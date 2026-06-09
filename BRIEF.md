@@ -178,3 +178,36 @@ Build it as `assets/js/screensaver.js`, self-contained and easy to toggle off.
 - Don't add a build step, framework, or dependency without Yaniv's say-so —
   it's a static site and should stay trivially deployable to GitHub Pages.
 - When in doubt about scope or a destructive action, ask rather than guess.
+
+---
+
+## 8. Skills (in .claude/skills/)
+
+This project ships with three Claude Code skills. Install them at
+`.claude/skills/<name>/SKILL.md` so they load automatically when relevant:
+
+- **grc-copywriter-he** — Hebrew copywriting. Triggers on any Hebrew writing,
+  rewriting, or review. Encodes the "source-language, not translation" rule,
+  the voice, term-handling, and spelling. Use it for every Hebrew string.
+- **grc-copywriter-en** — English copywriting. Triggers on any English copy
+  work. Encodes Yaniv's "working CISO, not a brochure" voice and the buzzword
+  ban. English is the default language, so this matters most.
+- **grc-changelog** — Version history. Owns CHANGELOG.md + the on-site
+  /changelog page, the versioning scheme, and bilingual entry format. Run it at
+  the END of any shipped change.
+
+The copy skills own *wording*; the changelog skill owns *structure/process* and
+defers to the copy skills for the actual text.
+
+---
+
+## 9. Version-updates page (/changelog)
+
+The site will keep evolving, so it maintains a public bilingual version history:
+a root `CHANGELOG.md` plus a styled on-site `/changelog` page that matches the
+classified-lab aesthetic (dark/light, green accent, mono version numbers, RTL
+Hebrew). Link it discreetly from the footer ("version history" / "עדכוני
+גרסאות"). See the `grc-changelog` skill for the full format and workflow.
+
+Seed it with: `v1.0` = public launch, and log the structural refactor as its own
+entry. Every future feature (favicon, screensaver, copy passes) gets an entry.
