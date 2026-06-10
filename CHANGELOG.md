@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.4 — 2026-06-10
+
+### Changed
+- Refined the Privacy & DPO wording — aligned with national privacy-authority requirements.
+- Rebalanced the hero — a smaller, supporting portrait so the wordmark and value proposition lead.
+- Reworked the screensaver — the demo terminal is now a raw full-screen console that runs winget-style GET installs, each streaming a full service response (a different command every cycle). Matrix rain still resolves into GRC·LABS; triggers after 9s idle.
+- Set the site to English-only for now — hid the Hebrew toggle (Hebrew content and RTL support remain in the code, ready to switch back on).
+
 ## v1.3 — 2026-06-10
 
 ### Changed
