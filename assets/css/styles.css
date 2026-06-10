@@ -71,6 +71,10 @@
   .iconbtn{display:inline-flex; align-items:center; gap:6px}
   .iconbtn:hover,.langbtn:hover{border-color:var(--amber); color:var(--amber)}
   .iconbtn svg{width:14px; height:14px; display:block}
+  /* Hebrew toggle hidden — site is English-only for now. The i18n system, all
+     Hebrew strings, data-i18n attributes and RTL logic remain intact; remove
+     this single rule (and nothing else) to re-enable the Hebrew toggle. */
+  #langbtn{display:none}
   @media(max-width:760px){ .topbar nav{display:none} .clr{display:none} #themelabel{display:none} .iconbtn{padding:6px 9px} }
 
   /* ── hero ── */
