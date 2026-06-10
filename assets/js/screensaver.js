@@ -89,7 +89,8 @@
       ['CISSP'], ['CISM'], ['ISO 27001'], ['CISO'], ['DPO']
     ];
     var fontSize = 16, cols = 0, rows = 0, drops = [], speeds = [], maskCells = [];
-    var coTimer = 0, coActive = 0, coCount = 0, otherIdx = 0, CO_PERIOD = 4500, CO_DUR = 2600;
+    var msgLines = [], msgFs = 0, msgY0 = 0, msgLh = 0;
+    var coTimer = 0, coActive = 0, coCount = 0, otherIdx = 0, CO_PERIOD = 5200, CO_DUR = 3600;
 
     function nextMsg() {
       var m = (coCount % 2 === 0) ? PRIMARY : OTHERS[otherIdx++ % OTHERS.length];
@@ -123,12 +124,13 @@
       o.textAlign = 'center'; o.textBaseline = 'middle';
       var lh = fs * 1.16, y0 = H / 2 - (lines.length - 1) * lh / 2;
       for (var w = 0; w < lines.length; w++) o.fillText(lines[w], W / 2, y0 + w * lh);
+      msgLines = lines; msgFs = fs; msgY0 = y0; msgLh = lh;   // remember geometry for the soft glow
       var data = o.getImageData(0, 0, W, H).data;
       for (var r = 0; r < rows; r++) {
         for (var c = 0; c < cols; c++) {
           var px = (c * fontSize + fontSize / 2) | 0, py = (r * fontSize + fontSize / 2) | 0;
           if (px < W && py < H && data[(py * W + px) * 4 + 3] > 128)
-            maskCells.push({ x: c * fontSize, y: r * fontSize });
+            maskCells.push({ x: c * fontSize, y: r * fontSize, g: GLYPHS[(Math.random() * GLYPHS.length) | 0] });
         }
       }
     }
@@ -153,13 +155,23 @@
       if (!coActive && coTimer >= CO_PERIOD) { coActive = 1; coTimer = 0; buildMask(nextMsg()); }
       if (coActive) {
         var t = Math.min(coTimer / CO_DUR, 1);
-        var inten = Math.sin(t * Math.PI);   // 0→1→0
-        ctx.font = '700 ' + fontSize + 'px ' + MONO;
+        var inten = Math.sin(t * Math.PI);           // 0→1→0
+        inten = inten * inten * (3 - 2 * inten);      // smoothstep — gentler emerge/melt
+        // soft phosphor "ghost": the words themselves, blurred and faint
+        ctx.save();
+        ctx.shadowColor = 'rgba(99,178,46,0.85)'; ctx.shadowBlur = 8 + 16 * inten;
+        ctx.fillStyle = 'rgba(99,178,46,' + (0.15 * inten).toFixed(3) + ')';
+        ctx.font = '700 ' + msgFs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        for (var w2 = 0; w2 < msgLines.length; w2++) ctx.fillText(msgLines[w2], W / 2, msgY0 + w2 * msgLh);
+        ctx.restore();
+        // sparse, ghosted glyph-cells hinting the words form out of the rain
+        ctx.font = '700 ' + fontSize + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+        ctx.fillStyle = GREEN;
         for (var m = 0; m < maskCells.length; m++) {
-          if (Math.random() > 0.5 + inten * 0.5) continue;
-          ctx.fillStyle = inten > 0.4 ? BRIGHT : GREEN;
-          ctx.globalAlpha = 0.6 + inten * 0.4;
-          ctx.fillText(GLYPHS[(Math.random() * GLYPHS.length) | 0], maskCells[m].x, maskCells[m].y);
+          if (Math.random() > 0.42 * inten) continue;                 // sparse, ramps with intensity
+          if (Math.random() < 0.07) maskCells[m].g = GLYPHS[(Math.random() * GLYPHS.length) | 0];
+          ctx.globalAlpha = 0.5 * inten;                              // ghosted — never full
+          ctx.fillText(maskCells[m].g, maskCells[m].x, maskCells[m].y);
         }
         ctx.globalAlpha = 1;
         if (coTimer >= CO_DUR) { coActive = 0; coTimer = 0; }
@@ -395,11 +407,125 @@
     return { reset: reset, draw: draw, staticResponse: staticResponse };
   })();
 
+  // ─────────── MODE 3 — ASCII portrait (intermittent), decrypt reveal ───────────
+  var ascii = (function () {
+    var RAMP = " .,:;-~=+*coaeUXEZ%#8B@";   // sparse → dense
+    var FLICK = '01<>[]{}/|=+*#%&XAHKMWZ'.split('');
+    var img = new Image(), ready = false, failed = false;
+    var grid = null, gw = 0, gh = 0, fs = 0, ageMs = 0, sized = -1, cache = null;
+    var ax0 = 0, ay0 = 0, acw = 0, ablockH = 0;
+    img.onload = function () { ready = true; grid = null; };
+    img.onerror = function () { failed = true; };
+    img.src = 'assets/img/portrait-dark.jpg';
+
+    function key() { return W * 100000 + H; }
+    function build() {
+      var side = Math.min(W * 0.9, H * 0.74);
+      fs = Math.max(7, Math.min(13, side / 54));
+      acw = fs * 0.6;
+      gw = Math.max(44, Math.floor(side / acw));
+      gh = Math.max(44, Math.floor(side / fs));
+      var off = document.createElement('canvas'); off.width = gw; off.height = gh;
+      var o = off.getContext('2d'); o.drawImage(img, 0, 0, gw, gh);
+      var d = o.getImageData(0, 0, gw, gh).data;
+      grid = [];
+      for (var r = 0; r < gh; r++) {
+        var row = [];
+        for (var c = 0; c < gw; c++) {
+          var i = (r * gw + c) * 4;
+          var lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+          var v = (lum - 0.16) / 0.74; v = Math.max(0, Math.min(1, v)); v = Math.pow(v, 0.7);   // contrast boost
+          var ch, col;
+          if (v < 0.12) { ch = ' '; col = null; }   // blank the dark background (drops JPEG noise)
+          else { ch = RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))); col = v > 0.7 ? BRIGHT : (v > 0.36 ? GREEN : '#3C7E20'); }
+          row.push({ ch: ch, col: col, settle: 320 + Math.random() * 650 + (r / gh) * 720 });
+        }
+        grid.push(row);
+      }
+      ablockH = gh * fs;
+      ax0 = Math.round((W - gw * acw) / 2); ay0 = Math.round((H - ablockH) / 2) - fs;
+      // pre-render the settled portrait (+ caption) once, for cheap blitting after the reveal
+      cache = document.createElement('canvas'); cache.width = W; cache.height = H;
+      var cc = cache.getContext('2d');
+      cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
+      for (var rr = 0; rr < gh; rr++) for (var cx = 0; cx < gw; cx++) {
+        var cl = grid[rr][cx]; if (cl.col === null) continue;
+        cc.fillStyle = cl.col; cc.fillText(cl.ch, ax0 + cx * acw, ay0 + rr * fs);
+      }
+      cc.fillStyle = DIM; cc.font = '700 ' + Math.max(11, Math.round(fs)) + 'px ' + MONO.replace(/"/g, '');
+      cc.textAlign = 'center'; cc.fillText('SUBJECT // Y.DADON — CISO', W / 2, ay0 + ablockH + fs * 0.7);
+      sized = key();
+    }
+    function reset() { ageMs = 0; if (sized !== key()) grid = null; }
+    function center(text, color, fz) {
+      ctx.fillStyle = color; ctx.font = '700 ' + fz + 'px ' + MONO;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, W / 2, H / 2);
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+    }
+    function draw(dt) {
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+      if (failed) { center('// SUBJECT UNAVAILABLE', GREEN, Math.round(W / 42)); return; }
+      if (!ready) { center('// DECRYPTING SUBJECT ...', DIM, Math.round(W / 42)); return; }
+      if (!grid || sized !== key()) build();
+      ageMs += dt;
+      if (ageMs >= 1760) { ctx.drawImage(cache, 0, 0); return; }   // settled — cheap blit
+      // decrypt reveal: cells flicker through glyphs, then settle into the portrait
+      ctx.font = fs + 'px ' + MONO;
+      for (var r = 0; r < gh; r++) {
+        var row = grid[r], yy = ay0 + r * fs;
+        for (var c = 0; c < gw; c++) {
+          var cell = row[c];
+          if (cell.col === null) continue;
+          if (ageMs >= cell.settle) { ctx.fillStyle = cell.col; ctx.fillText(cell.ch, ax0 + c * acw, yy); }
+          else if (Math.random() < 0.45) { ctx.fillStyle = DIM; ctx.fillText(FLICK[(Math.random() * FLICK.length) | 0], ax0 + c * acw, yy); }
+        }
+      }
+      ctx.fillStyle = DIM; ctx.font = '700 ' + Math.max(11, Math.round(fs)) + 'px ' + MONO;
+      ctx.textAlign = 'center'; ctx.fillText('SUBJECT // Y.DADON — CISO', W / 2, ay0 + ablockH + fs * 0.7);
+      ctx.textAlign = 'start';
+    }
+    return { reset: reset, draw: draw };
+  })();
+
+  // ───────────────────────── effects (CRT) ─────────────────────────
+  var scanPat = null, fxSweep = -120, fxGlitch = 0, fxNext = 2600 + Math.random() * 4000;
+  function getScanPat() {
+    if (scanPat) return scanPat;
+    var pc = document.createElement('canvas'); pc.width = 1; pc.height = 3;
+    var px = pc.getContext('2d'); px.fillStyle = 'rgba(0,0,0,0.11)'; px.fillRect(0, 2, 1, 1);
+    scanPat = ctx.createPattern(pc, 'repeat'); return scanPat;
+  }
+  function fx(dt) {
+    ctx.fillStyle = getScanPat(); ctx.fillRect(0, 0, W, H);            // faint static scanlines
+    fxSweep += dt * 0.16; if (fxSweep > H + 120) fxSweep = -120;        // soft scanline sweep
+    var gr = ctx.createLinearGradient(0, fxSweep - 60, 0, fxSweep + 60);
+    gr.addColorStop(0, 'rgba(99,178,46,0)'); gr.addColorStop(0.5, 'rgba(99,178,46,0.055)'); gr.addColorStop(1, 'rgba(99,178,46,0)');
+    ctx.fillStyle = gr; ctx.fillRect(0, fxSweep - 60, W, 120);
+    fxNext -= dt;
+    if (fxNext <= 0 && fxGlitch <= 0) { fxGlitch = 110 + Math.random() * 120; fxNext = 4500 + Math.random() * 6000; }
+    if (fxGlitch > 0) {                                                 // brief glitch slices
+      fxGlitch -= dt;
+      var n = 2 + (Math.random() * 3 | 0);
+      for (var k = 0; k < n; k++) {
+        var gy = Math.random() * H, ghh = 3 + Math.random() * 13;
+        ctx.fillStyle = Math.random() < 0.5 ? 'rgba(99,178,46,0.16)' : 'rgba(8,11,20,0.55)';
+        ctx.fillRect(0, gy, W, ghh);
+      }
+    }
+  }
+
   // ───────────────────────── mode manager + loop ─────────────────────────
-  var MODES = [matrix, terminal];
-  var MODE_MS = [13000, 16000];   // terminal needs room to stream a full response
-  var modeIndex = 0, modeAge = 0, raf = 0, last = 0;
+  var MODES = [matrix, terminal, ascii];
+  var MODE_MS = [13000, 16000, 8500];   // ASCII appears briefly + intermittently
+  var modeIndex = 0, modeAge = 0, raf = 0, last = 0, transCount = 0;
   var TRANS = 600, transElapsed = -1, transSwitched = false;
+
+  function nextMode(cur) {
+    transCount++;
+    if (cur !== 2 && transCount % 4 === 0) return 2;   // ASCII portrait, intermittent
+    return cur === 1 ? 0 : 1;                            // else alternate matrix / terminal
+  }
 
   function initMode(i) {
     modeIndex = i; modeAge = 0;
@@ -410,6 +536,7 @@
     if (!last) last = now;
     var dt = Math.min(80, now - last); last = now;
     MODES[modeIndex].draw(dt);
+    fx(dt);
 
     modeAge += dt;
     if (transElapsed < 0 && modeAge >= MODE_MS[modeIndex]) { transElapsed = 0; transSwitched = false; }
@@ -418,7 +545,7 @@
       var half = TRANS / 2;
       var a = transElapsed < half ? transElapsed / half : 1 - (transElapsed - half) / half;
       if (transElapsed >= half && !transSwitched) {
-        initMode((modeIndex + 1) % MODES.length); transSwitched = true;
+        initMode(nextMode(modeIndex)); transSwitched = true;
       }
       ctx.globalAlpha = Math.max(0, Math.min(1, a));
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
