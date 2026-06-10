@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.5 — 2026-06-10
+
+### Changed
+- Softened the screensaver's coalescing text — the GRC·LABS wordmark and capability/credential names now emerge and melt back into the rain as a ghosted glow, not hard text.
+- Reinstated the ASCII-portrait mode (intermittent) with stronger contrast so the face reads clearly in green, plus a brief decrypt reveal.
+- Added subtle CRT effects — scanlines, a slow sweep, and an occasional glitch.
+
 ## v1.4 — 2026-06-10
 
 ### Changed
