@@ -75,18 +75,25 @@
   // ───────────────────────── MODE 1 — matrix rain ─────────────────────────
   var matrix = (function () {
     var GLYPHS = 'アイウエオカキクケコサシスセソタチツテトﾊﾋﾌﾍﾎ0123456789#%&<>*+=/'.split('');
-    // real lines that the rain coalesces into — slogan, capabilities, credentials
-    var MSGS = [
-      ['TAILORED', 'INFORMATION', 'SECURITY'],
+    // The rain coalesces primarily into the GRC·LABS wordmark, alternating with
+    // other real lines (capability + credential names) for variety.
+    var PRIMARY = ['GRC·LABS'];
+    var OTHERS = [
       ['SECURITY', 'LEADERSHIP'],
       ['INCIDENT', 'RESPONSE'],
       ['SECURE', 'ARCHITECTURE'],
       ['PRIVACY', '& DPO'],
       ['GRC &', 'COMPLIANCE'],
-      ['CISSP'], ['CISM'], ['ISO 27001'], ['CISO']
+      ['CISSP'], ['CISM'], ['ISO 27001'], ['CISO'], ['DPO']
     ];
     var fontSize = 16, cols = 0, rows = 0, drops = [], speeds = [], maskCells = [];
-    var coTimer = 0, coActive = 0, coIndex = 0, CO_PERIOD = 4500, CO_DUR = 2600;
+    var coTimer = 0, coActive = 0, coCount = 0, otherIdx = 0, CO_PERIOD = 4500, CO_DUR = 2600;
+
+    function nextMsg() {
+      var m = (coCount % 2 === 0) ? PRIMARY : OTHERS[otherIdx++ % OTHERS.length];
+      coCount++;
+      return m;
+    }
 
     function layout() {
       fontSize = Math.max(12, Math.min(20, Math.round(W / 70)));
@@ -145,7 +152,7 @@
       coTimer += dt;
       if (!coActive && coTimer >= CO_PERIOD) {
         coActive = 1; coTimer = 0;
-        buildMask(MSGS[coIndex]); coIndex = (coIndex + 1) % MSGS.length;
+        buildMask(nextMsg());
       }
       if (coActive) {
         var t = Math.min(coTimer / CO_DUR, 1);
@@ -166,26 +173,44 @@
 
   // ─────────────────────── MODE 2 — secure-shell terminal ───────────────────────
   var terminal = (function () {
-    // GET <credential> lines (real) mixed with stylized demo-only test commands.
-    var SHELL = [
-      { k: 'get', cmd: 'GET CISO', resp: 'security leadership, as a service — senior ownership, not a checklist' },
-      { k: 'sh',  cmd: 'python harden.py', resp: 'OK' },
-      { k: 'get', cmd: 'GET GRC', resp: 'governance, risk & compliance — measured to your real risk' },
-      { k: 'sh',  cmd: 'pytest -q', resp: '12 passed in 0.42s' },
-      { k: 'get', cmd: 'GET DPO', resp: 'privacy & data protection — Israeli law and the GDPR' },
-      { k: 'sh',  cmd: './run_checks.sh', resp: 'all checks passed' },
-      { k: 'get', cmd: 'GET IR', resp: 'incident response — investigation, forensics, remediation' },
-      { k: 'sh',  cmd: 'python selftest.py', resp: 'OK' },
-      { k: 'get', cmd: 'GET ISO 27001', resp: 'lead auditor — an ISMS taken all the way to certification' },
-      { k: 'sh',  cmd: 'python audit_demo.py --dry-run', resp: 'OK · 0 findings' },
-      { k: 'get', cmd: 'GET CISSP', resp: '(ISC)² — certified information systems security professional' },
-      { k: 'get', cmd: 'GET CISM', resp: 'ISACA — certified information security manager' }
+    // Each script: a command + a short, varied sequence of output lines. GET <X>
+    // scripts are real capability/credential flexes; the rest are stylized
+    // DEMO-ONLY steps (never a claim of real execution — see the "// demo" label).
+    // Line prefix drives colour: "✓" = success, ">" = challenge hint, else a step.
+    var SCRIPTS = [
+      { cmd: 'GET CISO', out: ['→ loading security program ... OK', '→ policies + annual plan ... ready', '✓ CISO-as-a-Service — senior ownership'] },
+      { cmd: 'GET GRC', out: ['→ building risk register ... OK', '→ ISO 27001 / 27035 / 22301 ... aligned', '✓ governance, risk & compliance'] },
+      { cmd: 'GET DPO', out: ['→ data-protection controls ... OK', '→ Israeli privacy law + GDPR ... aligned', '✓ DPO services'] },
+      { cmd: 'GET IR', out: ['→ triage ... OK', '→ forensics + containment ... done', '→ remediation ... complete', '✓ incident response'] },
+      { cmd: 'GET ISO 27001', out: ['→ mapping Annex A controls ... 93/93', '→ evidence review ... passed', '✓ lead auditor · ISO/IEC 27001:2022'] },
+      { cmd: 'GET ARCH', out: ['→ threat model ... built', '→ security-by-design review ... passed', '✓ secure architecture'] },
+      { cmd: 'GET CISSP', out: ['→ verifying credential ... OK', '✓ (ISC)² CISSP'] },
+      { cmd: 'GET CISM', out: ['→ verifying credential ... OK', '✓ ISACA CISM'] },
+      { cmd: 'python harden.py', out: ['→ applying baseline ... OK', '→ 0 critical findings', 'done'] },
+      { cmd: 'pytest -q', out: ['..........', '12 passed in 0.42s'] },
+      { cmd: './run_checks.sh', out: ['→ config ... OK', '→ secrets scan ... clean', 'all checks passed'] },
+      { cmd: 'python audit_demo.py --dry-run', out: ['→ dry-run ... OK · 0 findings'] },
+      { cmd: 'GET CHALLENGE', out: ['> a door is hidden in plain sight ...', '> rotates every 90 days — or when someone cracks it'] }
     ];
     var PROMPT = 'grc-labs:~$ ';
-    var history, idx, typed, phase, wait, blink;
+    var HINT = '#79B0D6';
+    var order, oi, history, typed, phase, wait, blink, outShown, outTimer;
 
-    function reset() { history = []; idx = 0; typed = 0; phase = 'cmd'; wait = 0; blink = 0; }
+    function shuffle() {
+      order = SCRIPTS.map(function (_, i) { return i; });
+      for (var i = order.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+      }
+    }
+    function reset() { shuffle(); oi = 0; history = []; typed = 0; phase = 'cmd'; wait = 0; blink = 0; outShown = 0; outTimer = 0; }
 
+    function colorFor(line) {
+      var c = line.charAt(0);
+      if (c === '✓') return BRIGHT;
+      if (c === '>') return HINT;
+      return INK;
+    }
     function wrap(text, maxW) {
       var words = text.split(' '), lines = [], cur = '';
       for (var i = 0; i < words.length; i++) {
@@ -203,19 +228,18 @@
       // ── window geometry (centered both ways, wide, responsive, not full-bleed) ──
       var winW = Math.min(940, W * 0.86);
       var fs = Math.max(13, Math.min(21, Math.round(winW / 46)));
-      var lh = Math.round(fs * 1.55), pad = Math.round(fs * 1.4), titleH = Math.round(fs * 2.5);
+      var lh = Math.round(fs * 1.5), pad = Math.round(fs * 1.4), titleH = Math.round(fs * 2.5);
       var winX = Math.round((W - winW) / 2);
-      var maxRows = 14;
-      var winH = Math.min(Math.round(H * 0.7), titleH + pad + lh * (maxRows + 1));
+      var winH = Math.min(Math.round(H * 0.74), titleH + pad + lh * 15);
       var winY = Math.round((H - winH) / 2);
-      var textX = winX + pad, textW = winW - pad * 2;
-      maxRows = Math.max(4, Math.floor((winH - titleH - pad) / lh));
+      var textX = winX + pad, textW = winW - pad * 2, indent = Math.round(fs * 1.1);
+      var maxRows = Math.max(4, Math.floor((winH - titleH - pad) / lh));
 
       ctx.textBaseline = 'top'; ctx.textAlign = 'start';
       ctx.font = fs + 'px ' + MONO;
 
       // ── window chrome ──
-      ctx.fillStyle = 'rgba(10,14,24,0.74)'; ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+      ctx.fillStyle = 'rgba(10,14,24,0.78)'; ctx.strokeStyle = LINE; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.roundRect(winX, winY, winW, winH, 10); ctx.fill(); ctx.stroke();
       ctx.save(); ctx.beginPath(); ctx.roundRect(winX, winY, winW, titleH, 10); ctx.clip();
       ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(winX, winY, winW, titleH); ctx.restore();
@@ -230,43 +254,45 @@
       ctx.fillText('secure shell // demo', winX + winW / 2, dotY + 1);
       ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.font = fs + 'px ' + MONO;
 
-      // ── typing state machine ──
+      // ── typing / execution state machine ──
       blink += dt;
       var cur = (Math.floor(blink / 530) % 2) === 0;
-      var entry = SHELL[idx % SHELL.length];
+      var script = SCRIPTS[order[oi % order.length]];
       if (phase === 'cmd') {
         typed += dt / 42;
-        if (typed >= entry.cmd.length) { typed = entry.cmd.length; phase = 'pause'; wait = 0; }
+        if (typed >= script.cmd.length) { typed = script.cmd.length; phase = 'pause'; wait = 0; }
       } else if (phase === 'pause') {
-        wait += dt; if (wait > 320) phase = 'resp';
-      } else if (phase === 'resp') {
-        history.push(entry); phase = 'hold'; wait = 0;
+        wait += dt; if (wait > 280) { phase = 'out'; history.push({ type: 'cmd', cmd: script.cmd }); outShown = 0; outTimer = 0; }
+      } else if (phase === 'out') {
+        outTimer += dt;
+        if (outShown < script.out.length && outTimer > 250) {
+          var ln = script.out[outShown];
+          history.push({ type: 'out', text: ln, color: colorFor(ln) });
+          outShown++; outTimer = 0;
+        }
+        if (outShown >= script.out.length) { phase = 'hold'; wait = 0; }
       } else if (phase === 'hold') {
-        wait += dt; if (wait > 1500) { idx++; typed = 0; phase = 'cmd'; }
+        wait += dt; if (wait > 1400) { oi++; if (oi % order.length === 0) shuffle(); typed = 0; phase = 'cmd'; }
       }
 
-      // ── build rows (command + wrapped output), then the active line ──
-      var out = [];
+      // ── build display rows (wrapped output), then the active typing line ──
+      var rows = [];
       for (var h = 0; h < history.length; h++) {
         var e = history[h];
-        out.push({ type: 'cmd', cmd: e.cmd });
-        if (e.k === 'get') {
-          var gl = wrap(e.resp, textW - ctx.measureText('  → ').width);
-          for (var g = 0; g < gl.length; g++) out.push({ type: 'out', text: (g === 0 ? '  → ' : '    ') + gl[g], color: INK });
-        } else {
-          out.push({ type: 'out', text: '  ' + e.resp, color: BRIGHT });
-        }
+        if (e.type === 'cmd') { rows.push({ type: 'cmd', cmd: e.cmd }); continue; }
+        var wl = wrap(e.text, textW - indent);
+        for (var g = 0; g < wl.length; g++) rows.push({ type: 'out', text: (g === 0 ? wl[g] : '  ' + wl[g]), color: e.color });
       }
-      var activeCmd = (phase === 'cmd' || phase === 'pause') ? entry.cmd.slice(0, Math.floor(typed)) : '';
-      out.push({ type: 'cmd', cmd: activeCmd, active: true });
-      if (out.length > maxRows) out = out.slice(out.length - maxRows);
+      var activeCmd = (phase === 'cmd' || phase === 'pause') ? script.cmd.slice(0, Math.floor(typed)) : '';
+      rows.push({ type: 'cmd', cmd: activeCmd, active: true });
+      if (rows.length > maxRows) rows = rows.slice(rows.length - maxRows);
 
       // ── render, clipped to the window body ──
       ctx.save();
       ctx.beginPath(); ctx.rect(winX, winY + titleH, winW, winH - titleH); ctx.clip();
       var ty = winY + titleH + Math.round(pad * 0.5);
-      for (var r = 0; r < out.length; r++) {
-        var row = out[r];
+      for (var r = 0; r < rows.length; r++) {
+        var row = rows[r];
         if (row.type === 'cmd') {
           ctx.fillStyle = DIM; ctx.fillText(PROMPT, textX, ty);
           var pw = ctx.measureText(PROMPT).width;
@@ -276,10 +302,13 @@
             ctx.fillStyle = BRIGHT; ctx.fillRect(cwx + 2, ty + 2, fs * 0.5, fs);
           }
         } else {
-          ctx.fillStyle = row.color; ctx.fillText(row.text, textX, ty);
+          ctx.fillStyle = row.color; ctx.fillText(row.text, textX + indent, ty);
         }
         ty += lh;
       }
+      // subtle CRT scanlines over the body — keeps it feeling alive
+      ctx.fillStyle = 'rgba(0,0,0,0.10)';
+      for (var sy = winY + titleH + 1; sy < winY + winH; sy += 4) ctx.fillRect(winX, sy, winW, 1);
       ctx.restore();
     }
     return { reset: reset, draw: draw };
@@ -323,12 +352,14 @@
 
   function staticFrame() {
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    var fs = Math.min(W / 13, H / 7);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var fs = Math.min(W / 7, H / 5);
     ctx.font = '700 ' + fs + 'px ' + MONO;
-    ctx.fillStyle = GREEN; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('TAILORED', W / 2, H / 2 - fs * 1.1);
-    ctx.fillText('INFORMATION', W / 2, H / 2);
-    ctx.fillText('SECURITY', W / 2, H / 2 + fs * 1.1);
+    ctx.fillStyle = GREEN;
+    ctx.fillText('GRC·LABS', W / 2, H / 2 - fs * 0.18);
+    ctx.font = Math.round(fs * 0.17) + 'px ' + MONO;
+    ctx.fillStyle = DIM;
+    ctx.fillText('TAILORED INFORMATION SECURITY', W / 2, H / 2 + fs * 0.5);
     ctx.textAlign = 'start';
   }
 
