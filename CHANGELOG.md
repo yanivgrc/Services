@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.6 — 2026-06-10
+
+### Changed
+- Rebuilt the screensaver as a single scene console — matrix rain now only opens and wipes between scenes (no curtain), everything else plays inside one terminal, and the glitch/scanline effects are gone. Calmer and more fluid.
+- GET scenes now run a winget-style install, a readable typed response with a CLI "processing" beat, an output that opens with an SSH-randomart signature, and the Hebrew call-to-action inline in the terminal.
+- Added large ASCII geometry scenes — golden spiral, sunflower phyllotaxis, sine waves, fractal tree, DNA helix — plus an occasional breathing ASCII portrait.
+
 ## v1.5 — 2026-06-10
 
 ### Changed
