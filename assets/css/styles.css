@@ -75,7 +75,7 @@
 
   /* ── hero ── */
   .hero{padding:92px 0 70px; position:relative}
-  .hero-inner{display:grid; grid-template-columns:1.35fr 0.9fr; gap:54px; align-items:center}
+  .hero-inner{display:grid; grid-template-columns:1.7fr 0.8fr; gap:50px; align-items:center}
   @media(max-width:860px){ .hero-inner{grid-template-columns:1fr; gap:40px} .hero{padding:64px 0 56px} }
   .hero .tag{display:flex; align-items:center; gap:14px; margin-bottom:28px; flex-wrap:wrap}
   .hero .tag .bar{height:1px; flex:1; min-width:30px; background:var(--line)}
@@ -90,8 +90,8 @@
   .hero .meta span::before{content:""; width:6px; height:6px; background:var(--cyan); transform:rotate(45deg); flex:none}
 
   /* portrait with scanner brackets */
-  .portrait{position:relative; width:100%; max-width:300px; margin-inline:auto; aspect-ratio:1; }
-  .trust{max-width:300px; margin:18px auto 0; display:flex; align-items:center; gap:12px; justify-content:center}
+  .portrait{position:relative; width:100%; max-width:240px; margin-inline:auto; aspect-ratio:1; }
+  .trust{max-width:240px; margin:16px auto 0; display:flex; align-items:center; gap:12px; justify-content:center}
   .trust a{display:block; line-height:0; border-radius:50%; transition:transform .2s, filter .2s; filter:saturate(.92)}
   .trust a:hover{transform:translateY(-2px); filter:saturate(1.1)}
   .trust img{width:54px; height:54px; display:block; object-fit:contain; border-radius:8px}
