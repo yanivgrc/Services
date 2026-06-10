@@ -1,12 +1,12 @@
 /* GRC·LABS — cyber screensaver
-   After 30s of no interaction, a full-screen overlay fades in and cycles two
-   modes: matrix rain (which periodically coalesces into real lines — the slogan,
-   capability and credential names) and a wide, centered "secure shell" terminal
-   that types GET <credential> lines mixed with stylized, demo-only test commands.
-   Any interaction dismisses it instantly and resets the idle timer.
+   After 9s of no interaction, a full-screen overlay fades in and cycles two
+   modes: matrix rain (which periodically coalesces into the GRC·LABS wordmark
+   and other real lines), and a raw full-screen "secure shell" console that runs
+   a winget-style install for a GET <service> command and then streams the full
+   service response. Any interaction dismisses it instantly and resets the timer.
 
-   The terminal is atmosphere only — a clearly-labelled "// demo" sandbox, not a
-   claim of real actions. Pure canvas/JS, green-on-night-blue.
+   The console is stylized showcase content — a "// demo", not a real installer.
+   Pure canvas/JS, green-on-night-blue.
 
    Toggle: set CONFIG.enabled = false (or remove the <script> tag) to disable.
    Test helpers (query string): ?saver=now (trigger at once), ?saver=fast
@@ -15,8 +15,8 @@
   'use strict';
 
   var CONFIG = {
-    enabled: true,     // master feature flag
-    idleMs: 30000      // idle time before the screensaver appears
+    enabled: true,    // master feature flag
+    idleMs: 9000      // idle time before the screensaver appears
   };
 
   var params = new URLSearchParams(location.search);
@@ -28,7 +28,7 @@
 
   // ── palette (always green-on-dark, regardless of site theme) ──
   var BG = '#080B14', GREEN = '#63B22E', BRIGHT = '#9BE85B',
-      DIM = 'rgba(99,178,46,0.55)', INK = '#C7D0DD', LINE = 'rgba(122,140,170,0.20)';
+      DIM = 'rgba(99,178,46,0.55)', INK = '#C7D0DD';
   var GREENS = ['#4FA028', '#63B22E', '#6FC036', '#5AA82A'];
   var MONO = '"IBM Plex Mono", ui-monospace, monospace';
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -71,6 +71,8 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     matrix.layout();
   }
+
+  function rep(ch, n) { var s = ''; for (var i = 0; i < n; i++) s += ch; return s; }
 
   // ───────────────────────── MODE 1 — matrix rain ─────────────────────────
   var matrix = (function () {
@@ -141,19 +143,14 @@
       for (var i = 0; i < cols; i++) {
         var ch = GLYPHS[(Math.random() * GLYPHS.length) | 0];
         var x = i * fontSize, y = drops[i] * fontSize;
-        // bright head + occasional sparkle, otherwise a varied green for depth
         ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0];
         if (y > 0) ctx.fillText(ch, x, y);
         if (y > H && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.4 + Math.random() * 0.55; }
         drops[i] += speeds[i];
       }
 
-      // coalesce: periodically light a real message's cells, then dissolve
       coTimer += dt;
-      if (!coActive && coTimer >= CO_PERIOD) {
-        coActive = 1; coTimer = 0;
-        buildMask(nextMsg());
-      }
+      if (!coActive && coTimer >= CO_PERIOD) { coActive = 1; coTimer = 0; buildMask(nextMsg()); }
       if (coActive) {
         var t = Math.min(coTimer / CO_DUR, 1);
         var inten = Math.sin(t * Math.PI);   // 0→1→0
@@ -171,44 +168,97 @@
     return { layout: layout, reset: reset, draw: draw };
   })();
 
-  // ─────────────────────── MODE 2 — secure-shell terminal ───────────────────────
+  // ───────────── MODE 2 — raw console: winget-style install + full response ─────────────
   var terminal = (function () {
-    // Each script: a command + a short, varied sequence of output lines. GET <X>
-    // scripts are real capability/credential flexes; the rest are stylized
-    // DEMO-ONLY steps (never a claim of real execution — see the "// demo" label).
-    // Line prefix drives colour: "✓" = success, ">" = challenge hint, else a step.
-    var SCRIPTS = [
-      { cmd: 'GET CISO', out: ['→ loading security program ... OK', '→ policies + annual plan ... ready', '✓ CISO-as-a-Service — senior ownership'] },
-      { cmd: 'GET GRC', out: ['→ building risk register ... OK', '→ ISO 27001 / 27035 / 22301 ... aligned', '✓ governance, risk & compliance'] },
-      { cmd: 'GET DPO', out: ['→ data-protection controls ... OK', '→ Israeli privacy law + GDPR ... aligned', '✓ DPO services'] },
-      { cmd: 'GET IR', out: ['→ triage ... OK', '→ forensics + containment ... done', '→ remediation ... complete', '✓ incident response'] },
-      { cmd: 'GET ISO 27001', out: ['→ mapping Annex A controls ... 93/93', '→ evidence review ... passed', '✓ lead auditor · ISO/IEC 27001:2022'] },
-      { cmd: 'GET ARCH', out: ['→ threat model ... built', '→ security-by-design review ... passed', '✓ secure architecture'] },
-      { cmd: 'GET CISSP', out: ['→ verifying credential ... OK', '✓ (ISC)² CISSP'] },
-      { cmd: 'GET CISM', out: ['→ verifying credential ... OK', '✓ ISACA CISM'] },
-      { cmd: 'python harden.py', out: ['→ applying baseline ... OK', '→ 0 critical findings', 'done'] },
-      { cmd: 'pytest -q', out: ['..........', '12 passed in 0.42s'] },
-      { cmd: './run_checks.sh', out: ['→ config ... OK', '→ secrets scan ... clean', 'all checks passed'] },
-      { cmd: 'python audit_demo.py --dry-run', out: ['→ dry-run ... OK · 0 findings'] },
-      { cmd: 'GET CHALLENGE', out: ['> a door is hidden in plain sight ...', '> rotates every 90 days — or when someone cracks it'] }
+    var PROMPT = 'grc-labs:\\> ';
+    var BAR_LEN = 26;
+    // Full responses are the approved showcase content (screensaver-scripts.md),
+    // verbatim. Stylized demo — not a real installer.
+    var COMMANDS = [
+      { name: 'CISO', module: 'cyber-leadership-module', body: [
+        'Loading: Cyber Leadership Module', 'Status: Available', '',
+        'To receive CISO service, define business context first.', '',
+        'Required input:', '- Organization size', '- Critical systems', '- Regulatory exposure', '- Current security maturity', '- Main risks and known gaps', '',
+        'Processing:', '- Map assets, systems, vendors and business processes', '- Identify cyber, operational and compliance risks', '- Build security governance, policies and work plan', '- Prioritize controls by business impact', '- Create management visibility and measurable security roadmap', '',
+        'Output:', '- CISO-as-a-Service', '- Risk-based security program', '- Board and management reporting', '- Security policy framework', '- Operational cyber work plan', '',
+        'Result:', 'CISO service is ready when the organization wants security leadership, not just technical fixes.'
+      ] },
+      { name: 'DPO', module: 'privacy-governance-module', body: [
+        'Loading: Privacy Governance Module', 'Status: Available', '',
+        'To receive DPO service, start with personal data mapping.', '',
+        'Required input:', '- Types of personal data collected', '- Systems holding personal information', '- Data sharing with vendors', '- Legal basis for processing', '- Privacy notices and consent flows', '',
+        'Processing:', '- Map data flows across the organization', '- Identify privacy risks and regulatory gaps', '- Review retention, access, disclosure and security controls', '- Build privacy procedures and documentation', '- Prepare the organization for audits, incidents and data subject requests', '',
+        'Output:', '- Privacy compliance framework', '- Data processing inventory', '- DPIA support where required', '- Vendor privacy review', '- Management guidance on privacy obligations', '',
+        'Result:', 'DPO service is ready when privacy must become managed, documented and defensible.'
+      ] },
+      { name: 'ISO27001', module: 'isms-module', body: [
+        'Loading: Information Security Management System', 'Status: Available', '',
+        'To receive ISO 27001 readiness, define the scope.', '',
+        'Required input:', '- Business units in scope', '- Systems and locations in scope', '- Existing policies and procedures', '- Risk assessment status', '- Certification target or internal compliance target', '',
+        'Processing:', '- Define ISMS scope', '- Perform gap analysis against ISO 27001', '- Build risk assessment and treatment plan', '- Create required policies, procedures and evidence', '- Prepare management review, internal audit and certification readiness', '',
+        'Output:', '- ISO 27001 gap report', '- Risk register', '- Statement of Applicability', '- Policies and procedures', '- Certification readiness plan', '',
+        'Result:', 'ISO 27001 service is ready when security needs to become a managed system, not a collection of documents.'
+      ] },
+      { name: 'Audit', module: 'audit-engine', body: [
+        'Loading: Audit Engine', 'Status: Available', '',
+        'To receive audit service, define what needs to be tested.', '',
+        'Required input:', '- Audit scope', '- Standard or regulation', '- Systems and departments involved', '- Previous findings', '- Required reporting format', '',
+        'Processing:', '- Review documentation and evidence', '- Interview stakeholders', '- Validate controls in practice', '- Identify gaps, risks and exceptions', '- Prioritize findings by severity and business impact', '',
+        'Output:', '- Audit report', '- Control maturity assessment', '- Findings and recommendations', '- Corrective action plan', '- Executive summary', '',
+        'Result:', 'Audit service is ready when the organization needs a clear, independent view of what works, what fails and what must improve.'
+      ] },
+      { name: 'R&D', module: 'secure-rnd-module', body: [
+        'Loading: Research and Development Security Module', 'Status: Available', '',
+        'To receive R&D support, describe the product, architecture and development flow.', '',
+        'Required input:', '- Product purpose', '- Technology stack', '- Cloud or on-prem environment', '- Development lifecycle', '- Security and privacy requirements', '',
+        'Processing:', '- Review architecture and design assumptions', '- Identify security risks early in the development process', '- Embed privacy and security by design', '- Support secure API, cloud, identity and data architecture', '- Translate business needs into technical implementation tasks', '',
+        'Output:', '- Secure architecture guidance', '- Product risk analysis', '- Security requirements for development', '- API and cloud security recommendations', '- Technical roadmap', '',
+        'Result:', 'R&D service is ready when innovation needs structure, security and execution discipline.'
+      ] },
+      { name: 'IR', module: 'incident-response-module', body: [
+        'Loading: Incident Response Module', 'Status: Standby', '',
+        'To receive IR service, provide incident context immediately.', '',
+        'Required input:', '- What happened', '- When it started', '- Affected systems', '- Known indicators', '- Current containment actions', '- Available logs and evidence', '',
+        'Processing:', '- Stabilize the situation', '- Preserve evidence', '- Analyze scope and impact', '- Identify attack path and affected assets', '- Guide containment, eradication and recovery', '- Prepare management and regulatory communication where needed', '',
+        'Output:', '- Incident triage', '- Containment plan', '- Evidence-based analysis', '- Recovery guidance', '- Post-incident report', '- Lessons learned and control improvements', '',
+        'Result:', 'IR service is ready when the organization needs calm, structured and experienced handling under pressure.'
+      ] },
+      { name: 'IOT', module: 'iot-security-module', body: [
+        'Loading: IoT Security and Architecture Module', 'Status: Available', '',
+        'To receive IoT support, map the devices and communication paths.', '',
+        'Required input:', '- Device types', '- Network segments', '- Protocols in use', '- Cloud connections', '- Authentication model', '- Firmware and update process', '',
+        'Processing:', '- Map device behavior and network exposure', '- Separate IoT from critical systems', '- Define firewall, VLAN and access rules', '- Review identity, firmware, logging and update controls', '- Design secure monitoring and operational management', '',
+        'Output:', '- IoT network architecture', '- Segmentation plan', '- Device security checklist', '- Firewall rule recommendations', '- Monitoring and hardening guidance', '',
+        'Result:', 'IoT service is ready when connected devices must work reliably without becoming an uncontrolled security risk.'
+      ] },
+      { name: 'Full-Service', module: 'integrated-governance-suite', body: [
+        'Loading: Integrated Cyber, Privacy and Technology Governance', 'Status: Ready', '',
+        'Combining:', '- CISO', '- DPO', '- ISO27001', '- Audit', '- R&D', '- IR', '- IoT', '',
+        'Processing:', '- Connect business needs, technology, risk and regulation into one managed security program.', '',
+        'Output:', '- Tailored Information Security', '- Governance that understands technology', '- Technology that respects risk', '- Risk management that supports the business', '',
+        'Result:', 'Service package ready.', 'Recommended action:', 'Start with discovery, continue with risk mapping, execute by priority.'
+      ] }
     ];
-    var PROMPT = 'grc-labs:~$ ';
-    var HINT = '#79B0D6';
-    var order, oi, history, typed, phase, wait, blink, outShown, outTimer;
+
+    var order, oi, history, typed, phase, t, blink, preIdx, bodyIdx, barT;
 
     function shuffle() {
-      order = SCRIPTS.map(function (_, i) { return i; });
+      order = COMMANDS.map(function (_, i) { return i; });
       for (var i = order.length - 1; i > 0; i--) {
         var j = Math.floor(Math.random() * (i + 1));
         var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
       }
     }
-    function reset() { shuffle(); oi = 0; history = []; typed = 0; phase = 'cmd'; wait = 0; blink = 0; outShown = 0; outTimer = 0; }
+    function reset() { shuffle(); oi = 0; history = []; typed = 0; phase = 'cmd'; t = 0; blink = 0; preIdx = 0; bodyIdx = 0; barT = 0; }
+
+    function barStr(p) { var n = Math.round(p * BAR_LEN); return rep('█', n) + rep('░', BAR_LEN - n) + '  ' + Math.round(p * 100) + '%'; }
 
     function colorFor(line) {
-      var c = line.charAt(0);
-      if (c === '✓') return BRIGHT;
-      if (c === '>') return HINT;
+      if (line.indexOf('Successfully installed') === 0) return BRIGHT;
+      if (line.indexOf('Status:') === 0) return BRIGHT;
+      if (line.indexOf('Loading:') === 0) return DIM;
+      if (line.charAt(0) === '█' || line.charAt(0) === '░') return GREEN;
+      if (/^[A-Z][A-Za-z &/]+:$/.test(line)) return BRIGHT;   // section headers
       return INK;
     }
     function wrap(text, maxW) {
@@ -222,101 +272,132 @@
       return lines;
     }
 
+    // shared layout for both the animated console and the reduced-motion frame
+    function geo() {
+      var contentW = Math.min(880, W * 0.9);
+      var fs = Math.max(14, Math.min(19, Math.round(contentW / 56)));
+      return { contentW: contentW, fs: fs, lh: Math.round(fs * 1.5), x0: Math.round((W - contentW) / 2) };
+    }
+
+    function renderRow(row, x0, ty, fs, cursorOn) {
+      if (row.cmd) {
+        ctx.fillStyle = DIM; ctx.fillText(PROMPT, x0, ty);
+        var pw = ctx.measureText(PROMPT).width;
+        ctx.fillStyle = BRIGHT; ctx.fillText(row.text, x0 + pw, ty);
+        if (row.cursor && cursorOn) {
+          var cwx = x0 + pw + ctx.measureText(row.text).width;
+          ctx.fillStyle = BRIGHT; ctx.fillRect(cwx + 2, ty + 2, fs * 0.5, fs);
+        }
+      } else {
+        ctx.fillStyle = row.color; ctx.fillText(row.text, x0, ty);
+      }
+    }
+
     function draw(dt) {
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+      var g = geo();
+      var topY = Math.round(H * 0.10), maxRows = Math.max(6, Math.floor((H * 0.82) / g.lh));
+      ctx.font = g.fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start';
 
-      // ── window geometry (centered both ways, wide, responsive, not full-bleed) ──
-      var winW = Math.min(940, W * 0.86);
-      var fs = Math.max(13, Math.min(21, Math.round(winW / 46)));
-      var lh = Math.round(fs * 1.5), pad = Math.round(fs * 1.4), titleH = Math.round(fs * 2.5);
-      var winX = Math.round((W - winW) / 2);
-      var winH = Math.min(Math.round(H * 0.74), titleH + pad + lh * 15);
-      var winY = Math.round((H - winH) / 2);
-      var textX = winX + pad, textW = winW - pad * 2, indent = Math.round(fs * 1.1);
-      var maxRows = Math.max(4, Math.floor((winH - titleH - pad) / lh));
-
-      ctx.textBaseline = 'top'; ctx.textAlign = 'start';
-      ctx.font = fs + 'px ' + MONO;
-
-      // ── window chrome ──
-      ctx.fillStyle = 'rgba(10,14,24,0.78)'; ctx.strokeStyle = LINE; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(winX, winY, winW, winH, 10); ctx.fill(); ctx.stroke();
-      ctx.save(); ctx.beginPath(); ctx.roundRect(winX, winY, winW, titleH, 10); ctx.clip();
-      ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(winX, winY, winW, titleH); ctx.restore();
-      ctx.strokeStyle = LINE; ctx.beginPath(); ctx.moveTo(winX, winY + titleH); ctx.lineTo(winX + winW, winY + titleH); ctx.stroke();
-      var dotY = winY + titleH / 2, dx = winX + pad;
-      var dots = ['#C8503A', '#F0B429', '#63B22E'];
-      ctx.globalAlpha = 0.8;
-      for (var k = 0; k < 3; k++) { ctx.fillStyle = dots[k]; ctx.beginPath(); ctx.arc(dx + k * 16, dotY, 4, 0, 7); ctx.fill(); }
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = DIM; ctx.font = Math.round(fs * 0.82) + 'px ' + MONO;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('secure shell // demo', winX + winW / 2, dotY + 1);
-      ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.font = fs + 'px ' + MONO;
-
-      // ── typing / execution state machine ──
       blink += dt;
-      var cur = (Math.floor(blink / 530) % 2) === 0;
-      var script = SCRIPTS[order[oi % order.length]];
+      var cursorOn = (Math.floor(blink / 530) % 2) === 0;
+      var c = COMMANDS[order[oi % order.length]];
+      var cmdStr = 'get ' + c.name;
+
+      // ── install + stream state machine ──
       if (phase === 'cmd') {
-        typed += dt / 42;
-        if (typed >= script.cmd.length) { typed = script.cmd.length; phase = 'pause'; wait = 0; }
-      } else if (phase === 'pause') {
-        wait += dt; if (wait > 280) { phase = 'out'; history.push({ type: 'cmd', cmd: script.cmd }); outShown = 0; outTimer = 0; }
-      } else if (phase === 'out') {
-        outTimer += dt;
-        if (outShown < script.out.length && outTimer > 250) {
-          var ln = script.out[outShown];
-          history.push({ type: 'out', text: ln, color: colorFor(ln) });
-          outShown++; outTimer = 0;
+        typed += dt / 40;
+        if (typed >= cmdStr.length) { typed = cmdStr.length; history.push({ cmd: true, text: cmdStr }); phase = 'pre'; t = 0; preIdx = 0; }
+      } else if (phase === 'pre') {
+        t += dt;
+        var pre = ['Found ' + c.name + ' [GRC-Labs.' + c.name + ']', 'Downloading ' + c.module + ' ...'];
+        if (preIdx < pre.length && t > 240) { history.push({ text: pre[preIdx], color: INK }); preIdx++; t = 0; }
+        if (preIdx >= pre.length) { phase = 'bar'; barT = 0; }
+      } else if (phase === 'bar') {
+        barT += dt;
+        if (barT / 850 >= 1) {
+          history.push({ text: barStr(1), color: GREEN });
+          history.push({ text: 'Successfully installed. Launching ...', color: BRIGHT });
+          history.push({ text: '', color: INK });
+          phase = 'body'; bodyIdx = 0; t = 0;
         }
-        if (outShown >= script.out.length) { phase = 'hold'; wait = 0; }
+      } else if (phase === 'body') {
+        t += dt;
+        if (bodyIdx < c.body.length && t > 120) { var bl = c.body[bodyIdx]; history.push({ text: bl, color: colorFor(bl) }); bodyIdx++; t = 0; }
+        if (bodyIdx >= c.body.length) { phase = 'hold'; t = 0; }
       } else if (phase === 'hold') {
-        wait += dt; if (wait > 1400) { oi++; if (oi % order.length === 0) shuffle(); typed = 0; phase = 'cmd'; }
+        t += dt;
+        if (t > 1900) { oi++; if (oi % order.length === 0) shuffle(); typed = 0; phase = 'cmd'; history.push({ text: '', color: INK }); }
       }
 
-      // ── build display rows (wrapped output), then the active typing line ──
+      // active (transient) row
+      var active = null;
+      if (phase === 'cmd') active = { cmd: true, text: cmdStr.slice(0, Math.floor(typed)), cursor: true };
+      else if (phase === 'bar') active = { text: barStr(Math.min(barT / 850, 1)), color: GREEN };
+      else if (phase === 'hold') active = { cmd: true, text: '', cursor: true };
+
+      // build wrapped rows (history + active), auto-scroll to last maxRows
       var rows = [];
+      function pushOut(text, color) {
+        var wl = wrap(text, g.contentW);
+        if (!wl.length) { rows.push({ text: '', color: color }); return; }
+        for (var k = 0; k < wl.length; k++) rows.push({ text: (k === 0 ? wl[k] : '  ' + wl[k]), color: color });
+      }
       for (var h = 0; h < history.length; h++) {
         var e = history[h];
-        if (e.type === 'cmd') { rows.push({ type: 'cmd', cmd: e.cmd }); continue; }
-        var wl = wrap(e.text, textW - indent);
-        for (var g = 0; g < wl.length; g++) rows.push({ type: 'out', text: (g === 0 ? wl[g] : '  ' + wl[g]), color: e.color });
+        if (e.cmd) rows.push({ cmd: true, text: e.text });
+        else pushOut(e.text, e.color);
       }
-      var activeCmd = (phase === 'cmd' || phase === 'pause') ? script.cmd.slice(0, Math.floor(typed)) : '';
-      rows.push({ type: 'cmd', cmd: activeCmd, active: true });
+      if (active) {
+        if (active.cmd) rows.push({ cmd: true, text: active.text, cursor: active.cursor });
+        else pushOut(active.text, active.color);
+      }
       if (rows.length > maxRows) rows = rows.slice(rows.length - maxRows);
 
-      // ── render, clipped to the window body ──
-      ctx.save();
-      ctx.beginPath(); ctx.rect(winX, winY + titleH, winW, winH - titleH); ctx.clip();
-      var ty = winY + titleH + Math.round(pad * 0.5);
-      for (var r = 0; r < rows.length; r++) {
-        var row = rows[r];
-        if (row.type === 'cmd') {
-          ctx.fillStyle = DIM; ctx.fillText(PROMPT, textX, ty);
-          var pw = ctx.measureText(PROMPT).width;
-          ctx.fillStyle = BRIGHT; ctx.fillText(row.cmd, textX + pw, ty);
-          if (row.active && cur) {
-            var cwx = textX + pw + ctx.measureText(row.cmd).width;
-            ctx.fillStyle = BRIGHT; ctx.fillRect(cwx + 2, ty + 2, fs * 0.5, fs);
-          }
-        } else {
-          ctx.fillStyle = row.color; ctx.fillText(row.text, textX + indent, ty);
-        }
-        ty += lh;
-      }
-      // subtle CRT scanlines over the body — keeps it feeling alive
-      ctx.fillStyle = 'rgba(0,0,0,0.10)';
-      for (var sy = winY + titleH + 1; sy < winY + winH; sy += 4) ctx.fillRect(winX, sy, winW, 1);
-      ctx.restore();
+      var ty = topY;
+      for (var r = 0; r < rows.length; r++) { renderRow(rows[r], g.x0, ty, g.fs, cursorOn); ty += g.lh; }
     }
-    return { reset: reset, draw: draw };
+
+    // reduced-motion: one full response, static, scaled to fit, no animation
+    function staticResponse() {
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+      ctx.textBaseline = 'top'; ctx.textAlign = 'start';
+      var c = COMMANDS[0];
+      var items = [{ cmd: true, text: 'get ' + c.name }];
+      items.push({ text: 'Found ' + c.name + ' [GRC-Labs.' + c.name + ']', color: INK });
+      items.push({ text: 'Downloading ' + c.module + ' ...', color: INK });
+      items.push({ text: barStr(1), color: GREEN });
+      items.push({ text: 'Successfully installed. Launching ...', color: BRIGHT });
+      items.push({ text: '', color: INK });
+      for (var i = 0; i < c.body.length; i++) items.push({ text: c.body[i], color: colorFor(c.body[i]) });
+
+      var contentW = Math.min(880, W * 0.9), x0 = Math.round((W - contentW) / 2);
+      var fs, lh, rowCount;
+      for (fs = 19; fs >= 9; fs--) {                       // shrink until it fits
+        ctx.font = fs + 'px ' + MONO; lh = Math.round(fs * 1.5); rowCount = 0;
+        for (var j = 0; j < items.length; j++) {
+          if (items[j].cmd) { rowCount++; continue; }
+          rowCount += Math.max(1, wrap(items[j].text, contentW).length);
+        }
+        if (rowCount * lh <= H * 0.86) break;
+      }
+      ctx.font = fs + 'px ' + MONO; lh = Math.round(fs * 1.5);
+      var ty = Math.max(Math.round(H * 0.06), Math.round((H - rowCount * lh) / 2));
+      for (var k = 0; k < items.length; k++) {
+        var it = items[k];
+        if (it.cmd) { renderRow({ cmd: true, text: it.text }, x0, ty, fs, false); ty += lh; continue; }
+        var wl = wrap(it.text, contentW);
+        if (!wl.length) { ty += lh; continue; }
+        for (var w2 = 0; w2 < wl.length; w2++) { ctx.fillStyle = it.color; ctx.fillText(w2 === 0 ? wl[w2] : '  ' + wl[w2], x0, ty); ty += lh; }
+      }
+    }
+
+    return { reset: reset, draw: draw, staticResponse: staticResponse };
   })();
 
   // ───────────────────────── mode manager + loop ─────────────────────────
   var MODES = [matrix, terminal];
-  var MODE_MS = [14000, 11000];   // matrix gets more time (two coalesce messages per visit)
+  var MODE_MS = [13000, 16000];   // terminal needs room to stream a full response
   var modeIndex = 0, modeAge = 0, raf = 0, last = 0;
   var TRANS = 600, transElapsed = -1, transSwitched = false;
 
@@ -350,25 +431,12 @@
   // ───────────────────────── activation / idle ─────────────────────────
   var active = false, lastActivity = performance.now();
 
-  function staticFrame() {
-    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    var fs = Math.min(W / 7, H / 5);
-    ctx.font = '700 ' + fs + 'px ' + MONO;
-    ctx.fillStyle = GREEN;
-    ctx.fillText('GRC·LABS', W / 2, H / 2 - fs * 0.18);
-    ctx.font = Math.round(fs * 0.17) + 'px ' + MONO;
-    ctx.fillStyle = DIM;
-    ctx.fillText('TAILORED INFORMATION SECURITY', W / 2, H / 2 + fs * 0.5);
-    ctx.textAlign = 'start';
-  }
-
   function activate() {
     if (active) return;
     active = true;
     resize();
     root.classList.add('on');
-    if (reduceMotion) { staticFrame(); return; }   // no animation when reduced-motion
+    if (reduceMotion) { terminal.staticResponse(); return; }   // static frame, one full response
     matrix.reset();
     initMode(START_MODE % MODES.length);
     last = 0; transElapsed = -1;
