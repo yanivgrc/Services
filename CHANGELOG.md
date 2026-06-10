@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.7 — 2026-06-11
+
+### Changed
+- Reworked the screensaver's GET scenes into a bash/pip flow — `pip install` resolves and installs dependencies, a faked `ssh-keygen` produces a fingerprint and a dense randomart signature, then the service response.
+- Geometry scenes are now square ASCII-art grids — golden spiral, sine waves, DNA helix; dropped the sunflower and tree shapes.
+- The matrix wipe between scenes now sweeps the full screen over about three seconds.
+
 ## v1.6 — 2026-06-10
 
 ### Changed
