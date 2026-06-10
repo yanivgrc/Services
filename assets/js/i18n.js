@@ -106,7 +106,27 @@
     "contact.p":{en:"Great technology and sharp cyber, measured to your needs and cut to fit your organization — never off-the-rack. We take on a small number of clients at a time; tell us what you're protecting.",
       he:"שילוב מנצח של טכנולוגיה וסייבר לעידן הטרנספורמציה הדיגיטלית. אנחנו עובדים עם מספר מצומצם של לקוחות בכל זמן נתון — אם זה מדבר אליכם, בואו נכיר."},
     "contact.btn":{en:"connect on LinkedIn",he:"התחברו ב-LinkedIn"},
-    "foot.l":{en:"GRC&middot;LABS — Tailored Information Security",he:"GRC&middot;LABS — אבטחת מידע בהתאמה אישית"}
+    "foot.l":{en:"GRC&middot;LABS — Tailored Information Security",he:"GRC&middot;LABS — אבטחת מידע בהתאמה אישית"},
+    // ── /changelog page ──
+    "cl.nav.home":{en:"Home",he:"דף הבית"},
+    "cl.foot.link":{en:"version history",he:"עדכוני גרסאות"},
+    "cl.eyebrow":{en:"// CHANGELOG",he:"// עדכוני גרסאות"},
+    "cl.title":{en:"Version history",he:"עדכוני גרסאות"},
+    "cl.intro":{en:"What's changed on grc-labs.com — newest first.",he:"מה השתנה ב-grc-labs.com — מהחדש לישן."},
+    "cl.added":{en:"Added",he:"נוסף"},
+    "cl.changed":{en:"Changed",he:"שונה"},
+    "cl.internal":{en:"Internal",he:"פנימי"},
+    "cl.v12.a1":{en:"Favicon and full icon set — the green pulse-dot mark.",
+      he:"אייקון אתר (favicon) וסט אייקונים מלא — סמל הנקודה הירוקה הפועמת."},
+    "cl.v12.a2":{en:"Cyber screensaver — Matrix rain that resolves into the slogan, a green ASCII portrait, and a typed GET-command terminal. Appears after 30s idle; any key, click or scroll dismisses it. Honors reduced-motion.",
+      he:"שומר מסך סייבר — גשם מטריקס שמתלכד לסלוגן, דיוקן ASCII ירוק וטרמינל שמקליד פקודות GET. עולה אחרי 30 שניות ללא פעילות; כל הקשה, קליק או גלילה סוגרים אותו. מכבד reduced-motion."},
+    "cl.v12.a3":{en:"This public version-history page.",he:"דף היסטוריית הגרסאות הציבורי הזה."},
+    "cl.v12.c1":{en:"Sharpened the Hebrew copy — a stronger credentials heading and a pass of native-Hebrew fixes.",
+      he:"חידוד הקופי בעברית — כותרת הסמכות חזקה יותר ומעבר של תיקוני ניסוח טבעיים."},
+    "cl.v11.e1":{en:"Rebuilt the single-file site into a structured static project — separate styles, scripts and image assets. No visible change.",
+      he:"האתר נבנה מחדש מקובץ יחיד לפרויקט סטטי מסודר — עיצוב, סקריפטים ונכסי תמונה בנפרד. ללא שינוי גלוי."},
+    "cl.v10.e1":{en:"Public launch — Tailored Information Security. The GRC·LABS practice goes live.",
+      he:"השקה פומבית — אבטחת מידע בהתאמה אישית. אתר GRC·LABS עולה לאוויר."}
   };
 
   var root = document.documentElement;

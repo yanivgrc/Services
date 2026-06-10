@@ -206,3 +206,22 @@
 
   :focus-visible{outline:2px solid var(--amber); outline-offset:3px}
   @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important; scroll-behavior:auto} }
+
+  /* ── /changelog page ── */
+  .cl{padding:78px 0 40px}
+  .cl-h{font-family:var(--display); font-weight:700; font-size:clamp(34px,5.5vw,56px); letter-spacing:-.02em; color:var(--hero-title); margin:10px 0 6px}
+  html[data-lang="he"] .cl-h{font-family:var(--he)}
+  .cl-time{margin-top:40px; border-inline-start:1px solid var(--line); padding-inline-start:0}
+  .cl-release{position:relative; border-inline-start:1px solid var(--line); margin-inline-start:5px; padding:6px 0 30px 28px; padding-inline-start:28px}
+  .cl-release::before{content:""; position:absolute; inset-inline-start:-5px; top:11px; width:9px; height:9px; border-radius:50%;
+    background:var(--green); box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
+  .cl-relhead{display:flex; gap:12px; align-items:baseline; margin-bottom:16px; flex-wrap:wrap}
+  .cl-ver{font-family:var(--mono); font-weight:600; font-size:18px; color:var(--green); letter-spacing:.02em; direction:ltr; unicode-bidi:isolate}
+  .cl-date{font-family:var(--mono); font-size:12px; color:var(--ink-faint); letter-spacing:.08em; direction:ltr; unicode-bidi:isolate}
+  .cl-group{margin:0 0 16px}
+  .cl-cat{font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--amber-dim); margin-bottom:8px}
+  html[data-lang="he"] .cl-cat{font-family:var(--he); letter-spacing:.04em}
+  .cl-list{list-style:none; display:flex; flex-direction:column; gap:9px}
+  .cl-list li{position:relative; padding-inline-start:18px; font-size:14.5px; color:var(--ink-dim); line-height:1.55; max-width:680px}
+  html[data-lang="he"] .cl-list li{font-family:var(--he); font-size:15px}
+  .cl-list li::before{content:"›"; position:absolute; inset-inline-start:0; color:var(--green); font-family:var(--mono)}
