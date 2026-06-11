@@ -1,0 +1,129 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index cf28f81..9065d92 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,28 @@
+ 
+ All notable changes to grc-labs.com. Newest first.
+ 
++## v1.9 — 2026-06-11
++
++### Changed
++- Rebuilt the screensaver as one continuous tmux-style session — a persistent status bar, windows that switch with a slide, and no full-screen swaps; everything now flows inside the CLI.
++- Updated the title on the subject card to CEO.
++
++### Added
++- A "brain" window — a focused `pip install` stream on the left and a lateral thought-tree on the right that fans each service's sub-topics out, so the work reads as thinking broad and deep at once.
++- More ASCII animations — a rotating torus, an oscilloscope-style lissajous curve and Conway's Game of Life; the golden spiral now bleeds full-screen.
++- Hebrew message windows — the slogan and short calls-to-action decrypt inside a self-drawing frame.
++- The digit streams — in the rain and the message scramble — are now the decimals of π and e, not random noise.
++- Planted a handful of short Hebrew lines that surface briefly and sparsely inside the ASCII — an Easter egg, found rather than shown.
++- Added more ASCII figures to the rotation — the Sierpiński gasket, the Lorenz attractor, a butterfly curve, golden-angle phyllotaxis, base molecules (water, CO₂, methane, ammonia, salt) and the Giza pyramids.
++
++## v1.8 — 2026-06-11
++
++### Changed
++- Softened the screensaver's pacing — gentler typing, longer holds, and clearer separation between the `pip install`, `ssh-keygen` and response blocks.
++- Reworked the matrix transition between scenes — it now fills the screen, flows all the way to the bottom and drains out before the next scene fades up, instead of cutting off mid-animation.
++- Dropped the breathing zoom from the geometry and portrait scenes — calmer, less busy.
++- Spaced the GET commands further apart — one service per cycle, then two other scenes before the next GET.
++
+ ## v1.7 — 2026-06-11
+ 
+ ### Changed
+diff --git a/assets/js/i18n.js b/assets/js/i18n.js
+index 0ca8b1a..dd87260 100644
+--- a/assets/js/i18n.js
++++ b/assets/js/i18n.js
+@@ -115,6 +115,30 @@
+     "cl.added":{en:"Added",he:"נוסף"},
+     "cl.changed":{en:"Changed",he:"שונה"},
+     "cl.internal":{en:"Internal",he:"פנימי"},
++    "cl.v19.c1":{en:"A \"brain\" window — a focused pip install stream on the left and a lateral thought-tree on the right that fans each service's sub-topics out, so the work reads as thinking broad and deep at once.",
++      he:"נוסף חלון 'מוח' — בצד שמאל זרם pip install ממוקד, ובצד ימין עץ-מחשבה רוחבי שמפרׂש את תתי-הנושאים של כל שירות, כך שהעבודה נראית כחשיבה רחבה ועמוקה בו-זמנית."},
++    "cl.v19.c2":{en:"More ASCII animations — a rotating torus, an oscilloscope-style lissajous curve and Conway's Game of Life; the golden spiral now bleeds full-screen.",
++      he:"נוספו עוד אנימציות ASCII — torus מסתובב, עקומת lissajous בסגנון אוסילוסקופ, ו-Game of Life של קונוויי; ספירלת הזהב מציפה כעת את כל המסך."},
++    "cl.v19.c3":{en:"Hebrew message windows — the slogan and short calls-to-action decrypt inside a self-drawing frame.",
++      he:"נוספו חלונות מסר בעברית — הסלוגן וקריאות קצרות לפעולה שמתפענחים בתוך מסגרת שמשרטטת את עצמה."},
++    "cl.v19.c4":{en:"Rebuilt the screensaver as one continuous tmux-style session — a persistent status bar, windows that switch with a slide, and no full-screen swaps; everything now flows inside the CLI.",
++      he:"שומר המסך נבנה מחדש כסשן יחיד בסגנון tmux — שורת סטטוס קבועה, חלונות שמתחלפים בהחלקה, ובלי החלפות מסך מלאות; הכול זורם עכשיו בתוך ה-CLI."},
++    "cl.v19.c5":{en:"Updated the title on the subject card to CEO.",
++      he:"התואר בכרטיס הנושא עודכן ל-CEO."},
++    "cl.v19.c6":{en:"The digit streams in the rain and the message scramble are now the decimals of π and e, not random noise.",
++      he:"זרמי הספרות — בגשם ובערבול ההודעות — הם עכשיו הספרות של π ושל e, ולא רעש אקראי."},
++    "cl.v19.c7":{en:"Planted a handful of short Hebrew lines that surface briefly and sparsely inside the ASCII — an Easter egg, found rather than shown.",
++      he:"נשתלו כמה משפטים קצרים בעברית שצפים לרגע, נדיר ובמיקום מתחלף, בתוך ה-ASCII — ביצת-פסחא שמוצאים, לא שמראים."},
++    "cl.v19.c8":{en:"Added more ASCII figures to the rotation — the Sierpiński gasket, the Lorenz attractor, a butterfly curve, golden-angle phyllotaxis, base molecules (water, CO₂, methane, ammonia, salt) and the Giza pyramids.",
++      he:"נוספו עוד צורות ASCII למחזור — משולש שרפינסקי, אטרקטור לורנץ, עקומת פרפר, פילוטקסיס בזווית הזהב, מולקולות בסיס (מים, CO₂, מתאן, אמוניה, מלח) ופירמידות גיזה."},
++    "cl.v18.c1":{en:"Softened the screensaver's pacing — gentler typing, longer holds, and clearer separation between the pip install, ssh-keygen and response blocks.",
++      he:"קצב שומר המסך רוכך — הקלדה עדינה יותר, שהיות ארוכות יותר, והפרדה ברורה בין הבלוקים של pip install, ssh-keygen והתגובה."},
++    "cl.v18.c2":{en:"Reworked the matrix transition between scenes — it now fills the screen, flows all the way to the bottom and drains out before the next scene fades up, instead of cutting off mid-animation.",
++      he:"המעבר במטריקס בין הסצנות עוצב מחדש — הוא ממלא את המסך, זורם עד הסוף ומתנקז החוצה, ורק אז הסצנה הבאה עולה בהדרגה, במקום להיחתך באמצע."},
++    "cl.v18.c3":{en:"Dropped the breathing zoom from the geometry and portrait scenes — calmer, less busy.",
++      he:"אפקט הזום ה'נושם' הוסר מסצנות הגאומטריה והדיוקן — רגוע ופחות עמוס."},
++    "cl.v18.c4":{en:"Spaced the GET commands further apart — one service per cycle, then two other scenes before the next GET.",
++      he:"פקודות ה-GET רוּוחו זו מזו — שירות אחד בכל מחזור, ואז שתי סצנות אחרות לפני ה-GET הבא."},
+     "cl.v17.c1":{en:"Reworked the screensaver's GET scenes into a bash/pip flow — pip install resolves and installs dependencies, a faked ssh-keygen produces a fingerprint and a dense randomart signature, then the service response.",
+       he:"סצנות ה-GET בשומר המסך עוצבו מחדש כזרימת bash/pip — pip install מאתר ומתקין תלויות, ssh-keygen מדומה מפיק טביעת אצבע וחתימת randomart צפופה, ואז תגובת השירות."},
+     "cl.v17.c2":{en:"Geometry scenes are now square ASCII-art grids — golden spiral, sine waves, DNA helix; dropped the sunflower and tree shapes.",
+diff --git a/changelog/index.html b/changelog/index.html
+index d553be0..32eef24 100644
+--- a/changelog/index.html
++++ b/changelog/index.html
+@@ -39,6 +39,43 @@
+       <p class="sec-intro" data-i18n="cl.intro">What's changed on grc-labs.com — newest first.</p>
+ 
+       <div class="cl-time">
++        <!-- v1.9 -->
++        <div class="cl-release">
++          <div class="cl-relhead"><span class="cl-ver" data-decrypt>v1.9</span><span class="cl-date">— 2026-06-11</span></div>
++          <div class="cl-group">
++            <div class="cl-cat" data-i18n="cl.added">Added</div>
++            <ul class="cl-list">
++              <li data-i18n="cl.v19.c1">A "brain" window — a focused pip install stream on the left and a lateral thought-tree on the right that fans each service's sub-topics out, so the work reads as thinking broad and deep at once.</li>
++              <li data-i18n="cl.v19.c2">More ASCII animations — a rotating torus, an oscilloscope-style lissajous curve and Conway's Game of Life; the golden spiral now bleeds full-screen.</li>
++              <li data-i18n="cl.v19.c3">Hebrew message windows — the slogan and short calls-to-action decrypt inside a self-drawing frame.</li>
++              <li data-i18n="cl.v19.c6">The digit streams in the rain and the message scramble are now the decimals of π and e, not random noise.</li>
++              <li data-i18n="cl.v19.c7">Planted a handful of short Hebrew lines that surface briefly and sparsely inside the ASCII — an Easter egg, found rather than shown.</li>
++              <li data-i18n="cl.v19.c8">Added more ASCII figures to the rotation — the Sierpiński gasket, the Lorenz attractor, a butterfly curve, golden-angle phyllotaxis, base molecules (water, CO₂, methane, ammonia, salt) and the Giza pyramids.</li>
++            </ul>
++          </div>
++          <div class="cl-group">
++            <div class="cl-cat" data-i18n="cl.changed">Changed</div>
++            <ul class="cl-list">
++              <li data-i18n="cl.v19.c4">Rebuilt the screensaver as one continuous tmux-style session — a persistent status bar, windows that switch with a slide, and no full-screen swaps; everything now flows inside the CLI.</li>
++              <li data-i18n="cl.v19.c5">Updated the title on the subject card to CEO.</li>
++            </ul>
++          </div>
++        </div>
++
++        <!-- v1.8 -->
++        <div class="cl-release">
++          <div class="cl-relhead"><span class="cl-ver" data-decrypt>v1.8</span><span class="cl-date">— 2026-06-11</span></div>
++          <div class="cl-group">
++            <div class="cl-cat" data-i18n="cl.changed">Changed</div>
++            <ul class="cl-list">
++              <li data-i18n="cl.v18.c1">Softened the screensaver's pacing — gentler typing, longer holds, and clearer separation between the pip install, ssh-keygen and response blocks.</li>
++              <li data-i18n="cl.v18.c2">Reworked the matrix transition between scenes — it now fills the screen, flows all the way to the bottom and drains out before the next scene fades up, instead of cutting off mid-animation.</li>
++              <li data-i18n="cl.v18.c3">Dropped the breathing zoom from the geometry and portrait scenes — calmer, less busy.</li>
++              <li data-i18n="cl.v18.c4">Spaced the GET commands further apart — one service per cycle, then two other scenes before the next GET.</li>
++            </ul>
++          </div>
++        </div>
++
+         <!-- v1.7 -->
+         <div class="cl-release">
+           <div class="cl-relhead"><span class="cl-ver" data-decrypt>v1.7</span><span class="cl-date">— 2026-06-11</span></div>
+diff --git a/index.html b/index.html
+index aae56e5..385c37b 100644
+--- a/index.html
++++ b/index.html
+@@ -60,7 +60,7 @@
+             <img class="darkimg" src="assets/img/portrait-dark.jpg" alt="Portrait illustration of Yaniv Dadon" />
+             <img class="lightimg" src="assets/img/portrait-light.jpg" alt="Portrait illustration of Yaniv Dadon" />
+           </div>
+-          <div class="ptag"><span>SUBJECT // Y.DADON</span><span>CISO</span></div>
++          <div class="ptag"><span>SUBJECT // Y.DADON</span><span>CEO</span></div>
+         </div>
+         <div class="trust">
+           <a href="https://www.credly.com/badges/997e8e29-fea2-4a2b-abc1-b8697b5e2783" target="_blank" rel="noopener" title="CISSP — verified on Credly"><img src="https://images.credly.com/images/6eeb0a98-33cb-4f72-bfc3-f89d65a3286c/linkedin_thumb_image.png" alt="CISSP certification badge, ISC2" loading="lazy" onerror="this.closest('a').style.display='none'" /></a>

@@ -2,6 +2,20 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.9 — 2026-06-11
+
+### Changed
+- Rebuilt the screensaver as one continuous tmux-style session — a persistent status bar, windows that switch with a slide, and no full-screen swaps; everything now flows inside the CLI.
+- Updated the title on the subject card to CEO.
+
+### Added
+- A "brain" window — a focused `pip install` stream on the left and a lateral thought-tree on the right that fans each service's sub-topics out, so the work reads as thinking broad and deep at once.
+- More ASCII animations — a rotating torus, an oscilloscope-style lissajous curve and Conway's Game of Life; the golden spiral now bleeds full-screen.
+- Hebrew message windows — the slogan and short calls-to-action decrypt inside a self-drawing frame.
+- The digit streams — in the rain and the message scramble — are now the decimals of π and e, not random noise.
+- Planted a handful of short Hebrew lines that surface briefly and sparsely inside the ASCII — an Easter egg, found rather than shown.
+- Added more ASCII figures to the rotation — the Sierpiński gasket, the Lorenz attractor, a butterfly curve, golden-angle phyllotaxis, base molecules (water, CO₂, methane, ammonia, salt) and the Giza pyramids.
+
 ## v1.8 — 2026-06-11
 
 ### Changed

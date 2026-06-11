@@ -1,0 +1,214 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index cf28f81..3f58f3c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,14 @@
+ 
+ All notable changes to grc-labs.com. Newest first.
+ 
++## v1.8 — 2026-06-11
++
++### Changed
++- Softened the screensaver's pacing — gentler typing, longer holds, and clearer separation between the `pip install`, `ssh-keygen` and response blocks.
++- Reworked the matrix transition between scenes — it now fills the screen, flows all the way to the bottom and drains out before the next scene fades up, instead of cutting off mid-animation.
++- Dropped the breathing zoom from the geometry and portrait scenes — calmer, less busy.
++- Spaced the GET commands further apart — one service per cycle, then two other scenes before the next GET.
++
+ ## v1.7 — 2026-06-11
+ 
+ ### Changed
+diff --git a/assets/js/i18n.js b/assets/js/i18n.js
+index 0ca8b1a..6baa7b7 100644
+--- a/assets/js/i18n.js
++++ b/assets/js/i18n.js
+@@ -115,6 +115,14 @@
+     "cl.added":{en:"Added",he:"נוסף"},
+     "cl.changed":{en:"Changed",he:"שונה"},
+     "cl.internal":{en:"Internal",he:"פנימי"},
++    "cl.v18.c1":{en:"Softened the screensaver's pacing — gentler typing, longer holds, and clearer separation between the pip install, ssh-keygen and response blocks.",
++      he:"קצב שומר המסך רוכך — הקלדה עדינה יותר, שהיות ארוכות יותר, והפרדה ברורה בין הבלוקים של pip install, ssh-keygen והתגובה."},
++    "cl.v18.c2":{en:"Reworked the matrix transition between scenes — it now fills the screen, flows all the way to the bottom and drains out before the next scene fades up, instead of cutting off mid-animation.",
++      he:"המעבר במטריקס בין הסצנות עוצב מחדש — הוא ממלא את המסך, זורם עד הסוף ומתנקז החוצה, ורק אז הסצנה הבאה עולה בהדרגה, במקום להיחתך באמצע."},
++    "cl.v18.c3":{en:"Dropped the breathing zoom from the geometry and portrait scenes — calmer, less busy.",
++      he:"אפקט הזום ה'נושם' הוסר מסצנות הגאומטריה והדיוקן — רגוע ופחות עמוס."},
++    "cl.v18.c4":{en:"Spaced the GET commands further apart — one service per cycle, then two other scenes before the next GET.",
++      he:"פקודות ה-GET רוּוחו זו מזו — שירות אחד בכל מחזור, ואז שתי סצנות אחרות לפני ה-GET הבא."},
+     "cl.v17.c1":{en:"Reworked the screensaver's GET scenes into a bash/pip flow — pip install resolves and installs dependencies, a faked ssh-keygen produces a fingerprint and a dense randomart signature, then the service response.",
+       he:"סצנות ה-GET בשומר המסך עוצבו מחדש כזרימת bash/pip — pip install מאתר ומתקין תלויות, ssh-keygen מדומה מפיק טביעת אצבע וחתימת randomart צפופה, ואז תגובת השירות."},
+     "cl.v17.c2":{en:"Geometry scenes are now square ASCII-art grids — golden spiral, sine waves, DNA helix; dropped the sunflower and tree shapes.",
+diff --git a/assets/js/screensaver.js b/assets/js/screensaver.js
+index 5ccb966..c99deda 100644
+--- a/assets/js/screensaver.js
++++ b/assets/js/screensaver.js
+@@ -1,13 +1,16 @@
+ /* GRC·LABS — cyber screensaver (scene console)
+-   After 9s idle: a one-time matrix entrance dissolves into a single bash-style
+-   console. Scenes play inside it, separated by a full-screen matrix wipe (~3s):
++   After 9s idle: a matrix entrance fills then drains to the bottom, revealing a
++   single bash-style console. Scenes play inside it, separated by a full-screen
++   matrix transition that fills the screen, flows all the way down and out, then
++   lets the next scene fade up — no mid-animation cut:
+      A) GET <service> — `pip install` with dependency resolution, a faked
+         `ssh-keygen` (fingerprint + randomart), the response typed at a readable
+         pace with a CLI "processing" beat, then the Hebrew CTA inline.
+      B) ASCII geometry — square ASCII-art grid of a shape (spiral / sine / helix).
+-     C) ASCII portrait — occasional; square, gently breathing.
+-   Fluid, few effects. Any interaction exits instantly. prefers-reduced-motion →
+-   one static GET frame. Paused while the tab is hidden.
++     C) ASCII portrait — occasional; square, static (no breathing zoom).
++   One GET per cycle, then two other topics, then the next GET. Fluid, few
++   effects. Any interaction exits instantly. prefers-reduced-motion → one static
++   GET frame. Paused while the tab is hidden.
+    Test: ?saver=now|fast|off, ?scene=get|geo|portrait, ?shape=N */
+ (function () {
+   'use strict';
+@@ -147,22 +150,23 @@
+   // ─────────────────────────── SCENE: GET ───────────────────────────
+   function getScene(cmd) {
+     var pkg = 'grc-labs-' + cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+-    var rows = [], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false;
++    var rows = [], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
+     var cmdStr = 'pip install ' + pkg, setup = buildSetup(cmd.name, pkg);
+     function frame(dt) {
+       elapsed += dt; blink += dt;
+-      if (phase === 'cmd') { typed += dt / 52; if (typed >= cmdStr.length) { typed = cmdStr.length; rows.push({ cmd: true, text: cmdStr }); phase = 'setup'; t = 0; } }
+-      else if (phase === 'setup') { t += dt; var sl = setup[setupIdx], c0 = sl ? sl.charAt(0) : ''; var need = (c0 === '$') ? 420 : ((c0 === '+' || c0 === '|') ? 55 : 150); if (setupIdx < setup.length && t > need) { rows.push(setupRow(sl)); setupIdx++; t = 0; } if (setupIdx >= setup.length) { phase = 'body'; bodyIdx = 0; t = 0; } }
++      if (phase === 'cmd') { typed += dt / 56; if (typed >= cmdStr.length) { typed = cmdStr.length; rows.push({ cmd: true, text: cmdStr }); phase = 'setup'; t = 0; } }
++      else if (phase === 'setup') { t += dt; var sl = setup[setupIdx], c0 = sl ? sl.charAt(0) : ''; var need = (c0 === '$') ? 500 : ((c0 === '+' || c0 === '|') ? 55 : (sl === '' ? 380 : 150)); if (setupIdx < setup.length && t > need) { rows.push(setupRow(sl)); setupIdx++; t = 0; } if (setupIdx >= setup.length) { phase = 'gap'; gapT = 0; rows.push({ text: '', color: INK }); } }
++      else if (phase === 'gap') { gapT += dt; if (gapT > 460) { phase = 'body'; bodyIdx = 0; t = 0; } }
+       else if (phase === 'body') {
+         if (!thought && cmd.body[bodyIdx] === 'Output:') { phase = 'think'; thinkT = 0; thought = true; }
+-        else { t += dt; var nl = cmd.body[bodyIdx]; var need2 = (nl !== undefined && isHeader(nl)) ? 520 : 290; if (bodyIdx < cmd.body.length && t > need2) { rows.push({ text: nl, color: colorFor(nl) }); bodyIdx++; t = 0; } if (bodyIdx >= cmd.body.length) { phase = 'resultHold'; t = 0; } }
++        else { t += dt; var nl = cmd.body[bodyIdx]; var need2 = (nl !== undefined && isHeader(nl)) ? 560 : 300; if (bodyIdx < cmd.body.length && t > need2) { rows.push({ text: nl, color: colorFor(nl) }); bodyIdx++; t = 0; } if (bodyIdx >= cmd.body.length) { phase = 'resultHold'; t = 0; } }
+       }
+-      else if (phase === 'think') { thinkT += dt; if (thinkT > 1800) { phase = 'body'; t = 0; } }
+-      else if (phase === 'resultHold') { t += dt; if (t > 800) { rows.push({ text: '', color: INK }); rows.push({ cta: true, text: CTA }); phase = 'cta'; holdT = 0; } }
+-      else if (phase === 'cta') { holdT += dt; if (holdT > 700) phase = 'done'; }
+-      if (elapsed > 42000) phase = 'done';
++      else if (phase === 'think') { thinkT += dt; if (thinkT > 1700) { phase = 'body'; t = 0; } }
++      else if (phase === 'resultHold') { t += dt; if (t > 1000) { rows.push({ text: '', color: INK }); rows.push({ cta: true, text: CTA }); phase = 'cta'; holdT = 0; } }
++      else if (phase === 'cta') { holdT += dt; if (holdT > 1100) phase = 'done'; }
++      if (elapsed > 46000) phase = 'done';
+       var activeCmd = (phase === 'cmd') ? cmdStr.slice(0, Math.floor(typed)) : ((phase === 'resultHold' || phase === 'cta') ? '' : null);
+-      drawConsole(rows, activeCmd, null, (Math.floor(blink / 530) % 2) === 0, (phase === 'think') ? thinkStr(thinkT) : null);
++      drawConsole(rows, activeCmd, null, (Math.floor(blink / 560) % 2) === 0, (phase === 'think') ? thinkStr(thinkT) : null);
+       return phase === 'done';
+     }
+     return { frame: frame };
+@@ -175,18 +179,15 @@
+     { name: 'double helix · DNA', plot: function (add, prog) { var N = Math.floor(prog * 460); for (var i = 0; i < N; i++) { var ny = -0.98 + (i / 460) * 1.96, x1 = 0.72 * Math.sin(ny * Math.PI * 2.4), x2 = 0.72 * Math.sin(ny * Math.PI * 2.4 + Math.PI); add(x1, ny); add(x2, ny); if (i % 11 === 0) for (var k = 1; k < 6; k++) add(x1 + (x2 - x1) * k / 6, ny); } } }
+   ];
+   function geoScene(shape) {
+-    var t = 0, REVEAL = 3400, DUR = 5400, gw = 0, gh = 0, fs = 0, x0 = 0, y0 = 0, cw = 0, skey = -1, grid = null, RAMP = ' .:-=+*#%@';
++    var t = 0, REVEAL = 3600, DUR = 6200, gw = 0, gh = 0, fs = 0, x0 = 0, y0 = 0, cw = 0, skey = -1, grid = null, RAMP = ' .:-=+*#%@';
+     function dims() { var side = Math.min(W, H) * 0.84; fs = Math.max(9, Math.min(15, side / 46)); cw = fs * 0.6; gw = Math.floor(side / cw); gh = Math.floor(side / fs); x0 = Math.round((W - gw * cw) / 2); y0 = Math.round((H - gh * fs) / 2); grid = new Array(gw * gh); skey = W * 100000 + H; }
+     return { frame: function (dt) {
+       t += dt; ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+       if (skey !== W * 100000 + H) dims();
+       for (var z = 0; z < grid.length; z++) grid[z] = 0;
+       shape.plot(function (nx, ny) { var c = Math.round((nx + 1) / 2 * (gw - 1)), r = Math.round((1 - (ny + 1) / 2) * (gh - 1)); if (c >= 0 && c < gw && r >= 0 && r < gh) grid[r * gw + c]++; }, Math.min(t / REVEAL, 1));
+-      var pulse = 1 + 0.012 * Math.sin(t * 0.0035);
+-      ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(pulse, pulse); ctx.translate(-W / 2, -H / 2);
+       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start';
+       for (var r2 = 0; r2 < gh; r2++) for (var c2 = 0; c2 < gw; c2++) { var v = grid[r2 * gw + c2]; if (!v) continue; ctx.fillStyle = v >= 4 ? BRIGHT : (v >= 2 ? GREEN : '#4FA028'); ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, v)), x0 + c2 * cw, y0 + r2 * fs); }
+-      ctx.restore();
+       ctx.fillStyle = DIM; ctx.font = '600 ' + Math.max(11, Math.round(W / 95)) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(shape.name, W / 2, H * 0.95); ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+       return t >= DUR;
+     } };
+@@ -218,7 +219,7 @@
+         if (!ready) { ctx.fillStyle = DIM; ctx.font = '700 ' + Math.round(W / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// DECRYPTING SUBJECT ...', W / 2, H / 2); ctx.textAlign = 'start'; return false; }
+         if (!grid || sized !== key()) build();
+         if (ageMs < 1500) { ctx.font = fs + 'px ' + MONO; for (var r = 0; r < gh; r++) { var row = grid[r], yy = ay0 + r * fs; for (var c = 0; c < gw; c++) { var cell = row[c]; if (cell.col === null) continue; if (ageMs >= cell.settle) { ctx.fillStyle = cell.col; ctx.fillText(cell.ch, ax0 + c * acw, yy); } else if (Math.random() < 0.45) { ctx.fillStyle = DIM; ctx.fillText(FLICK[(Math.random() * FLICK.length) | 0], ax0 + c * acw, yy); } } } }
+-        else { var s = 1 + 0.016 * Math.sin((ageMs - 1500) * 0.0023); ctx.save(); ctx.translate(W / 2, cy); ctx.scale(s, s); ctx.translate(-W / 2, -cy); ctx.drawImage(cache, 0, 0); ctx.restore(); }
++        else { ctx.drawImage(cache, 0, 0); }
+         return ageMs >= DUR;
+       } };
+     }
+@@ -229,12 +230,13 @@
+   var matrix = (function () {
+     var GLYPHS = 'アイウエオカキクケコサシスセソタチツテトﾊﾋﾌﾍﾎ0123456789#%&<>*+=/'.split('');
+     var fs = 16, cols = 0, rows = 0, drops = [], speeds = [];
+-    function reset(fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(W / fs); rows = Math.ceil(H / fs); drops = []; speeds = []; for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 4 : Math.floor(Math.random() * -rows); speeds[i] = 0.55 + Math.random() * 0.8; } }
+-    function draw(dt) {
++    function reset(fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(W / fs); rows = Math.ceil(H / fs); drops = []; speeds = []; for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * -rows); speeds[i] = 0.55 + Math.random() * 0.8; } }
++    function draw(dt, respawn) {
+       ctx.fillStyle = 'rgba(8,11,20,0.12)'; ctx.fillRect(0, 0, W, H); ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+-      for (var i = 0; i < cols; i++) { var ch = GLYPHS[(Math.random() * GLYPHS.length) | 0], y = drops[i] * fs; ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]; if (y > 0) ctx.fillText(ch, i * fs, y); if (y > H && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.55 + Math.random() * 0.8; } drops[i] += speeds[i]; }
++      for (var i = 0; i < cols; i++) { var ch = GLYPHS[(Math.random() * GLYPHS.length) | 0], y = drops[i] * fs; ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]; if (y > 0 && y < H + fs) ctx.fillText(ch, i * fs, y); if (respawn && y > H && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.55 + Math.random() * 0.8; } else { drops[i] += speeds[i]; } }
+     }
+-    return { reset: reset, draw: draw };
++    function cleared() { for (var i = 0; i < cols; i++) if (drops[i] * fs <= H + fs) return false; return true; }
++    return { reset: reset, draw: draw, cleared: cleared };
+   })();
+ 
+   // ─────────────────────── reduced-motion static frame ───────────────────────
+@@ -259,22 +261,24 @@
+   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, sceneNum = 0;
+   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
+   function nextShape() { if (FORCE_SHAPE >= 0 && FORCE_SHAPE < SHAPES.length) return SHAPES[FORCE_SHAPE]; if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(SHAPES.map(function (_, i) { return i; })); shapeI = 0; } return SHAPES[shapeOrder[shapeI++]]; }
+-  function scheduleType() { if (FORCE_SCENE) return FORCE_SCENE; sceneNum++; if (sceneNum % 7 === 0) return 'portrait'; return (sceneNum % 2 === 1) ? 'get' : 'geo'; }
++  function scheduleType() { if (FORCE_SCENE) return FORCE_SCENE; var n = sceneNum++; if (n % 3 === 0) return 'get'; if (n % 6 === 5) return 'portrait'; return 'geo'; }
+   function nextScene() { var ty = scheduleType(); if (ty === 'geo') return geoScene(nextShape()); if (ty === 'portrait') return portrait.scene(); return getScene(nextCmd()); }
+ 
+-  var ENTRANCE_MS = 3500, DISSOLVE_MS = 800, WIPE_MS = 3000;
+-  var sphase = 'entrance', pt = 0, scene = null, raf = 0, last = 0;
++  var ENT_FILL = 2200, ENT_CLEAR = 1600, WIPE_FILL = 1300, WIPE_CLEAR = 1700, FADE_MS = 320, INTRO_MS = 520;
++  var sphase = 'entrance', sub = 'fill', pt = 0, fadeT = 0, introT = 0, scene = null, raf = 0, last = 0;
++  function startScene() { scene = nextScene(); sphase = 'scene'; introT = 0; }
+   function frame(now) {
+     if (!last) last = now; var dt = Math.min(80, now - last); last = now;
+-    if (sphase === 'entrance') {
+-      matrix.draw(dt); pt += dt;
+-      if (pt >= ENTRANCE_MS) { var a = Math.min((pt - ENTRANCE_MS) / DISSOLVE_MS, 1); ctx.globalAlpha = a; ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; if (pt >= ENTRANCE_MS + DISSOLVE_MS) { scene = nextScene(); sphase = 'scene'; } }
++    if (sphase === 'entrance' || sphase === 'wipe') {
++      var FILL = sphase === 'entrance' ? ENT_FILL : WIPE_FILL, CLEAR = sphase === 'entrance' ? ENT_CLEAR : WIPE_CLEAR;
++      pt += dt;
++      if (sub === 'fill') { matrix.draw(dt, true); if (pt >= FILL) sub = 'clear'; }
++      else if (sub === 'clear') { matrix.draw(dt, false); if ((pt - FILL) >= CLEAR || matrix.cleared()) { sub = 'fade'; fadeT = 0; } }
++      if (sub === 'fade') { fadeT += dt; var fa = Math.min(fadeT / FADE_MS, 1); ctx.globalAlpha = fa; ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; if (fadeT >= FADE_MS) { startScene(); sub = 'fill'; } }
+     } else if (sphase === 'scene') {
+-      if (scene.frame(dt)) { sphase = 'wipe'; pt = 0; matrix.reset(true); }
+-    } else if (sphase === 'wipe') {
+-      matrix.draw(dt); pt += dt;
+-      if (pt > WIPE_MS - 450) { var a2 = Math.min((pt - (WIPE_MS - 450)) / 450, 1); ctx.globalAlpha = a2; ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+-      if (pt >= WIPE_MS) { scene = nextScene(); sphase = 'scene'; }
++      var done = scene.frame(dt);
++      if (introT < INTRO_MS) { introT += dt; var ia = 1 - Math.min(introT / INTRO_MS, 1); ctx.globalAlpha = ia; ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
++      if (done) { sphase = 'wipe'; sub = 'fill'; pt = 0; matrix.reset(true); }
+     }
+     raf = requestAnimationFrame(frame);
+   }
+@@ -285,7 +289,7 @@
+     if (active) return; active = true; resize(); root.classList.add('on');
+     if (reduceMotion) { staticFrame(); return; }
+     sceneNum = 0; cmdOrder = null; shapeOrder = null; last = 0;
+-    if (FORCE_SCENE) { scene = nextScene(); sphase = 'scene'; } else { sphase = 'entrance'; pt = 0; matrix.reset(false); ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H); }
++    if (FORCE_SCENE) { startScene(); } else { sphase = 'entrance'; sub = 'fill'; pt = 0; matrix.reset(false); ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H); }
+     raf = requestAnimationFrame(frame);
+   }
+   function deactivate() { if (!active) return; active = false; root.classList.remove('on'); if (raf) cancelAnimationFrame(raf), raf = 0; lastActivity = performance.now(); }
+diff --git a/changelog/index.html b/changelog/index.html
+index d553be0..5aba98a 100644
+--- a/changelog/index.html
++++ b/changelog/index.html
+@@ -39,6 +39,20 @@
+       <p class="sec-intro" data-i18n="cl.intro">What's changed on grc-labs.com — newest first.</p>
+ 
+       <div class="cl-time">
++        <!-- v1.8 -->
++        <div class="cl-release">
++          <div class="cl-relhead"><span class="cl-ver" data-decrypt>v1.8</span><span class="cl-date">— 2026-06-11</span></div>
++          <div class="cl-group">
++            <div class="cl-cat" data-i18n="cl.changed">Changed</div>
++            <ul class="cl-list">
++              <li data-i18n="cl.v18.c1">Softened the screensaver's pacing — gentler typing, longer holds, and clearer separation between the pip install, ssh-keygen and response blocks.</li>
++              <li data-i18n="cl.v18.c2">Reworked the matrix transition between scenes — it now fills the screen, flows all the way to the bottom and drains out before the next scene fades up, instead of cutting off mid-animation.</li>
++              <li data-i18n="cl.v18.c3">Dropped the breathing zoom from the geometry and portrait scenes — calmer, less busy.</li>
++              <li data-i18n="cl.v18.c4">Spaced the GET commands further apart — one service per cycle, then two other scenes before the next GET.</li>
++            </ul>
++          </div>
++        </div>
++
+         <!-- v1.7 -->
+         <div class="cl-release">
+           <div class="cl-relhead"><span class="cl-ver" data-decrypt>v1.7</span><span class="cl-date">— 2026-06-11</span></div>
