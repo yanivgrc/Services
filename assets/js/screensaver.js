@@ -52,6 +52,27 @@
   var PI_D = '31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679';
   var E_D = '27182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274';
   function constPick() { return Math.random() < 0.5 ? { d: PI_D, s: 'π' } : { d: E_D, s: 'e' }; }
+  // the rain charset — katakana (the "looks like Chinese" glyphs), a few kanji, Greek, symbols, and the streaming value of π
+  var KANA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンﾊﾋﾌﾍﾎ';
+  var KANJI = '日月火水木金土山川田力心目耳口手中大小上下天空雨風';
+  var GLY_GREEK = 'πΣΔΛΦΩΘΞΨμβαλσ';
+  var GLY_SYM = '#%&<>*+=/¥§∞';
+  function rainChar(cptr, i) {
+    var roll = Math.random();
+    if (roll < 0.40) return { ch: KANA.charAt((Math.random() * KANA.length) | 0), amber: false };
+    if (roll < 0.55) return { ch: KANJI.charAt((Math.random() * KANJI.length) | 0), amber: false };
+    if (roll < 0.74) return { ch: PI_D.charAt(cptr[i]++ % PI_D.length), amber: false };
+    if (roll < 0.82) return { ch: 'π', amber: true };
+    if (roll < 0.91) return { ch: GLY_GREEK.charAt((Math.random() * GLY_GREEK.length) | 0), amber: false };
+    return { ch: GLY_SYM.charAt((Math.random() * GLY_SYM.length) | 0), amber: false };
+  }
+  // eased crossfade for things that coalesce out of the matrix and dissolve back — smooth in and out
+  function coalesceMix(t, FILL, CO, HOLD, DIS) {
+    if (t < FILL) return { a: 0, rainI: 1 };
+    if (t < FILL + CO) { var p = ease((t - FILL) / CO); return { a: p, rainI: 1 - 0.82 * p }; }
+    if (t < FILL + CO + HOLD) return { a: 1, rainI: 0.13 };
+    var q = ease(clamp((t - FILL - CO - HOLD) / DIS, 0, 1)); return { a: 1 - q, rainI: 0.18 + 0.82 * q };
+  }
   // short Hebrew lines planted, sparsely, inside the ASCII — found, not shown
   var GHOSTS = ['צור קשר', 'דברו איתנו', 'מצאת אותי', 'מי קורא?', 'עדיין כאן'];
 
@@ -215,7 +236,7 @@
     for (var d = 0; d < disp.length; d++) {
       var row = disp[d];
       if (row.cmd) { ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.direction = 'ltr'; ctx.fillStyle = DIM; ctx.fillText(PROMPT, x0, ty); var pw = ctx.measureText(PROMPT).width; ctx.fillStyle = BRIGHT; ctx.fillText(row.text, x0 + pw, ty); if (row.cursor && cursorOn) { var cwx = x0 + pw + ctx.measureText(row.text).width; ctx.fillStyle = BRIGHT; ctx.fillRect(cwx + 2, ty + 2, fs * 0.5, fs); } }
-      else if (row.cta) { ctx.save(); ctx.font = fs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'right'; ctx.fillStyle = AMBER; ctx.fillText(row.text, x0 + contentW, ty); ctx.restore(); }
+      else if (row.cta) { ctx.save(); ctx.font = '600 ' + fs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'right'; ctx.fillStyle = GREEN; ctx.fillText(row.text, x0 + contentW, ty); ctx.restore(); }
       else { ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.direction = 'ltr'; ctx.fillStyle = row.color; ctx.fillText(row.text, x0, ty); }
       ty += lh;
     }
@@ -224,7 +245,7 @@
   // ───────────────────────── focus pane: pip install stream ─────────────────────────
   function makeGet(cmd) {
     var pkg = 'grc-labs-' + cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    var rows = [], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
+    var rows = [{ cta: true, text: CTA }, { text: '', color: INK }], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
     var track = pickTrack(cmd, pkg), cmdStr = track.cmd, setup = track.lines;
     function frame(dt, R) {
       elapsed += dt; blink += dt;
@@ -236,10 +257,9 @@
         else { t += dt; var nl = cmd.body[bodyIdx]; var need2 = (nl !== undefined && isHeader(nl)) ? 540 : 300; if (bodyIdx < cmd.body.length && t > need2) { rows.push({ text: nl, color: colorFor(nl) }); bodyIdx++; t = 0; } if (bodyIdx >= cmd.body.length) { phase = 'resultHold'; t = 0; } }
       }
       else if (phase === 'think') { thinkT += dt; if (thinkT > 1700) { phase = 'body'; t = 0; } }
-      else if (phase === 'resultHold') { t += dt; if (t > 900) { rows.push({ text: '', color: INK }); rows.push({ cta: true, text: CTA }); phase = 'cta'; holdT = 0; } }
-      else if (phase === 'cta') { holdT += dt; if (holdT > 1100) phase = 'done'; }
+      else if (phase === 'resultHold') { t += dt; if (t > 1600) phase = 'done'; }
       if (elapsed > 60000) phase = 'done';
-      var activeCmd = (phase === 'cmd') ? cmdStr.slice(0, Math.floor(typed)) : ((phase === 'resultHold' || phase === 'cta') ? '' : null);
+      var activeCmd = (phase === 'cmd') ? cmdStr.slice(0, Math.floor(typed)) : (phase === 'resultHold' ? '' : null);
       drawConsole(rows, R, activeCmd, (Math.floor(blink / 560) % 2) === 0, (phase === 'think') ? thinkStr(thinkT) : null);
       return phase === 'done';
     }
@@ -448,7 +468,8 @@
       for (var i = 0; i < m.bonds.length; i++) { var b = m.bonds[i], A = pts[b[0]], B = pts[b[1]], dx = B.x - A.x, dy = B.y - A.y, len = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / len, uy = dy / len, ox = -uy, oy = ux; var ax = A.x + ux * ar, ay = A.y + uy * ar, bx = B.x - ux * ar, by = B.y - uy * ar; var offs = b[2] === 1 ? [0] : (b[2] === 2 ? [-3, 3] : [-4, 0, 4]); for (var o = 0; o < offs.length; o++) { ctx.beginPath(); ctx.moveTo(ax + ox * offs[o], ay + oy * offs[o]); ctx.lineTo(bx + ox * offs[o], by + oy * offs[o]); ctx.stroke(); } }
       var fs = clamp(Math.round(Math.min(R.w, R.h) / 22), 13, 28); ctx.font = '700 ' + fs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
       for (var a2 = 0; a2 < m.atoms.length; a2++) { var p = pts[a2], el = m.atoms[a2].e; ctx.fillStyle = BG; ctx.beginPath(); ctx.arc(p.x, p.y, ar + fs * 0.16, 0, 6.2832); ctx.fill(); ctx.strokeStyle = DIM; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(p.x, p.y, ar + fs * 0.16, 0, 6.2832); ctx.stroke(); ctx.fillStyle = (el === 'O' || el === 'Cl') ? BRIGHT : (el === 'C' ? GREEN : ((el === 'Na' || el === 'N') ? AMBER : INK)); ctx.fillText(el, p.x, p.y); }
-      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+      var cfs = clamp(Math.round(R.w / 30), 14, 26); ctx.font = '700 ' + cfs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText(CTA, cx, R.y + R.h * 0.13); // every molecule is an invitation — contact us
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       label(R, 'molecule · ' + m.name);
       return t >= DUR;
     }
@@ -464,13 +485,10 @@
       ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       var ground = Math.floor(rows * 0.80);
       var pyr = [{ cx: cols * 0.30, bh: cols * 0.15, h: Math.floor(rows * 0.40) }, { cx: cols * 0.58, bh: cols * 0.22, h: Math.floor(rows * 0.56) }, { cx: cols * 0.80, bh: cols * 0.12, h: Math.floor(rows * 0.30) }];
-      var sx = cols * 0.74, sy = rows * 0.20, sr = Math.max(3, cols * 0.05);
       var rs = xs(99); for (var k = 0; k < 44; k++) { var stx = rs() % cols, sty = rs() % Math.max(1, Math.floor(rows * 0.62)); ctx.fillStyle = (rs() % 5 === 0) ? BRIGHT : FAINT; ctx.fillText('.', x0 + stx * cw, y0 + sty * fs); }
       for (var y = 0; y < rows; y++) {
         for (var c = 0; c < cols; c++) {
           var ch = null, col = GREEN;
-          var ddx = (c - sx) * 0.55, ddy = (y - sy), dist = Math.sqrt(ddx * ddx + ddy * ddy);
-          if (dist < sr) { ch = dist < sr * 0.5 ? '@' : '*'; col = dist < sr * 0.5 ? BRIGHT : AMBER; }
           if (y === ground) { ch = '_'; col = DIM; }
           else if (y > ground) {
             var off = y - ground;
@@ -549,8 +567,6 @@
       gw = Math.max(40, Math.floor(R.w / cw)); gh = Math.max(28, Math.floor(R.h / fs));
       var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
       var sky = o.createLinearGradient(0, 0, 0, gh); sky.addColorStop(0, '#04060a'); sky.addColorStop(1, '#1a1410'); o.fillStyle = sky; o.fillRect(0, 0, gw, gh);
-      var sunx = gw * 0.74, suny = gh * 0.24, sr = Math.min(gw, gh) * 0.18;
-      var sun = o.createRadialGradient(sunx, suny, 0, sunx, suny, sr); sun.addColorStop(0, '#ffffff'); sun.addColorStop(0.45, '#cdd8a4'); sun.addColorStop(1, 'rgba(20,20,16,0)'); o.fillStyle = sun; o.beginPath(); o.arc(sunx, suny, sr, 0, 6.2832); o.fill();
       var ground = gh * 0.74;
       var sand = o.createLinearGradient(0, ground, 0, gh); sand.addColorStop(0, '#3a3026'); sand.addColorStop(1, '#0d0b08'); o.fillStyle = sand; o.fillRect(0, Math.floor(ground), gw, gh);
       var pyr = [{ cx: gw * 0.30, bw: gw * 0.20, h: gh * 0.40 }, { cx: gw * 0.56, bw: gw * 0.28, h: gh * 0.54 }, { cx: gw * 0.80, bw: gw * 0.15, h: gh * 0.30 }];
@@ -606,11 +622,7 @@
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
-      var a, rainI;
-      if (t < FILL) { a = 0; rainI = 1; }
-      else if (t < FILL + CO) { var p = (t - FILL) / CO; a = ease(p); rainI = 1 - 0.72 * p; }
-      else if (t < FILL + CO + HOLD) { a = 1; rainI = 0.14; }
-      else { var q = clamp((t - FILL - CO - HOLD) / DIS, 0, 1); a = 1 - ease(q); rainI = 0.28 + 0.72 * q; }
+      var m = coalesceMix(t, FILL, CO, HOLD, DIS), a = m.a, rainI = m.rainI;
       rain.draw(R, rainI);
       if (a > 0.01) { var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2; ctx.globalAlpha = a; ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH); ctx.globalAlpha = 1; }
       if (a > 0.85) label(R, 'menorah · temple');
@@ -701,29 +713,71 @@
     }
     return { frame: frame, title: 'viz' };
   }
-  // a 3D RF link — spherical wavefronts broadcasting from the antenna tip
+  // RF link — a conversation between components: packets hop node to node, with wave rings at the sender
   function makeRF() {
-    var t = 0, DUR = 8000;
+    var t = 0, DUR = 8400;
+    var nodes = [{ x: 0.22, y: 0.30, n: 'EDGE' }, { x: 0.78, y: 0.28, n: 'CORE' }, { x: 0.50, y: 0.78, n: 'VAULT' }];
+    var convo = [[0, 1, 'REQ'], [1, 0, 'ACK'], [1, 2, 'SYNC'], [2, 1, 'DATA'], [2, 0, 'PUSH'], [0, 2, 'OK']];
+    var MSG = 1300;
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.round(Math.min(R.w, R.h) / 46), 9, 15), cx = R.x + R.w / 2, tipY = R.y + R.h * 0.34, groundY = R.y + R.h * 0.82, maxR = Math.min(R.w, R.h) * 0.46;
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 40), 9, 15);
+      function P(i) { return { x: R.x + nodes[i].x * R.w, y: R.y + nodes[i].y * R.h }; }
       ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
-      var RINGLIFE = 3000;
-      for (var i = 0; i < 7; i++) {
-        var p = ((t / RINGLIFE) + i / 7) % 1, rr = p * maxR; if (rr < 5) continue;
-        var fade = 1 - p, col = fade > 0.66 ? BRIGHT : (fade > 0.33 ? GREEN : MIDG), npts = Math.max(20, Math.floor(rr * 0.5));
-        ctx.fillStyle = col;
-        for (var k = 0; k < npts; k++) { var a = (k / npts) * 6.2832, x = cx + Math.cos(a) * rr, y = tipY + Math.sin(a) * rr * 0.5; if (y <= groundY) ctx.fillText(fade > 0.5 ? 'o' : '.', x, y); }
-      }
-      ctx.fillStyle = DIM; for (var gx = R.x + 12; gx < R.x + R.w - 12; gx += fs) ctx.fillText('_', gx, groundY);
-      ctx.fillStyle = GREEN; for (var my = tipY; my < groundY; my += fs) ctx.fillText('|', cx, my);
-      var beat = (Math.floor(t / 280) % 2) === 0; ctx.fillStyle = beat ? '#ffffff' : AMBER; ctx.fillText(beat ? '*' : '^', cx, tipY - fs);
-      var pk = (t * 0.02) % maxR; ctx.fillStyle = BRIGHT; ctx.fillText('#', cx + pk, tipY); ctx.fillText('#', cx - pk, tipY);
+      ctx.fillStyle = FAINT;
+      for (var i = 0; i < nodes.length; i++) for (var j = i + 1; j < nodes.length; j++) { var pa = P(i), pb = P(j), steps = 46; for (var s = 0; s < steps; s++) ctx.fillText('·', pa.x + (pb.x - pa.x) * s / steps, pa.y + (pb.y - pa.y) * s / steps); }
+      var mi = Math.floor(t / MSG) % convo.length, mp = (t % MSG) / MSG, msg = convo[mi], from = P(msg[0]), to = P(msg[1]);
+      for (var w = 0; w < 3; w++) { var wp = mp * 3 - w; if (wp > 0 && wp < 1) { var rr = wp * fs * 4.5, np = Math.max(12, Math.floor(rr * 0.55)); ctx.fillStyle = wp < 0.5 ? BRIGHT : GREEN; for (var k = 0; k < np; k++) { var ang = k / np * 6.2832; ctx.fillText('·', from.x + Math.cos(ang) * rr, from.y + Math.sin(ang) * rr * 0.62); } } }
+      var e2 = mp < 0.5 ? 2 * mp * mp : 1 - Math.pow(-2 * mp + 2, 2) / 2, px = from.x + (to.x - from.x) * e2, py = from.y + (to.y - from.y) * e2;
+      ctx.fillStyle = AMBER; ctx.fillText(msg[2], px, py - fs * 1.2); ctx.fillStyle = BRIGHT; ctx.fillText('#', px, py);
+      for (var n = 0; n < nodes.length; n++) { var pp = P(n), active = (n === msg[0] || n === msg[1]); ctx.fillStyle = active ? BRIGHT : MIDG; ctx.fillText('^', pp.x, pp.y - fs * 1.25); ctx.fillStyle = active ? '#ffffff' : GREEN; ctx.fillText('[' + nodes[n].n + ']', pp.x, pp.y); }
       ctx.textAlign = 'start'; ctx.textBaseline = 'top';
-      label(R, 'rf · uplink');
+      label(R, 'rf · link');
       return t >= DUR;
     }
     return { frame: frame, title: 'viz' };
+  }
+  // a shared 3D solid renderer — same z-buffer, RAMP and lighting as the torus, for every 3D shape
+  function makeSolid3D(name, verts, faces, opts) {
+    opts = opts || {};
+    var t = 0, DUR = 7200, RAMP = '.,-~:;=!*#$@';
+    function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function nrm(a) { var l = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+    function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    var fnorm = faces.map(function (f) { var a = verts[f[0]], n = nrm(cross(sub(verts[f[1]], a), sub(verts[f[2]], a))); var cx = (verts[f[0]][0] + verts[f[1]][0] + verts[f[2]][0]) / 3, cy = (verts[f[0]][1] + verts[f[1]][1] + verts[f[2]][1]) / 3, cz = (verts[f[0]][2] + verts[f[1]][2] + verts[f[2]][2]) / 3; if (n[0] * cx + n[1] * cy + n[2] * cz < 0) n = [-n[0], -n[1], -n[2]]; return n; });
+    var LIGHT = nrm([0.3, 0.7, -0.9]), sph = [];
+    if (opts.sphere) { var R0 = opts.sphere; for (var u = 0.0001; u < Math.PI; u += 0.20) for (var v = 0; v < 6.283; v += 0.20) sph.push([Math.sin(u) * Math.cos(v) * R0, Math.cos(u) * R0, Math.sin(u) * Math.sin(v) * R0]); }
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.min(R.w, R.h) / 44, 9, 16), cw = fs * 0.6, cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
+      var bf = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < bf.length; z++) { bf[z] = -1; zb[z] = 0; }
+      var A = opts.tilt != null ? opts.tilt : t * 0.0009, B = t * 0.0011, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B), K2 = 5, K1 = Math.min(cols, rows) * (opts.scale || 1.0);
+      function rot(p) { var x1 = p[0] * cb + p[2] * sb, z1 = -p[0] * sb + p[2] * cb, y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca; return [x1, y2, z2]; }
+      function plot(rp, lvl) { var ooz = 1 / (K2 + rp[2]), xp = Math.floor(cols / 2 + K1 * ooz * rp[0]), yp = Math.floor(rows / 2 - K1 * ooz * rp[1] * 0.5); if (xp >= 0 && xp < cols && yp >= 0 && yp < rows) { var idx = yp * cols + xp; if (ooz > zb[idx]) { zb[idx] = ooz; bf[idx] = lvl; } } }
+      var STEP = 20;
+      for (var fi = 0; fi < faces.length; fi++) {
+        var f = faces[fi], rnv = rot(fnorm[fi]), lum = Math.max(0.06, rnv[0] * LIGHT[0] + rnv[1] * LIGHT[1] + rnv[2] * LIGHT[2]), v0 = verts[f[0]], e1 = sub(verts[f[1]], v0), e2 = sub(verts[f[2]], v0);
+        for (var ii = 0; ii <= STEP; ii++) for (var jj = 0; jj <= STEP - ii; jj++) { var uu = ii / STEP, vv = jj / STEP, rp = rot([v0[0] + e1[0] * uu + e2[0] * vv, v0[1] + e1[1] * uu + e2[1] * vv, v0[2] + e1[2] * uu + e2[2] * vv]), ooz = 1 / (K2 + rp[2]); plot(rp, Math.min(RAMP.length - 1, Math.max(0, Math.round(lum * (RAMP.length - 1) * (0.82 + 0.9 * ooz))))); }
+      }
+      for (var si = 0; si < sph.length; si++) { var rp2 = rot(sph[si]), nn = nrm(rp2), lum2 = Math.max(0.08, nn[0] * LIGHT[0] + nn[1] * LIGHT[1] + nn[2] * LIGHT[2]); plot(rp2, Math.min(RAMP.length - 1, Math.floor(lum2 * (RAMP.length - 1)))); }
+      if (opts.edges) for (var ei = 0; ei < opts.edges.length; ei++) { var ea = rot(verts[opts.edges[ei][0]]), eb = rot(verts[opts.edges[ei][1]]), steps = 28; for (var s = 0; s <= steps; s++) plot([ea[0] + (eb[0] - ea[0]) * s / steps, ea[1] + (eb[1] - ea[1]) * s / steps, ea[2] + (eb[2] - ea[2]) * s / steps], RAMP.length - 1); }
+      var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = FAINT; for (var rd = 0; rd < rows; rd++) for (var cd = 0; cd < cols; cd++) if (bf[rd * cols + cd] < 0) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs);
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { var l = bf[r * cols + c]; if (l < 0) continue; ctx.fillStyle = l >= 8 ? BRIGHT : (l >= 4 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(l), x0 + c * cw, y0 + r * fs); }
+      label(R, name);
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
+  function makeCube() {
+    var s = 0.78, V = [[-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s], [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]];
+    var F = [[0, 1, 2], [0, 2, 3], [5, 4, 7], [5, 7, 6], [4, 0, 3], [4, 3, 7], [1, 5, 6], [1, 6, 2], [4, 5, 1], [4, 1, 0], [3, 2, 6], [3, 6, 7]];
+    return makeSolid3D('cube · 3d', V, F, { scale: 1.0 });
+  }
+  function makeTetraSphere() {
+    var s = 0.95, V = [[s, s, s], [s, -s, -s], [-s, s, -s], [-s, -s, s]], E = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
+    return makeSolid3D('tetra · sphere', V, [], { edges: E, sphere: 0.46, scale: 1.05 });
   }
   function label(R, name) { ctx.fillStyle = DIM; ctx.font = '600 ' + clamp(Math.round(R.w / 95), 11, 15) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr'; ctx.fillText('// ' + name, R.x + R.w / 2, R.y + R.h - 26); ctx.textAlign = 'start'; ctx.textBaseline = 'top'; }
 
@@ -762,15 +816,15 @@
 
   // ───────────────────────── window: rain — matrix as content ─────────────────────────
   function makeRain() {
-    var t = 0, DUR = 6000, KANA = 'アイウエオカキクケコサシスセソタチツテトﾊﾋﾌﾍﾎ'.split(''), SYM = '#%&<>*+=/'.split(''), cp = constPick(), DIG = cp.d, fs = 16, cols = 0, drops = [], spd = [], cptr = [], key = -1;
-    function build(R) { fs = clamp(Math.round(R.w / 70), 12, 20); cols = Math.ceil(R.w / fs); drops = []; spd = []; cptr = []; for (var i = 0; i < cols; i++) { drops[i] = Math.floor(Math.random() * -(R.h / fs)); spd[i] = 0.55 + Math.random() * 0.8; cptr[i] = (Math.random() * DIG.length) | 0; } key = (R.w << 1) ^ R.h; }
+    var t = 0, DUR = 6000, fs = 16, cols = 0, drops = [], spd = [], cptr = [], key = -1;
+    function build(R) { fs = clamp(Math.round(R.w / 70), 12, 20); cols = Math.ceil(R.w / fs); drops = []; spd = []; cptr = []; for (var i = 0; i < cols; i++) { drops[i] = Math.floor(Math.random() * -(R.h / fs)); spd[i] = 0.55 + Math.random() * 0.8; cptr[i] = (Math.random() * PI_D.length) | 0; } key = (R.w << 1) ^ R.h; }
     function frame(dt, R) {
       t += dt; if (key !== ((R.w << 1) ^ R.h)) build(R);
       ctx.save(); clipRect(R); ctx.fillStyle = 'rgba(8,11,20,0.14)'; ctx.fillRect(R.x, R.y, R.w, R.h);
       ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      for (var i = 0; i < cols; i++) { var roll = Math.random(), ch = roll < 0.80 ? DIG.charAt(cptr[i]++ % DIG.length) : (roll < 0.93 ? KANA[(Math.random() * KANA.length) | 0] : SYM[(Math.random() * SYM.length) | 0]), yy = R.y + drops[i] * fs; ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]; if (yy > R.y) ctx.fillText(ch, R.x + i * fs, yy); if (yy > R.y + R.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); spd[i] = 0.55 + Math.random() * 0.8; } else drops[i] += spd[i]; }
+      for (var i = 0; i < cols; i++) { var g = rainChar(cptr, i), yy = R.y + drops[i] * fs; ctx.fillStyle = g.amber ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]); if (yy > R.y) ctx.fillText(g.ch, R.x + i * fs, yy); if (yy > R.y + R.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); spd[i] = 0.55 + Math.random() * 0.8; } else drops[i] += spd[i]; }
       ctx.restore(); ctx.restore();
-      label(R, 'rain · ' + cp.s);
+      label(R, 'rain · π');
       return t >= DUR;
     }
     return { frame: frame, title: 'rain' };
@@ -785,7 +839,7 @@
       ctx.font = rfs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       for (var i = 0; i < rcols; i++) {
         var yy = R.y + rdrops[i] * rfs;
-        if (Math.random() <= intensity) { var ch = Math.random() < 0.85 ? PI_D.charAt(rcptr[i]++ % PI_D.length) : 'π'; ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]; if (yy > R.y && yy < R.y + R.h) ctx.fillText(ch, R.x + i * rfs, yy); }
+        if (Math.random() <= intensity) { var g = rainChar(rcptr, i); ctx.fillStyle = g.amber ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]); if (yy > R.y && yy < R.y + R.h) ctx.fillText(g.ch, R.x + i * rfs, yy); }
         if (yy > R.y + R.h && Math.random() > 0.975) rdrops[i] = Math.floor(Math.random() * -8); else rdrops[i] += rspd[i];
       }
       ctx.restore(); ctx.restore();
@@ -815,11 +869,7 @@
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
-      var a, rainI;
-      if (t < FILL) { a = 0; rainI = 1; }
-      else if (t < FILL + CO) { var p = (t - FILL) / CO; a = ease(p); rainI = 1 - 0.72 * p; }
-      else if (t < FILL + CO + HOLD) { a = 1; rainI = 0.16; }
-      else { var q = clamp((t - FILL - CO - HOLD) / DIS, 0, 1); a = 1 - ease(q); rainI = 0.28 + 0.72 * q; }
+      var m = coalesceMix(t, FILL, CO, HOLD, DIS), a = m.a, rainI = m.rainI;
       rain.draw(R, rainI);
       if (a > 0.01) { var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2; ctx.globalAlpha = a; ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH); ctx.globalAlpha = 1; }
       if (a > 0.85) label(R, 'grc·labs');
@@ -868,11 +918,7 @@
         if (failed) { ctx.fillStyle = GREEN; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// SUBJECT UNAVAILABLE', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return t >= END; }
         if (!ready) { ctx.fillStyle = DIM; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// DECRYPTING SUBJECT ...', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return false; }
         if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
-        var faceA, rainI;
-        if (t < FILL) { faceA = 0; rainI = 1; }
-        else if (t < FILL + CO) { var p = (t - FILL) / CO; faceA = ease(p); rainI = 1 - 0.72 * p; }
-        else if (t < FILL + CO + HOLD) { faceA = 1; rainI = 0.16; }
-        else { var q = clamp((t - FILL - CO - HOLD) / DIS, 0, 1); faceA = 1 - ease(q); rainI = 0.28 + 0.72 * q; }
+        var m = coalesceMix(t, FILL, CO, HOLD, DIS), faceA = m.a, rainI = m.rainI;
         rain.draw(R, rainI);
         if (faceA > 0.01) { var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2; ctx.globalAlpha = faceA; ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH); ctx.globalAlpha = 1; }
         if (faceA > 0.85) label(R, 'subject · ' + V.id);
@@ -917,7 +963,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyramids, makePyr3D, makePyramidPhoto, makeMenorah, makeCircuit, makeAstro, makePiDigits, makeRF]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyramids, makePyr3D, makePyramidPhoto, makeCube, makeTetraSphere, makeCircuit, makeAstro, makePiDigits, makeRF]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }
@@ -975,21 +1021,16 @@
   // ─────────── matrix wipe — the transition between windows ───────────
   // Falls to fill, then drains down and out the bottom, revealing the next window.
   var mtx = (function () {
-    // the rain honours π — each column streams the digits of π, with the π glyph itself surfacing in amber
-    var KANA = 'アイウエオカキクケコサシスセソタチツテト'.split('');
+    // a rich rain — katakana, kanji, Greek, symbols, and the streaming value of π (in amber)
     var fs = 16, cols = 0, drops = [], speeds = [], cptr = [];
     function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; cptr = []; for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * -(C.h / fs)); speeds[i] = 0.6 + Math.random() * 0.85; cptr[i] = (Math.random() * PI_D.length) | 0; } }
     function draw(C, respawn) {
       ctx.save(); clipRect(C); ctx.fillStyle = 'rgba(8,11,20,0.12)'; ctx.fillRect(C.x, C.y, C.w, C.h);
       ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       for (var i = 0; i < cols; i++) {
-        var roll = Math.random(), ch, isPi = false;
-        if (roll < 0.78) ch = PI_D.charAt(cptr[i]++ % PI_D.length);     // the value of π, streaming
-        else if (roll < 0.90) { ch = 'π'; isPi = true; }                // the π glyph itself
-        else ch = KANA[(Math.random() * KANA.length) | 0];
-        var yy = C.y + drops[i] * fs;
-        ctx.fillStyle = isPi ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]);
-        if (yy > C.y - fs && yy < C.y + C.h + fs) ctx.fillText(ch, C.x + i * fs, yy);
+        var g = rainChar(cptr, i), yy = C.y + drops[i] * fs;
+        ctx.fillStyle = g.amber ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]);
+        if (yy > C.y - fs && yy < C.y + C.h + fs) ctx.fillText(g.ch, C.x + i * fs, yy);
         if (respawn && yy > C.y + C.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.6 + Math.random() * 0.85; } else drops[i] += speeds[i];
       }
       ctx.restore(); ctx.restore();

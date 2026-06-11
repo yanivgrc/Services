@@ -2,6 +2,18 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.20 — 2026-06-11
+
+### Added
+- A 3D cube and a tetrahedron with a hollow sphere at its centre — rendered like the torus.
+
+### Changed
+- The matrix rain now uses a richer charset (katakana, kanji, Greek and symbols, with the digits of π streaming through) and coalesces in and out more smoothly.
+- The contact line now sits at the top of the terminal session, in green.
+- RF is now a conversation between components — packets hop node to node with wave rings at the sender.
+- Every molecule scene now carries the contact line.
+- Dropped the Menorah and removed the sun over the pyramids.
+
 ## v1.19 — 2026-06-11
 
 ### Changed
