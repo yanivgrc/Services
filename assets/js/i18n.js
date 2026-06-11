@@ -116,6 +116,8 @@
     "cl.changed":{en:"Changed",he:"שונה"},
     "cl.internal":{en:"Internal",he:"פנימי"},
     "cl.fixed":{en:"Fixed",he:"תוקן"},
+    "cl.v119.c1":{en:"The Menorah now has straight, angular branches (Knesset style) instead of curved ones.",
+      he:"למנורה עכשיו קנים ישרים וזוויתיים (בסגנון מנורת הכנסת) במקום מעוגלים."},
     "cl.v118.a1":{en:"A π scene — the digits of π spiral outward as if being computed, place by place.",
       he:"סצנת π — ספרות π נפרשות בספירלה כאילו מחושבות, ספרה אחר ספרה."},
     "cl.v118.a2":{en:"A 3D RF link — spherical wavefronts broadcasting from an antenna.",

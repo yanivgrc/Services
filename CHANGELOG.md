@@ -2,6 +2,11 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.19 — 2026-06-11
+
+### Changed
+- The Menorah now has straight, angular branches (Knesset style) instead of curved ones.
+
 ## v1.18 — 2026-06-11
 
 ### Added

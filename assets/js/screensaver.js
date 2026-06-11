@@ -591,7 +591,8 @@
       o.strokeStyle = '#fff'; o.fillStyle = '#fff'; o.lineCap = 'round'; o.lineJoin = 'round'; o.lineWidth = Math.max(1, Math.min(gw, gh) * 0.020);
       var cx = gw / 2, lampY = gh * 0.27, baseY = gh * 0.74, d = Math.min(gw, gh) * 0.13;
       o.beginPath(); o.moveTo(cx, lampY); o.lineTo(cx, baseY); o.stroke();                                  // central shaft
-      for (var i = 1; i <= 3; i++) { o.beginPath(); o.arc(cx, lampY, i * d, 0, Math.PI / 2); o.stroke(); o.beginPath(); o.arc(cx, lampY, i * d, Math.PI / 2, Math.PI); o.stroke(); } // six branches
+      var neckY = lampY + d * 0.6;                                                                           // straight angular branches (Knesset style): a diagonal arm then a vertical neck
+      for (var i = 1; i <= 3; i++) { var jy = lampY + i * d; o.beginPath(); o.moveTo(cx, jy); o.lineTo(cx + i * d, neckY); o.lineTo(cx + i * d, lampY); o.stroke(); o.beginPath(); o.moveTo(cx, jy); o.lineTo(cx - i * d, neckY); o.lineTo(cx - i * d, lampY); o.stroke(); }
       for (var j = -3; j <= 3; j++) { var lx = cx + j * d; o.beginPath(); o.moveTo(lx - d * 0.30, lampY - d * 0.16); o.lineTo(lx - d * 0.30, lampY); o.lineTo(lx + d * 0.30, lampY); o.lineTo(lx + d * 0.30, lampY - d * 0.16); o.stroke(); } // unlit lamp cups
       o.beginPath(); o.moveTo(cx, baseY); o.lineTo(cx - d * 0.9, gh - 1); o.lineTo(cx + d * 0.9, gh - 1); o.closePath(); o.fill();
       o.fillRect(cx - d * 1.4, gh - Math.max(2, gh * 0.035), d * 2.8, Math.max(2, gh * 0.035));               // stepped foot
