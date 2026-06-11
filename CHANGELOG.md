@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.8 — 2026-06-11
+
+### Changed
+- Softened the screensaver's pacing — gentler typing, longer holds, and clearer separation between the `pip install`, `ssh-keygen` and response blocks.
+- Reworked the matrix transition between scenes — it now fills the screen, flows all the way to the bottom and drains out before the next scene fades up, instead of cutting off mid-animation.
+- Dropped the breathing zoom from the geometry and portrait scenes — calmer, less busy.
+- Spaced the GET commands further apart — one service per cycle, then two other scenes before the next GET.
+
 ## v1.7 — 2026-06-11
 
 ### Changed
