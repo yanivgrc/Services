@@ -17,7 +17,7 @@
      subject — occasional ASCII portrait.
    One brain (GET) per few windows, spaced by other topics. Any interaction exits
    instantly. prefers-reduced-motion → one static GET frame. Paused while hidden.
-   Test: ?saver=now|fast|off, ?win=brain|viz|msg|rain|subject, ?shape=N */
+   Test: ?saver=now|fast|off, ?win=brain|viz|msg|rain|subject, ?shape=N, ?face=N */
 (function () {
   'use strict';
 
@@ -28,6 +28,7 @@
   var FORCE_NOW = params.get('saver') === 'now';
   var FORCE_WIN = params.get('win');
   var FORCE_SHAPE = parseInt(params.get('shape'), 10); if (isNaN(FORCE_SHAPE)) FORCE_SHAPE = -1;
+  var FORCE_FACE = parseInt(params.get('face'), 10); if (isNaN(FORCE_FACE)) FORCE_FACE = -1;
   if (!CONFIG.enabled) return;
 
   var BG = '#080B14', GREEN = '#63B22E', BRIGHT = '#9BE85B', AMBER = '#F0B429',
@@ -41,7 +42,7 @@
   var PROMPT = 'grc-labs:~$ ';
   var BAR_LEN = 26;
   var MSGS = [
-    { he: 'אבטחת מידע בהתאמה אישית', en: 'TAILORED INFORMATION SECURITY' },
+    { he: 'GRC·LABS', en: '' },
     { he: 'צרו קשר', en: 'ESTABLISH CONTACT' },
     { he: 'דברו איתנו', en: "LET'S TALK" },
     { he: 'ספרו לנו איזה אתגר תרצו לפתור', en: 'NAME YOUR CHALLENGE' }
@@ -249,13 +250,13 @@
   // where the lateral side itself splits into a reasoning log and a live 3D render.
   function makeBrain(cmd) {
     var get = makeGet(cmd), think = null, ascii = null, split = 0, SPLIT_MS = 720, splitting = false, narrow = false, t = 0, narrowPhase = 0, fade = 0;
-    var rr = Math.random(), mode = rr < 0.25 ? 'solo' : (rr < 0.55 ? 'duo' : 'trio');
+    var mode = 'trio'; // TMUX always splits to three: focus + reasoning log + a live 3D render
     function frame(dt, R) {
       t += dt; narrow = R.w < 760;
       ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       if (mode === 'solo') { var sd = get.frame(dt, R); paneChrome(R, '1:focus', true); return sd; }
       if (!narrow) {
-        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeThink(cmd); if (mode === 'trio' && !ascii) ascii = (Math.random() < 0.55 ? makeDonut : makePyramids)(); }
+        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeThink(cmd); if (mode === 'trio' && !ascii) ascii = (Math.random() < 0.5 ? makeDonut : makePyr3D)(); }
         if (splitting && split < 1) split = Math.min(1, split + dt / SPLIT_MS);
         var e = ease(split), gap = split > 0 ? 6 : 0;
         var leftW = R.w * (1 - (mode === 'trio' ? 0.50 : 0.46) * e) - (split > 0 ? gap / 2 : 0);
@@ -429,6 +430,50 @@
     }
     return { frame: frame, title: 'viz' };
   }
+  // a real 3D square pyramid — z-buffered, flat-shaded faces, spinning like the torus
+  function makePyr3D() {
+    var t = 0, DUR = 7200, RAMP = '.,-~:;=!*#$@';
+    var AP = [0, 1.0, 0], BV = [[-0.9, -0.6, -0.9], [0.9, -0.6, -0.9], [0.9, -0.6, 0.9], [-0.9, -0.6, 0.9]];
+    var faces = [[AP, BV[0], BV[1]], [AP, BV[1], BV[2]], [AP, BV[2], BV[3]], [AP, BV[3], BV[0]], [BV[0], BV[2], BV[3]], [BV[0], BV[1], BV[2]]];
+    function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function nrm(a) { var l = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+    var fn = faces.map(function (f) {
+      var e1 = sub(f[1], f[0]), e2 = sub(f[2], f[0]);
+      var n = nrm([e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]]);
+      var cx = (f[0][0] + f[1][0] + f[2][0]) / 3, cy = (f[0][1] + f[1][1] + f[2][1]) / 3, cz = (f[0][2] + f[1][2] + f[2][2]) / 3;
+      if (n[0] * cx + n[1] * cy + n[2] * cz < 0) n = [-n[0], -n[1], -n[2]];
+      return n;
+    });
+    var LIGHT = nrm([0.3, 0.7, -0.9]);
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.min(R.w, R.h) / 44, 9, 16), cw = fs * 0.6;
+      var cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
+      var bf = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < bf.length; z++) { bf[z] = -1; zb[z] = 0; }
+      var A = t * 0.0011, B = t * 0.0008, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B);
+      var K2 = 5, K1 = Math.min(cols, rows) * 1.15;
+      function rot(p) { var x1 = p[0] * cb + p[2] * sb, z1 = -p[0] * sb + p[2] * cb; var y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca; return [x1, y2, z2]; }
+      var STEP = 22;
+      for (var fi = 0; fi < faces.length; fi++) {
+        var f = faces[fi], rnv = rot(fn[fi]), lum = Math.max(0.06, rnv[0] * LIGHT[0] + rnv[1] * LIGHT[1] + rnv[2] * LIGHT[2]);
+        var e1 = sub(f[1], f[0]), e2 = sub(f[2], f[0]), lvl = Math.min(RAMP.length - 1, Math.floor(lum * (RAMP.length - 1)));
+        for (var ii = 0; ii <= STEP; ii++) for (var jj = 0; jj <= STEP - ii; jj++) {
+          var u = ii / STEP, vv = jj / STEP;
+          var rp = rot([f[0][0] + e1[0] * u + e2[0] * vv, f[0][1] + e1[1] * u + e2[1] * vv, f[0][2] + e1[2] * u + e2[2] * vv]);
+          var ooz = 1 / (K2 + rp[2]);
+          var xp = Math.floor(cols / 2 + K1 * ooz * rp[0]), yp = Math.floor(rows / 2 - K1 * ooz * rp[1] * 0.5);
+          if (xp >= 0 && xp < cols && yp >= 0 && yp < rows) { var idx = yp * cols + xp; if (ooz > zb[idx]) { zb[idx] = ooz; bf[idx] = lvl; } }
+        }
+      }
+      var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = FAINT; for (var rd = 0; rd < rows; rd++) for (var cd = 0; cd < cols; cd++) if (bf[rd * cols + cd] < 0) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs);
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { var l = bf[r * cols + c]; if (l < 0) continue; ctx.fillStyle = l >= 8 ? BRIGHT : (l >= 4 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(l), x0 + c * cw, y0 + r * fs); }
+      label(R, 'pyramid · 3d');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
   function label(R, name) { ctx.fillStyle = DIM; ctx.font = '600 ' + clamp(Math.round(R.w / 95), 11, 15) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr'; ctx.fillText('// ' + name, R.x + R.w / 2, R.y + R.h - 26); ctx.textAlign = 'start'; ctx.textBaseline = 'top'; }
 
   // ───────────────────────── window: msg — Hebrew line in a frame ─────────────────────────
@@ -481,26 +526,42 @@
   }
 
   // ───────────────────────── window: subject — ASCII portrait ─────────────────────────
+  // a few portrait renderings to compare — cycle with ?face=N, or it rotates each appearance
+  var FACE_VARIANTS = [
+    { id: 'v1·soft', ramp: " .,:;-~=+*coaeUXEZ%#8B@", lo: 0.16, span: 0.74, gamma: 0.70, hi: 0.70, mid: 0.36, blank: 0.12 },
+    { id: 'v2·hard', ramp: " .:-=+ox*#%@MW", lo: 0.10, span: 0.82, gamma: 0.85, hi: 0.60, mid: 0.30, blank: 0.10 },
+    { id: 'v3·block', ramp: " .·:-+*coe%#", lo: 0.13, span: 0.78, gamma: 0.72, hi: 0.64, mid: 0.34, blank: 0.10 }
+  ];
+  var faceVar = 0;
   var portrait = (function () {
-    var RAMP = " .,:;-~=+*coaeUXEZ%#8B@", img = new Image(), ready = false, failed = false;
+    var img = new Image(), ready = false, failed = false;
     img.onload = function () { ready = true; }; img.onerror = function () { failed = true; }; img.src = 'assets/img/portrait-dark.jpg';
     function scene() {
-      var t = 0, DUR = 7000, grid = null, gw = 0, gh = 0, fs = 0, acw = 0, key = -1, cache = null, ax0 = 0, ay0 = 0, bh = 0;
+      var t = 0, DUR = 7000, blk = null, blkW = 0, blkH = 0, key = -1;
+      var V = FACE_VARIANTS[FORCE_FACE >= 0 ? (FORCE_FACE % FACE_VARIANTS.length) : (faceVar++ % FACE_VARIANTS.length)], RAMP = V.ramp;
       function build(R) {
-        var side = Math.min(R.w * 0.8, R.h * 0.82); fs = clamp(side / 56, 7, 13); acw = fs * 0.6; gw = Math.max(44, Math.floor(side / acw)); gh = Math.max(44, Math.floor(side / fs));
-        var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d'); o.drawImage(img, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data; grid = [];
-        for (var r = 0; r < gh; r++) { var row = []; for (var c = 0; c < gw; c++) { var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - 0.16) / 0.74, 0, 1), 0.7), 0, 1); var ch, col; if (v < 0.12) { ch = ' '; col = null; } else { ch = RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))); col = v > 0.7 ? BRIGHT : (v > 0.36 ? GREEN : MIDG); } row.push({ ch: ch, col: col }); } grid.push(row); }
-        bh = gh * fs; ax0 = R.x + Math.round((R.w - gw * acw) / 2); ay0 = R.y + Math.round((R.h - bh) / 2) - fs;
-        cache = document.createElement('canvas'); cache.width = canvas.width; cache.height = canvas.height; var cc = cache.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
-        for (var rr = 0; rr < gh; rr++) for (var cx2 = 0; cx2 < gw; cx2++) { var cl = grid[rr][cx2]; if (!cl.col) continue; cc.fillStyle = cl.col; cc.fillText(cl.ch, ax0 + cx2 * acw, ay0 + rr * fs); }
-        cc.fillStyle = DIM; cc.font = '700 ' + Math.max(11, Math.round(fs)) + 'px ' + MONO.replace(/"/g, ''); cc.textAlign = 'center'; cc.fillText('SUBJECT // Y.DADON — CEO', R.x + R.w / 2, ay0 + bh + fs * 0.8); key = (R.w << 1) ^ R.h;
+        var side = Math.min(R.w * 0.74, R.h * 0.80), fs = clamp(side / 56, 7, 13), acw = fs * 0.6;
+        var gw = Math.max(40, Math.floor(side / acw)), gh = Math.max(40, Math.floor(side / fs));
+        var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d'); o.drawImage(img, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data;
+        var bh = gh * fs; blkW = gw * acw; blkH = bh + Math.round(fs * 2.2);
+        blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
+        var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
+        for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) {
+          var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - V.lo) / V.span, 0, 1), V.gamma), 0, 1);
+          if (v < V.blank) continue;
+          cc.fillStyle = v > V.hi ? BRIGHT : (v > V.mid ? GREEN : MIDG); cc.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))), c * acw, r * fs);
+        }
+        cc.fillStyle = DIM; cc.font = '700 ' + Math.max(11, Math.round(fs)) + 'px ' + MONO.replace(/"/g, ''); cc.textAlign = 'center'; cc.fillText('SUBJECT // Y.DADON — CEO', blkW / 2, bh + fs * 0.5);
+        key = (R.w << 1) ^ R.h;
       }
       function frame(dt, R) {
         t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
         if (failed) { ctx.fillStyle = GREEN; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// SUBJECT UNAVAILABLE', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return t >= DUR; }
         if (!ready) { ctx.fillStyle = DIM; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// DECRYPTING SUBJECT ...', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return false; }
-        if (!grid || key !== ((R.w << 1) ^ R.h)) build(R);
-        ctx.drawImage(cache, 0, 0, canvas.width, canvas.height, 0, 0, W, H);
+        if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
+        var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2;
+        ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH);
+        label(R, 'subject · ' + V.id);
         return t >= DUR;
       }
       return { frame: frame, title: 'subject' };
@@ -542,7 +603,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyramids]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyramids, makePyr3D]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }
@@ -599,13 +660,23 @@
   // ─────────── matrix wipe — the transition between windows ───────────
   // Falls to fill, then drains down and out the bottom, revealing the next window.
   var mtx = (function () {
-    var GLYPHS = 'アイウエオカキクケコサシスセソタチツテトﾊﾋﾌﾍﾎ0123456789#%&<>*+=/'.split('');
-    var fs = 16, cols = 0, drops = [], speeds = [];
-    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * -(C.h / fs)); speeds[i] = 0.6 + Math.random() * 0.85; } }
+    // the rain honours π — each column streams the digits of π, with the π glyph itself surfacing in amber
+    var KANA = 'アイウエオカキクケコサシスセソタチツテト'.split('');
+    var fs = 16, cols = 0, drops = [], speeds = [], cptr = [];
+    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; cptr = []; for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * -(C.h / fs)); speeds[i] = 0.6 + Math.random() * 0.85; cptr[i] = (Math.random() * PI_D.length) | 0; } }
     function draw(C, respawn) {
       ctx.save(); clipRect(C); ctx.fillStyle = 'rgba(8,11,20,0.12)'; ctx.fillRect(C.x, C.y, C.w, C.h);
       ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      for (var i = 0; i < cols; i++) { var ch = GLYPHS[(Math.random() * GLYPHS.length) | 0], yy = C.y + drops[i] * fs; ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]; if (yy > C.y - fs && yy < C.y + C.h + fs) ctx.fillText(ch, C.x + i * fs, yy); if (respawn && yy > C.y + C.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.6 + Math.random() * 0.85; } else drops[i] += speeds[i]; }
+      for (var i = 0; i < cols; i++) {
+        var roll = Math.random(), ch, isPi = false;
+        if (roll < 0.78) ch = PI_D.charAt(cptr[i]++ % PI_D.length);     // the value of π, streaming
+        else if (roll < 0.90) { ch = 'π'; isPi = true; }                // the π glyph itself
+        else ch = KANA[(Math.random() * KANA.length) | 0];
+        var yy = C.y + drops[i] * fs;
+        ctx.fillStyle = isPi ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]);
+        if (yy > C.y - fs && yy < C.y + C.h + fs) ctx.fillText(ch, C.x + i * fs, yy);
+        if (respawn && yy > C.y + C.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.6 + Math.random() * 0.85; } else drops[i] += speeds[i];
+      }
       ctx.restore(); ctx.restore();
     }
     function cleared(C) { for (var i = 0; i < cols; i++) if (drops[i] * fs <= C.h + fs) return false; return true; }

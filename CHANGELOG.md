@@ -2,6 +2,17 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.13 — 2026-06-11
+
+### Added
+- A real 3D rotating pyramid — z-buffered and face-shaded, spinning like the torus.
+
+### Changed
+- The "brain" window now always splits into three panes — a focus stream, a reasoning log, and a live 3D render — with different content each time.
+- The matrix rain now honours π — each column streams the digits of π, and the π glyph itself surfaces in amber.
+- The ASCII portrait now fits the frame cleanly (no longer clipped) and cycles through a few renderings.
+- Replaced the "Tailored Information Security" message with the GRC·LABS mark.
+
 ## v1.12 — 2026-06-11
 
 ### Added
