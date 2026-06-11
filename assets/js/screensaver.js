@@ -249,7 +249,7 @@
   // where the lateral side itself splits into a reasoning log and a live 3D render.
   function makeBrain(cmd) {
     var get = makeGet(cmd), think = null, ascii = null, split = 0, SPLIT_MS = 720, splitting = false, narrow = false, t = 0, narrowPhase = 0, fade = 0;
-    var rr = Math.random(), mode = rr < 0.30 ? 'solo' : (rr < 0.64 ? 'duo' : 'trio');
+    var rr = Math.random(), mode = rr < 0.25 ? 'solo' : (rr < 0.55 ? 'duo' : 'trio');
     function frame(dt, R) {
       t += dt; narrow = R.w < 760;
       ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
@@ -315,7 +315,7 @@
       var x0 = R.x + Math.round((R.w - gw * cw) / 2), y0 = R.y + Math.round((R.h - gh * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       ctx.fillStyle = FAINT; for (var rd = 0; rd < gh; rd++) for (var cd = 0; cd < gw; cd++) if (!grid[rd * gw + cd]) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs); // empty cells get a faint dot — gives the field form
-      for (var r2 = 0; r2 < gh; r2++) for (var c2 = 0; c2 < gw; c2++) { var v = grid[r2 * gw + c2]; if (!v) continue; ctx.fillStyle = v >= 4 ? BRIGHT : (v >= 2 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, v)), x0 + c2 * cw, y0 + r2 * fs); }
+      for (var r2 = 0; r2 < gh; r2++) for (var c2 = 0; c2 < gw; c2++) { var v = grid[r2 * gw + c2]; if (!v) continue; var pc = v >= 4 ? BRIGHT : (v >= 2 ? GREEN : MIDG); if (Math.sin((r2 * 3.3 + c2 * 1.7) + t * 0.006) > 0.82) pc = BRIGHT; ctx.fillStyle = pc; ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, v)), x0 + c2 * cw, y0 + r2 * fs); } // lit cells twinkle so the shape never freezes after reveal
       label(R, shape.name);
       return t >= DUR;
     }
@@ -416,8 +416,8 @@
               if (ad <= hw) {
                 if (edge < 1) { ch = d < 0 ? '/' : '\\'; col = BRIGHT; }                                            // silhouette outline
                 else if (ad < 0.85) { ch = '│'; col = BRIGHT; }                                                     // near front edge — the 3D ridge
-                else if (d > 0) { var lit = (y & 1) === 0; ch = lit ? '▓' : '▒'; col = lit ? BRIGHT : GREEN; }       // sunlit right face
-                else { var dk = (y & 1) === 0; ch = dk ? '▒' : '░'; col = dk ? MIDG : DIM; }                         // shadowed left face
+                else if (d > 0) { var lp = Math.sin(c * 0.2 - t * 0.0028 + pi) * 0.5 + 0.5; ch = lp > 0.58 ? '▓' : '▒'; col = lp > 0.58 ? BRIGHT : GREEN; }   // sunlit right face — slow light sweep
+                else { var lp2 = Math.sin(c * 0.2 - t * 0.0028 + pi) * 0.5 + 0.5; ch = lp2 > 0.55 ? '▒' : '░'; col = lp2 > 0.55 ? MIDG : DIM; }              // shadowed left face — slow light sweep
               }
             }
           }
@@ -520,17 +520,23 @@
   function statusH() { return Math.round(chFs() * 1.8); }
   function timeStr() { var d = new Date(), h = d.getHours(), m = d.getMinutes(); return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
   var windowsLog = [];
-  function drawStatus() {
+  // the session is always working — a live spinner + rotating Hebrew status word, never idle
+  var STAT_HE = ['בטיפול', 'בבדיקה', 'התנעה', 'ניתוח', 'מיפוי', 'אימות', 'ניטור'];
+  var STAT_SPN = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+  function drawStatus(nowMs) {
     var sh = statusH(), y = H - sh, fs = Math.round(sh * 0.44), pad = Math.round(sh * 0.5);
     ctx.fillStyle = '#0B0F18'; ctx.fillRect(0, y, W, sh); ctx.fillStyle = 'rgba(99,178,46,0.25)'; ctx.fillRect(0, y, W, 1);
     ctx.textBaseline = 'middle'; ctx.direction = 'ltr'; ctx.textAlign = 'left';
     ctx.font = '700 ' + fs + 'px ' + MONO; var sess = '[grc-labs]', sw = ctx.measureText(sess).width + pad * 1.4;
     ctx.fillStyle = GREEN; ctx.fillRect(0, y, sw, sh); ctx.fillStyle = BG; ctx.fillText(sess, pad * 0.7, y + sh / 2);
-    ctx.font = fs + 'px ' + MONO; var x = sw + pad;
+    var x = sw + pad;
+    ctx.font = fs + 'px ' + MONO; ctx.fillStyle = BRIGHT; var spin = STAT_SPN.charAt(Math.floor(nowMs / 90) % STAT_SPN.length); ctx.fillText(spin, x, y + sh / 2); x += ctx.measureText(spin).width + Math.round(pad * 0.5);
+    ctx.font = '600 ' + fs + 'px ' + HEBF; ctx.fillStyle = AMBER; var word = STAT_HE[Math.floor(nowMs / 2200) % STAT_HE.length]; ctx.fillText(word, x, y + sh / 2); x += ctx.measureText(word).width + pad;
+    ctx.font = fs + 'px ' + MONO;
     var show = windowsLog.slice(-4);
     for (var i = 0; i < show.length; i++) { var wd = show[i], lab = wd.idx + ':' + wd.name + (wd.active ? '*' : ' '); ctx.fillStyle = wd.active ? BRIGHT : DIM; ctx.fillText(lab, x, y + sh / 2); x += ctx.measureText(lab).width + pad; }
     var right = 'y.dadon@grc-labs   ' + timeStr(); ctx.textAlign = 'right'; ctx.fillStyle = DIM; ctx.fillText(right, W - pad, y + sh / 2);
-    ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+    ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
   }
 
   // ─────────────────────────── scheduler ───────────────────────────
@@ -628,7 +634,7 @@
       ghost.update(dt, C, cur.title);
       if (done) { incoming = nextWindow(); trans = 'fill'; transT = 0; mtx.reset(C, true); }
     }
-    drawStatus();
+    drawStatus(now);
     raf = requestAnimationFrame(frame);
   }
 

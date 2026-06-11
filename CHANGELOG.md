@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.12 — 2026-06-11
+
+### Added
+- A live "thinking" indicator in the status bar — a spinner and rotating Hebrew status words (בטיפול / בבדיקה / התנעה) — so the session never reads as idle.
+
+### Changed
+- Removed the static holds — the geometry shimmers, the pyramids catch a slow light sweep, and the brain window more often runs a live 3D render.
+
 ## v1.11 — 2026-06-11
 
 ### Changed
