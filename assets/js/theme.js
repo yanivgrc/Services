@@ -1,6 +1,10 @@
 /* GRC·LABS — theme toggle
    Black-hat / white-hat switch. Dark = black hat (filled), light = white hat
    (outline) — a nod to attacker vs. defender. Self-contained. */
+
+/* Keep the site a plain page — never surface a PWA "install app" prompt. */
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); });
+
 (function(){
   var root = document.documentElement;
   var themebtn = document.getElementById('themebtn');

@@ -244,23 +244,37 @@
   }
   function clipRect(R) { ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip(); }
 
+  // The brain window varies so it never reads the same twice: sometimes a single
+  // focus pane, sometimes a focus + reasoning log, sometimes a three-pane split
+  // where the lateral side itself splits into a reasoning log and a live 3D render.
   function makeBrain(cmd) {
-    var get = makeGet(cmd), think = null, split = 0, SPLIT_MS = 720, splitting = false, narrow = false, t = 0, narrowPhase = 0, fade = 0;
+    var get = makeGet(cmd), think = null, ascii = null, split = 0, SPLIT_MS = 720, splitting = false, narrow = false, t = 0, narrowPhase = 0, fade = 0;
+    var rr = Math.random(), mode = rr < 0.30 ? 'solo' : (rr < 0.64 ? 'duo' : 'trio');
     function frame(dt, R) {
       t += dt; narrow = R.w < 760;
       ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      if (mode === 'solo') { var sd = get.frame(dt, R); paneChrome(R, '1:focus', true); return sd; }
       if (!narrow) {
-        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeThink(cmd); }
+        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeThink(cmd); if (mode === 'trio' && !ascii) ascii = (Math.random() < 0.55 ? makeDonut : makePyramids)(); }
         if (splitting && split < 1) split = Math.min(1, split + dt / SPLIT_MS);
         var e = ease(split), gap = split > 0 ? 6 : 0;
-        var leftW = R.w * (1 - 0.46 * e) - (split > 0 ? gap / 2 : 0);
+        var leftW = R.w * (1 - (mode === 'trio' ? 0.50 : 0.46) * e) - (split > 0 ? gap / 2 : 0);
         var Lr = { x: R.x, y: R.y, w: Math.max(40, leftW), h: R.h };
         clipRect(Lr); var gd = get.frame(dt, inset(Lr, split > 0)); ctx.restore(); paneChrome(Lr, '1:focus', true);
-        var td = true;
-        if (split > 0 && think) { var Rr = { x: R.x + leftW + gap, y: R.y, w: R.w - leftW - gap, h: R.h }; clipRect(Rr); ctx.globalAlpha = e; td = think.frame(dt, inset(Rr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Rr, '2:lateral', false); }
-        return gd && (split >= 1) && td;
+        var rd = true;
+        if (split > 0) {
+          var rx = R.x + leftW + gap, rw = R.w - leftW - gap;
+          if (mode === 'trio' && ascii) {
+            var th = R.h * 0.52 - gap / 2, Tr = { x: rx, y: R.y, w: rw, h: th }, Ar = { x: rx, y: R.y + th + gap, w: rw, h: R.h - th - gap };
+            clipRect(Tr); ctx.globalAlpha = e; rd = think.frame(dt, inset(Tr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Tr, '2:reason', false);
+            clipRect(Ar); ctx.globalAlpha = e; ascii.frame(dt, inset(Ar, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Ar, '3:render', false);
+          } else if (think) {
+            var Rr = { x: rx, y: R.y, w: rw, h: R.h }; clipRect(Rr); ctx.globalAlpha = e; rd = think.frame(dt, inset(Rr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Rr, '2:lateral', false);
+          }
+        }
+        return gd && (split >= 1) && rd;
       } else {
-        // narrow: focus first, then cross-fade to the lateral tree
+        // narrow: focus first, then cross-fade to the reasoning log
         if (narrowPhase === 0) {
           var done0 = get.frame(dt, R); paneChrome(R, '1:focus', true);
           if (get.atBody() && !think) think = makeThink(cmd);
@@ -300,6 +314,7 @@
       shape.plot(function (nx, ny) { var c = Math.round(cx + nx * ax * 0.5), r = Math.round(cy - ny * ay * 0.5); if (c >= 0 && c < gw && r >= 0 && r < gh) grid[r * gw + c]++; }, Math.min(t / REVEAL, 1));
       var x0 = R.x + Math.round((R.w - gw * cw) / 2), y0 = R.y + Math.round((R.h - gh * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = FAINT; for (var rd = 0; rd < gh; rd++) for (var cd = 0; cd < gw; cd++) if (!grid[rd * gw + cd]) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs); // empty cells get a faint dot — gives the field form
       for (var r2 = 0; r2 < gh; r2++) for (var c2 = 0; c2 < gw; c2++) { var v = grid[r2 * gw + c2]; if (!v) continue; ctx.fillStyle = v >= 4 ? BRIGHT : (v >= 2 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, v)), x0 + c2 * cw, y0 + r2 * fs); }
       label(R, shape.name);
       return t >= DUR;
@@ -324,6 +339,7 @@
         } }
       var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = FAINT; for (var rd = 0; rd < rows; rd++) for (var cd = 0; cd < cols; cd++) if (!b[rd * cols + cd]) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs); // empty cells get a faint dot — gives the field form
       for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { var l = b[r * cols + c]; if (!l) continue; ctx.fillStyle = l >= 7 ? BRIGHT : (l >= 4 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, l)), x0 + c * cw, y0 + r * fs); }
       label(R, 'torus · rot');
       return t >= DUR;
@@ -473,7 +489,7 @@
       function build(R) {
         var side = Math.min(R.w * 0.8, R.h * 0.82); fs = clamp(side / 56, 7, 13); acw = fs * 0.6; gw = Math.max(44, Math.floor(side / acw)); gh = Math.max(44, Math.floor(side / fs));
         var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d'); o.drawImage(img, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data; grid = [];
-        for (var r = 0; r < gh; r++) { var row = []; for (var c = 0; c < gw; c++) { var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - 0.10) / 0.82, 0, 1), 0.62), 0, 1); var ch, col; if (v < 0.08) { ch = ' '; col = null; } else { ch = RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))); col = v > 0.6 ? BRIGHT : (v > 0.3 ? GREEN : MIDG); } row.push({ ch: ch, col: col }); } grid.push(row); }
+        for (var r = 0; r < gh; r++) { var row = []; for (var c = 0; c < gw; c++) { var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - 0.16) / 0.74, 0, 1), 0.7), 0, 1); var ch, col; if (v < 0.12) { ch = ' '; col = null; } else { ch = RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))); col = v > 0.7 ? BRIGHT : (v > 0.36 ? GREEN : MIDG); } row.push({ ch: ch, col: col }); } grid.push(row); }
         bh = gh * fs; ax0 = R.x + Math.round((R.w - gw * acw) / 2); ay0 = R.y + Math.round((R.h - bh) / 2) - fs;
         cache = document.createElement('canvas'); cache.width = canvas.width; cache.height = canvas.height; var cc = cache.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
         for (var rr = 0; rr < gh; rr++) for (var cx2 = 0; cx2 < gw; cx2++) { var cl = grid[rr][cx2]; if (!cl.col) continue; cc.fillStyle = cl.col; cc.fillText(cl.ch, ax0 + cx2 * acw, ay0 + rr * fs); }

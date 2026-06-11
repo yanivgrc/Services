@@ -2,6 +2,16 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.11 — 2026-06-11
+
+### Changed
+- The screensaver's "brain" window now varies its layout — sometimes a single focus pane, sometimes focus plus a reasoning log, sometimes a three-pane split that adds a live 3D render — so it never reads the same twice.
+- ASCII scenes now lay down a faint dot field in the empty cells, giving the space form.
+- Restored the previous ASCII portrait rendering — it read better.
+
+### Fixed
+- Removed the "install app" (PWA) prompt — the site stays a plain page, nothing to install.
+
 ## v1.10 — 2026-06-11
 
 ### Changed
