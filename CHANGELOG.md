@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.22 — 2026-06-11
+
+### Added
+- An audio-waveform oscilloscope — just the signal, filled from the centre line.
+
+### Changed
+- Removed the RF scene and the GRC·LABS brand screen.
+
 ## v1.21 — 2026-06-11
 
 ### Added

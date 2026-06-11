@@ -687,6 +687,30 @@
     }
     return { frame: frame, title: 'viz' };
   }
+  // an audio waveform on a scope — just the signal, filled from the centre line
+  function makeAudioScope() {
+    var t = 0, DUR = 8000;
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 52), 8, 14), cw = fs * 0.6;
+      var cols = Math.max(50, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
+      var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      function put(c, r, ch, col) { if (c < 0 || c >= cols || r < 0 || r >= rows) return; ctx.fillStyle = col; ctx.fillText(ch, x0 + c * cw, y0 + r * fs); }
+      var mid = Math.round(rows / 2), half = rows * 0.44;
+      for (var cc = 0; cc < cols; cc++) put(cc, mid, '·', FAINT);
+      for (var c = 0; c < cols; c++) {
+        var u = c / cols;
+        var env = 0.40 + 0.45 * Math.abs(Math.sin(u * Math.PI * 2 - t * 0.0009)) * (0.6 + 0.4 * Math.sin(t * 0.0013 + u * 7));
+        var sig = Math.sin(u * Math.PI * 38 - t * 0.020) * 0.6 + Math.sin(u * Math.PI * 17 - t * 0.013) * 0.30 + Math.sin(u * Math.PI * 71 - t * 0.030) * 0.18;
+        var amp = sig * env, h = Math.round(Math.abs(amp) * half), dir = amp >= 0 ? -1 : 1;
+        for (var k = 0; k <= h; k++) { var rr = mid + dir * k, edge = k >= h - 1; put(c, rr, edge ? '#' : '|', edge ? '#ffffff' : (k < h * 0.5 ? GREEN : MIDG)); }
+      }
+      label(R, 'audio · scope');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
   // encryption, illustrated — plaintext is consumed and turned to ciphertext, round by round
   function makeCrypto() {
     var t = 0, DUR = 8200;
@@ -1051,7 +1075,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeScope, makeAstro, makeRF, makeCrypto, makeVoyager]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeScope, makeAudioScope, makeAstro, makeCrypto, makeVoyager]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }
@@ -1063,7 +1087,7 @@
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
     if (n % 3 === 0) return 'brain';
-    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'brand', 'subject']); ilI = 0; } // matrix rain, GRC·LABS ASCII art, and the face coalescing from the rain
+    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'viz', 'rain', 'subject']); ilI = 0; } // viz scenes, matrix rain, and the face coalescing from the rain
     return ilOrder[ilI++];
   }
   function buildWindow(type) {
