@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.15 — 2026-06-11
+
+### Changed
+- The 3D pyramid now holds a steady three-quarter angle (slow spin) so its faces read clearly, with ASCII shading varying across each face.
+- Dropped the framed message banner — the matrix rain carries the message moments now.
+
 ## v1.14 — 2026-06-11
 
 ### Fixed

@@ -450,19 +450,19 @@
       var fs = clamp(Math.min(R.w, R.h) / 44, 9, 16), cw = fs * 0.6;
       var cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
       var bf = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < bf.length; z++) { bf[z] = -1; zb[z] = 0; }
-      var A = t * 0.0011, B = t * 0.0008, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B);
+      var A = 0.5, B = t * 0.0009, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B); // fixed three-quarter tilt, slow spin
       var K2 = 5, K1 = Math.min(cols, rows) * 1.15;
       function rot(p) { var x1 = p[0] * cb + p[2] * sb, z1 = -p[0] * sb + p[2] * cb; var y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca; return [x1, y2, z2]; }
       var STEP = 22;
       for (var fi = 0; fi < faces.length; fi++) {
         var f = faces[fi], rnv = rot(fn[fi]), lum = Math.max(0.06, rnv[0] * LIGHT[0] + rnv[1] * LIGHT[1] + rnv[2] * LIGHT[2]);
-        var e1 = sub(f[1], f[0]), e2 = sub(f[2], f[0]), lvl = Math.min(RAMP.length - 1, Math.floor(lum * (RAMP.length - 1)));
+        var e1 = sub(f[1], f[0]), e2 = sub(f[2], f[0]), lb = lum * (RAMP.length - 1);
         for (var ii = 0; ii <= STEP; ii++) for (var jj = 0; jj <= STEP - ii; jj++) {
           var u = ii / STEP, vv = jj / STEP;
           var rp = rot([f[0][0] + e1[0] * u + e2[0] * vv, f[0][1] + e1[1] * u + e2[1] * vv, f[0][2] + e1[2] * u + e2[2] * vv]);
           var ooz = 1 / (K2 + rp[2]);
           var xp = Math.floor(cols / 2 + K1 * ooz * rp[0]), yp = Math.floor(rows / 2 - K1 * ooz * rp[1] * 0.5);
-          if (xp >= 0 && xp < cols && yp >= 0 && yp < rows) { var idx = yp * cols + xp; if (ooz > zb[idx]) { zb[idx] = ooz; bf[idx] = lvl; } }
+          if (xp >= 0 && xp < cols && yp >= 0 && yp < rows) { var idx = yp * cols + xp; if (ooz > zb[idx]) { zb[idx] = ooz; bf[idx] = Math.min(RAMP.length - 1, Math.max(0, Math.round(lb * (0.82 + 0.9 * ooz)))); } } // shade varies across the face by depth
         }
       }
       var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
@@ -618,7 +618,7 @@
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
     if (n % 3 === 0) return 'brain';
-    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'msg', 'rain', 'subject']); ilI = 0; }
+    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'rain', 'subject']); ilI = 0; } // no framed banner — matrix rain instead
     return ilOrder[ilI++];
   }
   function buildWindow(type) {
