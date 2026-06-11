@@ -2,6 +2,17 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.18 — 2026-06-11
+
+### Added
+- A π scene — the digits of π spiral outward as if being computed, place by place.
+- A 3D RF link — spherical wavefronts broadcasting from an antenna.
+
+### Changed
+- GRC·LABS now coalesces out of the matrix rain and dissolves back, instead of the flat ASCII-art.
+- The Menorah is now unlit and coalesces out of the matrix and back, in its classic seven-branched shape.
+- The portrait now shows only for a moment as the matrix forms and clears.
+
 ## v1.17 — 2026-06-11
 
 ### Added
