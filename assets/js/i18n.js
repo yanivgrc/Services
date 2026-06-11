@@ -116,6 +116,8 @@
     "cl.changed":{en:"Changed",he:"שונה"},
     "cl.internal":{en:"Internal",he:"פנימי"},
     "cl.fixed":{en:"Fixed",he:"תוקן"},
+    "cl.v114.f1":{en:"The ASCII portrait now crops tight on the face so it fills the frame, centred — no longer small, low or clipped.",
+      he:"דיוקן ה-ASCII נחתך עכשיו צמוד לפנים וממלא את המסגר, ממורכז — לא עוד קטן, נמוך או חתוך."},
     "cl.v113.a1":{en:"A real 3D rotating pyramid — z-buffered and face-shaded, spinning like the torus.",
       he:"פירמידת תלת-מימד אמיתית — z-buffer והצללת פאות, מסתובבת כמו הטורוס."},
     "cl.v113.c1":{en:"The “brain” window now always splits into three panes — a focus stream, a reasoning log, and a live 3D render — with different content each time.",

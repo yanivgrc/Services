@@ -540,9 +540,12 @@
       var t = 0, DUR = 7000, blk = null, blkW = 0, blkH = 0, key = -1;
       var V = FACE_VARIANTS[FORCE_FACE >= 0 ? (FORCE_FACE % FACE_VARIANTS.length) : (faceVar++ % FACE_VARIANTS.length)], RAMP = V.ramp;
       function build(R) {
-        var side = Math.min(R.w * 0.74, R.h * 0.80), fs = clamp(side / 56, 7, 13), acw = fs * 0.6;
+        var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 58, 7, 13), acw = fs * 0.6;
         var gw = Math.max(40, Math.floor(side / acw)), gh = Math.max(40, Math.floor(side / fs));
-        var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d'); o.drawImage(img, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data;
+        var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
+        // crop a centred square tight on the head, so the face fills the frame instead of floating small and low
+        var iw = img.naturalWidth || img.width || 720, ih = img.naturalHeight || img.height || 720, cs = Math.min(iw, ih) * 0.76, isx = (iw - cs) / 2, isy = clamp(ih * 0.47 - cs / 2, 0, ih - cs);
+        o.drawImage(img, isx, isy, cs, cs, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data;
         var bh = gh * fs; blkW = gw * acw; blkH = bh + Math.round(fs * 2.2);
         blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
         var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';

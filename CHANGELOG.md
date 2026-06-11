@@ -2,6 +2,11 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.14 — 2026-06-11
+
+### Fixed
+- The ASCII portrait now crops tight on the face so it fills the frame, centred — no longer small, low or clipped.
+
 ## v1.13 — 2026-06-11
 
 ### Added
