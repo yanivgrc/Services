@@ -2,6 +2,15 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.16 — 2026-06-11
+
+### Added
+- GRC·LABS rendered as live ASCII art — a decrypt reveal that keeps shimmering.
+
+### Changed
+- The "brain" window varies again — one, two or three panes — and its reasoning pane now keeps working: a looping analysis log that ticks each pass off with "done · OK" instead of going idle.
+- The ASCII portrait now coalesces out of the matrix rain and dissolves back into it — no longer static.
+
 ## v1.15 — 2026-06-11
 
 ### Changed

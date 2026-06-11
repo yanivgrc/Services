@@ -14,7 +14,8 @@
                (H₂O, CO₂, CH₄, NH₃, NaCl) or the Giza pyramids. Spiral bleeds out.
      msg     — a Hebrew line (slogan / call-to-action) decrypting inside a frame.
      rain    — matrix rain, as a window rather than a wipe.
-     subject — occasional ASCII portrait.
+     brand   — GRC·LABS rendered as live ASCII art (decrypt reveal).
+     subject — ASCII portrait that coalesces out of the matrix and dissolves back.
    One brain (GET) per few windows, spaced by other topics. Any interaction exits
    instantly. prefers-reduced-motion → one static GET frame. Paused while hidden.
    Test: ?saver=now|fast|off, ?win=brain|viz|msg|rain|subject, ?shape=N, ?face=N */
@@ -195,41 +196,48 @@
     }
     return phases.slice(0, 5);
   }
+  // the reasoning pane keeps working — an endless analysis log that streams phases,
+  // ticks each off with "done · OK", then starts another pass. It never just stops.
   function makeThink(cmd) {
-    var data = thinkData(cmd), SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'], STAT = ['ok', 'pass', 'clear', 'mapped', 'scored'], t = 0;
-    // a streaming CLI log: prompt → reasoner attaches → each phase ticks off with a tree of sub-checks
-    var script = [{ kind: 'cmd', text: 'grc-think --deep ' + cmd.name.toLowerCase(), at: 0 }, { kind: 'note', text: 'attach reasoner · context=' + cmd.name.toLowerCase(), at: 320 }], at = 520, pAts = [];
-    for (var i = 0; i < data.length; i++) {
-      pAts.push(at); script.push({ kind: 'phase', label: data[i].label, sidx: i, at: at }); at += 640;
-      var subs = data[i].subs;
-      for (var s = 0; s < subs.length; s++) { script.push({ kind: 'sub', text: subs[s], last: s === subs.length - 1, at: at }); at += 300; }
+    var SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'], STAT = ['ok', 'pass', 'clear', 'mapped', 'scored', 'signed'], t = 0, emitT = 0, lines = [], queue = [], pass = 0, pending = null;
+    var base = thinkData(cmd), name = cmd.name.toLowerCase();
+    function enqueue() {
+      pass++;
+      queue.push({ k: 'cmd', text: 'grc-think --deep ' + name + (pass > 1 ? ' --watch' : '') });
+      queue.push({ k: 'note', text: 'attach reasoner · context=' + name });
+      var data = shuffle(base.slice());
+      for (var i = 0; i < data.length; i++) { queue.push({ k: 'phase', label: data[i].label, sidx: i }); var subs = data[i].subs; for (var s = 0; s < subs.length; s++) queue.push({ k: 'sub', text: subs[s], last: s === subs.length - 1 }); }
+      queue.push({ k: 'done' }); queue.push({ k: 'gap' });
     }
-    var finalAt = at + 240, END = finalAt + 1400;
-    script.push({ kind: 'final', at: finalAt });
+    function delayOf(it) { return it.k === 'cmd' ? 520 : it.k === 'note' ? 360 : it.k === 'phase' ? 600 : it.k === 'sub' ? 300 : it.k === 'done' ? 760 : 420; }
+    function settle() { if (pending) { pending.done = true; pending = null; } }
+    function emit(it) {
+      if (it.k === 'cmd') { settle(); lines.push({ pre: PROMPT, text: it.text, pcol: DIM, col: BRIGHT }); }
+      else if (it.k === 'note') lines.push({ text: '… ' + it.text, col: DIM });
+      else if (it.k === 'phase') { settle(); pending = { phase: true, label: it.label, sidx: it.sidx, done: false }; lines.push(pending); }
+      else if (it.k === 'sub') lines.push({ text: '  ' + (it.last ? '└─ ' : '├─ ') + it.text, col: MIDG });
+      else if (it.k === 'done') { settle(); lines.push({ text: '✓ ' + name + ' — done · OK', col: BRIGHT }); }
+      else lines.push({ text: '', col: INK });
+      if (lines.length > 120) lines.splice(0, lines.length - 120);
+    }
+    enqueue();
     function frame(dt, R) {
-      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      t += dt; emitT += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      while (queue.length && emitT >= delayOf(queue[0])) { emitT -= delayOf(queue[0]); emit(queue.shift()); if (queue.length < 3) enqueue(); }
       var pad = Math.round(Math.min(R.w, R.h) * 0.05) + 8, x0 = R.x + pad, y0 = R.y + pad, w = R.w - pad * 2;
       var fs = clamp(Math.round(w / 30), 11, 16), lh = Math.round(fs * 1.6), maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
-      var dotW = ctx.measureText('.').width, lines = [], pi = -1;
-      for (var k = 0; k < script.length; k++) {
-        var e = script[k]; if (t < e.at) break;
-        if (e.kind === 'cmd') lines.push({ pre: PROMPT, text: e.text, pcol: DIM, col: BRIGHT });
-        else if (e.kind === 'note') lines.push({ text: '… ' + e.text, col: DIM });
-        else if (e.kind === 'phase') {
-          pi++; var done = t >= (pAts[pi + 1] != null ? pAts[pi + 1] : finalAt);
-          var mark = done ? '✓' : SPIN[Math.floor(t / 90) % SPIN.length], status = done ? STAT[e.sidx % STAT.length] : 'analyzing';
-          var head = mark + ' ' + e.label + ' ', nDots = Math.floor((w - ctx.measureText(head + ' ' + status).width) / dotW);
-          lines.push({ text: head + rep('.', clamp(nDots, 2, 80)) + ' ' + status, col: done ? GREEN : BRIGHT });
-        }
-        else if (e.kind === 'sub') lines.push({ text: '  ' + (e.last ? '└─ ' : '├─ ') + e.text, col: MIDG });
-        else { lines.push({ text: '', col: INK }); lines.push({ text: '✓ reasoning complete · ' + data.length + ' vectors', col: BRIGHT }); }
+      var dotW = ctx.measureText('.').width, vis = lines.length > maxRows ? lines.slice(lines.length - maxRows) : lines, ty = y0, endX = x0;
+      for (var d = 0; d < vis.length; d++) {
+        var L = vis[d], txt, col, pre = L.pre || null;
+        if (L.phase) { var mark = L.done ? '✓' : SPIN[Math.floor(t / 90) % SPIN.length], status = L.done ? STAT[L.sidx % STAT.length] : 'analyzing'; var head = mark + ' ' + L.label + ' ', nDots = Math.floor((w - ctx.measureText(head + ' ' + status).width) / dotW); txt = head + rep('.', clamp(nDots, 2, 80)) + ' ' + status; col = L.done ? GREEN : BRIGHT; }
+        else { txt = L.text; col = L.col; }
+        if (pre) { ctx.fillStyle = L.pcol; ctx.fillText(pre, x0, ty); ctx.fillStyle = col; ctx.fillText(txt, x0 + ctx.measureText(pre).width, ty); endX = x0 + ctx.measureText(pre).width + ctx.measureText(txt).width; }
+        else { ctx.fillStyle = col; ctx.fillText(txt, x0, ty); endX = x0 + ctx.measureText(txt).width; }
+        ty += lh;
       }
-      if (lines.length > maxRows) lines = lines.slice(lines.length - maxRows);
-      var ty = y0;
-      for (var d = 0; d < lines.length; d++) { var L = lines[d]; if (L.pre) { ctx.fillStyle = L.pcol; ctx.fillText(L.pre, x0, ty); ctx.fillStyle = L.col; ctx.fillText(L.text, x0 + ctx.measureText(L.pre).width, ty); } else { ctx.fillStyle = L.col; ctx.fillText(L.text, x0, ty); } ty += lh; }
-      if (t < END && lines.length) { var ln = lines[lines.length - 1], lw = (ln.pre ? ctx.measureText(ln.pre).width : 0) + ctx.measureText(ln.text).width; if ((Math.floor(t / 520) % 2) === 0) { ctx.fillStyle = BRIGHT; ctx.fillRect(x0 + lw + 3, ty - lh + 2, fs * 0.5, fs); } }
-      return t >= END;
+      if ((Math.floor(t / 520) % 2) === 0) { ctx.fillStyle = BRIGHT; ctx.fillRect(endX + 3, ty - lh + 2, fs * 0.5, fs); }
+      return false; // keeps working — never stops on its own
     }
     return { frame: frame };
   }
@@ -249,8 +257,8 @@
   // focus pane, sometimes a focus + reasoning log, sometimes a three-pane split
   // where the lateral side itself splits into a reasoning log and a live 3D render.
   function makeBrain(cmd) {
-    var get = makeGet(cmd), think = null, ascii = null, split = 0, SPLIT_MS = 720, splitting = false, narrow = false, t = 0, narrowPhase = 0, fade = 0;
-    var mode = 'trio'; // TMUX always splits to three: focus + reasoning log + a live 3D render
+    var get = makeGet(cmd), think = null, ascii = null, split = 0, SPLIT_MS = 720, splitting = false, narrow = false, t = 0, narrowPhase = 0, narrowT = 0, fade = 0;
+    var rr = Math.random(), mode = rr < 0.30 ? 'solo' : (rr < 0.62 ? 'duo' : 'trio'); // sometimes one pane, sometimes two or three
     function frame(dt, R) {
       t += dt; narrow = R.w < 760;
       ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
@@ -262,18 +270,17 @@
         var leftW = R.w * (1 - (mode === 'trio' ? 0.50 : 0.46) * e) - (split > 0 ? gap / 2 : 0);
         var Lr = { x: R.x, y: R.y, w: Math.max(40, leftW), h: R.h };
         clipRect(Lr); var gd = get.frame(dt, inset(Lr, split > 0)); ctx.restore(); paneChrome(Lr, '1:focus', true);
-        var rd = true;
         if (split > 0) {
           var rx = R.x + leftW + gap, rw = R.w - leftW - gap;
           if (mode === 'trio' && ascii) {
             var th = R.h * 0.52 - gap / 2, Tr = { x: rx, y: R.y, w: rw, h: th }, Ar = { x: rx, y: R.y + th + gap, w: rw, h: R.h - th - gap };
-            clipRect(Tr); ctx.globalAlpha = e; rd = think.frame(dt, inset(Tr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Tr, '2:reason', false);
+            clipRect(Tr); ctx.globalAlpha = e; think.frame(dt, inset(Tr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Tr, '2:reason', false);
             clipRect(Ar); ctx.globalAlpha = e; ascii.frame(dt, inset(Ar, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Ar, '3:render', false);
           } else if (think) {
-            var Rr = { x: rx, y: R.y, w: rw, h: R.h }; clipRect(Rr); ctx.globalAlpha = e; rd = think.frame(dt, inset(Rr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Rr, '2:lateral', false);
+            var Rr = { x: rx, y: R.y, w: rw, h: R.h }; clipRect(Rr); ctx.globalAlpha = e; think.frame(dt, inset(Rr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Rr, '2:lateral', false);
           }
         }
-        return gd && (split >= 1) && rd;
+        return gd && (split >= 1); // the focus script drives the close; the side panes keep working until then
       } else {
         // narrow: focus first, then cross-fade to the reasoning log
         if (narrowPhase === 0) {
@@ -282,10 +289,10 @@
           if (done0) { narrowPhase = 1; fade = 0; }
           return false;
         } else {
-          fade = Math.min(1, fade + dt / 320);
-          var dt2 = think.frame(dt, R); paneChrome(R, '2:lateral', true);
+          narrowT += dt; fade = Math.min(1, fade + dt / 320);
+          think.frame(dt, R); paneChrome(R, '2:lateral', true);
           if (fade < 1) { ctx.globalAlpha = 1 - fade; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.globalAlpha = 1; }
-          return dt2;
+          return narrowT > 6500; // the reasoning log loops; cap its airtime on narrow screens
         }
       }
     }
@@ -525,7 +532,39 @@
     return { frame: frame, title: 'rain' };
   }
 
-  // ───────────────────────── window: subject — ASCII portrait ─────────────────────────
+  // ───────────────────────── window: brand — GRC·LABS as ASCII art ─────────────────────────
+  function makeBrand() {
+    var t = 0, DUR = 6500, grid = null, ord = null, gw = 0, gh = 0, fs = 0, cw = 0, key = -1, x0 = 0, y0 = 0, SCR = '01#%*+=<>';
+    function build(R) {
+      fs = clamp(Math.round(Math.min(R.w, R.h) / 30), 9, 18); cw = fs * 0.6;
+      gw = Math.max(24, Math.floor((R.w * 0.92) / cw)); gh = Math.max(7, Math.floor((R.h * 0.5) / fs));
+      var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
+      o.fillStyle = '#000'; o.fillRect(0, 0, gw, gh); o.fillStyle = '#fff'; o.textAlign = 'center'; o.textBaseline = 'middle';
+      var fsize = gh; o.font = '700 ' + fsize + 'px ' + MONO.replace(/"/g, '');
+      while (fsize > 4 && o.measureText('GRC·LABS').width > gw * 0.94) { fsize--; o.font = '700 ' + fsize + 'px ' + MONO.replace(/"/g, ''); }
+      o.fillText('GRC·LABS', gw / 2, gh / 2 + 1);
+      var d = o.getImageData(0, 0, gw, gh).data; grid = new Array(gw * gh); ord = new Array(gw * gh);
+      for (var i = 0; i < gw * gh; i++) { grid[i] = d[i * 4] > 110 ? 1 : 0; ord[i] = Math.random(); }
+      x0 = R.x + Math.round((R.w - gw * cw) / 2); y0 = R.y + Math.round((R.h - gh * fs) / 2); key = (R.w << 1) ^ R.h;
+    }
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      if (!grid || key !== ((R.w << 1) ^ R.h)) build(R);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      var reveal = clamp(t / 1700, 0, 1);
+      ctx.fillStyle = FAINT; for (var re = 0; re < gh; re++) for (var ce = 0; ce < gw; ce++) if (!grid[re * gw + ce]) ctx.fillText('.', x0 + ce * cw, y0 + re * fs);
+      for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) {
+        var idx = r * gw + c; if (!grid[idx]) continue;
+        if (reveal >= ord[idx]) { var tw = Math.sin((r * 2.1 + c * 1.3) + t * 0.005) > 0.6; ctx.fillStyle = tw ? BRIGHT : GREEN; ctx.fillText(tw ? '@' : '#', x0 + c * cw, y0 + r * fs); }
+        else { ctx.fillStyle = MIDG; ctx.fillText(SCR.charAt((Math.random() * SCR.length) | 0), x0 + c * cw, y0 + r * fs); }
+      }
+      label(R, 'grc·labs');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'brand' };
+  }
+
+  // ───────────────────────── window: subject — ASCII portrait (retired; ?win=subject) ─────────────────────────
   // a few portrait renderings to compare — cycle with ?face=N, or it rotates each appearance
   var FACE_VARIANTS = [
     { id: 'v1·soft', ramp: " .,:;-~=+*coaeUXEZ%#8B@", lo: 0.16, span: 0.74, gamma: 0.70, hi: 0.70, mid: 0.36, blank: 0.12 },
@@ -537,8 +576,22 @@
     var img = new Image(), ready = false, failed = false;
     img.onload = function () { ready = true; }; img.onerror = function () { failed = true; }; img.src = 'assets/img/portrait-dark.jpg';
     function scene() {
-      var t = 0, DUR = 7000, blk = null, blkW = 0, blkH = 0, key = -1;
+      var t = 0, blk = null, blkW = 0, blkH = 0, key = -1;
       var V = FACE_VARIANTS[FORCE_FACE >= 0 ? (FORCE_FACE % FACE_VARIANTS.length) : (faceVar++ % FACE_VARIANTS.length)], RAMP = V.ramp;
+      // the face coalesces out of the matrix rain, holds, then dissolves back into it
+      var FILL = 900, CO = 1000, HOLD = 2600, DIS = 1300, END = FILL + CO + HOLD + DIS;
+      var rfs = 16, rcols = 0, rdrops = [], rspd = [], rcptr = [], rkey = -1;
+      function rainBuild(R) { rfs = clamp(Math.round(R.w / 70), 12, 20); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; rcptr = []; for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * -(R.h / rfs)); rspd[i] = 0.55 + Math.random() * 0.8; rcptr[i] = (Math.random() * PI_D.length) | 0; } rkey = (R.w << 1) ^ R.h; }
+      function rainDraw(R, intensity) {
+        ctx.save(); clipRect(R); ctx.fillStyle = 'rgba(8,11,20,0.18)'; ctx.fillRect(R.x, R.y, R.w, R.h);
+        ctx.font = rfs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+        for (var i = 0; i < rcols; i++) {
+          var yy = R.y + rdrops[i] * rfs;
+          if (Math.random() <= intensity) { var ch = Math.random() < 0.85 ? PI_D.charAt(rcptr[i]++ % PI_D.length) : 'π'; ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]; if (yy > R.y && yy < R.y + R.h) ctx.fillText(ch, R.x + i * rfs, yy); }
+          if (yy > R.y + R.h && Math.random() > 0.975) rdrops[i] = Math.floor(Math.random() * -8); else rdrops[i] += rspd[i];
+        }
+        ctx.restore(); ctx.restore();
+      }
       function build(R) {
         var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 58, 7, 13), acw = fs * 0.6;
         var gw = Math.max(40, Math.floor(side / acw)), gh = Math.max(40, Math.floor(side / fs));
@@ -559,13 +612,19 @@
       }
       function frame(dt, R) {
         t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-        if (failed) { ctx.fillStyle = GREEN; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// SUBJECT UNAVAILABLE', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return t >= DUR; }
+        if (failed) { ctx.fillStyle = GREEN; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// SUBJECT UNAVAILABLE', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return t >= END; }
         if (!ready) { ctx.fillStyle = DIM; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// DECRYPTING SUBJECT ...', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return false; }
         if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
-        var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2;
-        ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH);
-        label(R, 'subject · ' + V.id);
-        return t >= DUR;
+        if (rkey !== ((R.w << 1) ^ R.h)) rainBuild(R);
+        var faceA, rainI;
+        if (t < FILL) { faceA = 0; rainI = 1; }
+        else if (t < FILL + CO) { var p = (t - FILL) / CO; faceA = ease(p); rainI = 1 - 0.72 * p; }
+        else if (t < FILL + CO + HOLD) { faceA = 1; rainI = 0.16; }
+        else { var q = clamp((t - FILL - CO - HOLD) / DIS, 0, 1); faceA = 1 - ease(q); rainI = 0.28 + 0.72 * q; }
+        rainDraw(R, rainI);
+        if (faceA > 0.01) { var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2; ctx.globalAlpha = faceA; ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH); ctx.globalAlpha = 1; }
+        if (faceA > 0.85) label(R, 'subject · ' + V.id);
+        return t >= END;
       }
       return { frame: frame, title: 'subject' };
     }
@@ -618,7 +677,7 @@
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
     if (n % 3 === 0) return 'brain';
-    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'rain', 'subject']); ilI = 0; } // no framed banner — matrix rain instead
+    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'brand', 'subject']); ilI = 0; } // matrix rain, GRC·LABS ASCII art, and the face coalescing from the rain
     return ilOrder[ilI++];
   }
   function buildWindow(type) {
@@ -626,6 +685,7 @@
     if (type === 'viz') return nextViz();
     if (type === 'msg') return nextMsg();
     if (type === 'rain') return makeRain();
+    if (type === 'brand') return makeBrand();
     if (type === 'subject') return portrait.scene();
     return nextViz();
   }
