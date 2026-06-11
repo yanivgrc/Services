@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.17 — 2026-06-11
+
+### Added
+- More terminal scripts in the focus pane — alongside `pip install`, an SSH login to the workspace, a `ping google.com` reachability check, and an interactive Python session running the risk model — each themed to the chosen service.
+- Four new ASCII scenes — a drawn Giza scene sampled into ASCII, the seven-branched Temple Menorah in gold with flickering flames, a printed-circuit board with chips and travelling signal pulses, and an orbital astronomy simulation.
+
 ## v1.16 — 2026-06-11
 
 ### Added

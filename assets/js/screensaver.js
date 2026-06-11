@@ -114,11 +114,71 @@
     s.push('');
     return s;
   }
+  // a live SSH connection into the workspace — not just a key, an actual session
+  function buildSsh(name, ln) {
+    var s = [];
+    s.push("The authenticity of host 'vault.grc-labs.io (10.0.2.4)' can't be established.");
+    s.push('ED25519 key fingerprint is SHA256:' + fakeHash(name) + '.');
+    s.push('Are you sure you want to continue connecting (yes/no/[fingerprint])? yes');
+    s.push("Warning: Permanently added 'vault.grc-labs.io' to the list of known hosts.");
+    s.push('Enter passphrase for key: ********');
+    s.push('');
+    s.push('  Welcome to GRC·LABS secure shell — ' + name + ' workspace');
+    s.push('  Last login: from 10.0.0.7 over wireguard');
+    s.push('');
+    s.push('$ grc session open --scope ' + ln);
+    s.push('[ok] policy bundle verified · signature valid');
+    s.push('[ok] controls synced · evidence mounted at /vault/' + ln);
+    s.push('$ logout');
+    s.push('Connection to vault.grc-labs.io closed.');
+    s.push('');
+    return s;
+  }
+  // a reachability check to the outside world
+  function buildPing(name) {
+    var s = [], times = ['12.4', '11.8', '12.1', '11.9'];
+    s.push('PING google.com (142.250.74.78): 56 data bytes');
+    for (var i = 0; i < 4; i++) s.push('64 bytes from 142.250.74.78: icmp_seq=' + i + ' ttl=118 time=' + times[i] + ' ms');
+    s.push('');
+    s.push('--- google.com ping statistics ---');
+    s.push('4 packets transmitted, 4 received, 0.0% packet loss');
+    s.push('round-trip min/avg/max/stddev = 11.8/12.0/12.4/0.2 ms');
+    s.push('[ok] egress reachable · ' + name + ' uplink healthy');
+    s.push('');
+    return s;
+  }
+  // an interactive Python session running the risk model
+  function buildPython(name, ln) {
+    var s = [];
+    s.push('Python 3.12.2 (grc-labs build) on linux');
+    s.push('Type "help", "copyright", "credits" or "license" for more information.');
+    s.push('>>> from grc import risk, controls');
+    s.push('>>> r = risk.assess("' + ln + '")');
+    s.push('>>> r.score');
+    s.push(((hashOf(name) % 35) + 58) + '.0   # residual risk, 0=clean');
+    s.push('>>> controls.gaps(r)');
+    s.push("['access-review', 'logging', 'mfa-coverage']");
+    s.push('>>> r.prioritize()[:2]');
+    s.push("[('mfa-coverage', 'high'), ('logging', 'med')]");
+    s.push('>>> exit()');
+    s.push('');
+    return s;
+  }
+  function pickTrack(cmd, pkg) {
+    var ln = cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    var tracks = [
+      function () { return { cmd: 'pip install ' + pkg, lines: buildSetup(cmd.name, pkg) }; },
+      function () { return { cmd: 'ssh ' + ln + '@vault.grc-labs.io', lines: buildSsh(cmd.name, ln) }; },
+      function () { return { cmd: 'ping -c 4 google.com', lines: buildPing(cmd.name) }; },
+      function () { return { cmd: 'python3', lines: buildPython(cmd.name, ln) }; }
+    ];
+    return tracks[(Math.random() * tracks.length) | 0]();
+  }
   function setupRow(line) {
     var c0 = line.charAt(0), col;
-    if (line.indexOf('Successfully installed') === 0 || c0 === '$') col = BRIGHT;
+    if (line.indexOf('Successfully installed') === 0 || c0 === '$' || line.indexOf('>>>') === 0) col = BRIGHT;
     else if (c0 === '+' || c0 === '|') col = MIDG;
-    else if (line.indexOf('SHA256:') === 0) col = GREEN;
+    else if (line.indexOf('SHA256:') === 0 || line.indexOf('[ok]') >= 0) col = GREEN;
     else col = INK;
     return { text: line, color: col };
   }
@@ -165,7 +225,7 @@
   function makeGet(cmd) {
     var pkg = 'grc-labs-' + cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     var rows = [], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
-    var cmdStr = 'pip install ' + pkg, setup = buildSetup(cmd.name, pkg);
+    var track = pickTrack(cmd, pkg), cmdStr = track.cmd, setup = track.lines;
     function frame(dt, R) {
       elapsed += dt; blink += dt;
       if (phase === 'cmd') { typed += dt / 56; if (typed >= cmdStr.length) { typed = cmdStr.length; rows.push({ cmd: true, text: cmdStr }); phase = 'setup'; t = 0; } }
@@ -481,6 +541,138 @@
     }
     return { frame: frame, title: 'viz' };
   }
+  // a drawn Giza scene, sampled into ASCII like a photo
+  function makePyramidPhoto() {
+    var t = 0, DUR = 7200, RAMP = " .'^:-=+coaUOXE%#@", grid = null, gw = 0, gh = 0, fs = 0, cw = 0, key = -1, x0 = 0, y0 = 0;
+    function build(R) {
+      fs = clamp(Math.round(Math.min(R.w, R.h) / 64), 7, 13); cw = fs * 0.6;
+      gw = Math.max(40, Math.floor(R.w / cw)); gh = Math.max(28, Math.floor(R.h / fs));
+      var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
+      var sky = o.createLinearGradient(0, 0, 0, gh); sky.addColorStop(0, '#04060a'); sky.addColorStop(1, '#1a1410'); o.fillStyle = sky; o.fillRect(0, 0, gw, gh);
+      var sunx = gw * 0.74, suny = gh * 0.24, sr = Math.min(gw, gh) * 0.18;
+      var sun = o.createRadialGradient(sunx, suny, 0, sunx, suny, sr); sun.addColorStop(0, '#ffffff'); sun.addColorStop(0.45, '#cdd8a4'); sun.addColorStop(1, 'rgba(20,20,16,0)'); o.fillStyle = sun; o.beginPath(); o.arc(sunx, suny, sr, 0, 6.2832); o.fill();
+      var ground = gh * 0.74;
+      var sand = o.createLinearGradient(0, ground, 0, gh); sand.addColorStop(0, '#3a3026'); sand.addColorStop(1, '#0d0b08'); o.fillStyle = sand; o.fillRect(0, Math.floor(ground), gw, gh);
+      var pyr = [{ cx: gw * 0.30, bw: gw * 0.20, h: gh * 0.40 }, { cx: gw * 0.56, bw: gw * 0.28, h: gh * 0.54 }, { cx: gw * 0.80, bw: gw * 0.15, h: gh * 0.30 }];
+      for (var p = 0; p < pyr.length; p++) {
+        var P = pyr[p], apex = ground - P.h;
+        o.fillStyle = '#d8dcc0'; o.beginPath(); o.moveTo(P.cx, apex); o.lineTo(P.cx - P.bw, ground); o.lineTo(P.cx, ground); o.closePath(); o.fill();
+        o.fillStyle = '#6b6f5a'; o.beginPath(); o.moveTo(P.cx, apex); o.lineTo(P.cx + P.bw, ground); o.lineTo(P.cx, ground); o.closePath(); o.fill();
+      }
+      var d = o.getImageData(0, 0, gw, gh).data; grid = new Array(gw * gh);
+      for (var i = 0; i < gw * gh; i++) grid[i] = clamp((0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255, 0, 1);
+      x0 = R.x + Math.round((R.w - gw * cw) / 2); y0 = R.y + Math.round((R.h - gh * fs) / 2); key = (R.w << 1) ^ R.h;
+    }
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      if (!grid || key !== ((R.w << 1) ^ R.h)) build(R);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) {
+        var v = grid[r * gw + c], idx = Math.min(RAMP.length - 1, Math.floor(v * RAMP.length));
+        if (idx <= 0) { ctx.fillStyle = FAINT; ctx.fillText('.', x0 + c * cw, y0 + r * fs); continue; }
+        var tw = Math.sin((r * 1.7 + c * 2.3) + t * 0.004) > 0.88;
+        ctx.fillStyle = v > 0.62 ? (tw ? '#ffffff' : BRIGHT) : (v > 0.34 ? GREEN : MIDG);
+        ctx.fillText(RAMP.charAt(idx), x0 + c * cw, y0 + r * fs);
+      }
+      label(R, 'giza · ascii');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
+  // the seven-branched Temple Menorah, drawn in gold ASCII with flickering flames
+  function makeMenorah() {
+    var t = 0, DUR = 7600, grid = null, gw = 0, gh = 0, fs = 0, cw = 0, key = -1, x0 = 0, y0 = 0, lamps = [];
+    function build(R) {
+      fs = clamp(Math.round(Math.min(R.w, R.h) / 40), 8, 15); cw = fs * 0.6;
+      gw = Math.max(36, Math.floor((R.w * 0.8) / cw)); gh = Math.max(24, Math.floor((R.h * 0.82) / fs));
+      var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
+      o.fillStyle = '#000'; o.fillRect(0, 0, gw, gh);
+      o.strokeStyle = '#fff'; o.fillStyle = '#fff'; o.lineCap = 'round'; o.lineWidth = Math.max(1, Math.min(gw, gh) * 0.022);
+      var cx = gw / 2, lampY = gh * 0.24, baseY = gh * 0.80, d = Math.min(gw, gh) * 0.13;
+      o.beginPath(); o.moveTo(cx, lampY); o.lineTo(cx, baseY); o.stroke();
+      for (var i = 1; i <= 3; i++) { o.beginPath(); o.arc(cx, lampY, i * d, 0, Math.PI / 2); o.stroke(); o.beginPath(); o.arc(cx, lampY, i * d, Math.PI / 2, Math.PI); o.stroke(); }
+      o.beginPath(); o.moveTo(cx - d * 1.5, gh - 1); o.lineTo(cx - d * 0.45, baseY); o.lineTo(cx + d * 0.45, baseY); o.lineTo(cx + d * 1.5, gh - 1); o.closePath(); o.fill();
+      o.fillRect(cx - d * 0.7, baseY - Math.max(1, gh * 0.03), d * 1.4, Math.max(1, gh * 0.03));
+      var data = o.getImageData(0, 0, gw, gh).data; grid = new Array(gw * gh);
+      for (var k = 0; k < gw * gh; k++) grid[k] = data[k * 4] > 110 ? 1 : 0;
+      lamps = []; for (var j = -3; j <= 3; j++) lamps.push({ c: Math.round(cx + j * d), r: Math.round(lampY) });
+      x0 = R.x + Math.round((R.w - gw * cw) / 2); y0 = R.y + Math.round((R.h - gh * fs) / 2); key = (R.w << 1) ^ R.h;
+    }
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      if (!grid || key !== ((R.w << 1) ^ R.h)) build(R);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = FAINT; for (var re = 0; re < gh; re++) for (var ce = 0; ce < gw; ce++) if (!grid[re * gw + ce]) ctx.fillText('.', x0 + ce * cw, y0 + re * fs);
+      ctx.fillStyle = AMBER; for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) if (grid[r * gw + c]) ctx.fillText('#', x0 + c * cw, y0 + r * fs);
+      for (var i = 0; i < lamps.length; i++) {
+        var L = lamps[i], fl = Math.sin(t * 0.013 + i * 1.7) * 0.5 + 0.5, hot = fl > 0.5;
+        ctx.fillStyle = BRIGHT; ctx.fillText('|', x0 + L.c * cw, y0 + L.r * fs);
+        ctx.fillStyle = hot ? '#ffffff' : AMBER; ctx.fillText(hot ? '*' : "'", x0 + L.c * cw, y0 + (L.r - 1) * fs);
+      }
+      label(R, 'menorah · temple');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
+  // an ASCII printed-circuit board — chips, traces, and signal pulses
+  function makeCircuit() {
+    var t = 0, DUR = 7800;
+    var chips = [{ x: 0.16, y: 0.24, w: 7, h: 4, n: 'MCU' }, { x: 0.64, y: 0.20, w: 6, h: 3, n: 'AES' }, { x: 0.38, y: 0.62, w: 8, h: 4, n: 'TPM' }, { x: 0.78, y: 0.64, w: 5, h: 3, n: 'RNG' }];
+    var links = [[0, 1], [0, 2], [1, 3], [2, 3]];
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 40), 9, 15), cw = fs * 0.6;
+      var cols = Math.max(30, Math.floor(R.w / cw)), rows = Math.max(18, Math.floor(R.h / fs));
+      var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      function put(c, r, ch, col) { if (c < 0 || c >= cols || r < 0 || r >= rows) return; ctx.fillStyle = col; ctx.fillText(ch, x0 + c * cw, y0 + r * fs); }
+      for (var r0 = 0; r0 < rows; r0++) for (var c0 = (r0 % 2) ? 0 : 1; c0 < cols; c0 += 2) put(c0, r0, '.', FAINT);
+      var ch = chips.map(function (k) { return { cc: Math.round(k.x * cols), cr: Math.round(k.y * rows), w: k.w, h: k.h, n: k.n }; });
+      for (var li = 0; li < links.length; li++) {
+        var A = ch[links[li][0]], B = ch[links[li][1]];
+        var ax = A.cc + A.w + 1, ay = A.cr + (A.h >> 1), bx = B.cc - 1, by = B.cr + (B.h >> 1), midx = Math.round((ax + bx) / 2), path = [];
+        for (var x = ax; x <= midx; x++) path.push([x, ay]);
+        for (var y2 = ay; y2 !== by; y2 += (by > ay ? 1 : -1)) path.push([midx, y2]);
+        for (var x2 = midx; x2 <= bx; x2++) path.push([x2, by]);
+        for (var pi = 0; pi < path.length; pi++) { var pc = path[pi], vert = pi > 0 && path[pi - 1][0] === pc[0]; put(pc[0], pc[1], vert ? '|' : '-', 'rgba(99,178,46,0.40)'); }
+        var head = Math.floor((t * 0.013 + li * 9) % path.length);
+        for (var g = 0; g < 3; g++) { var pp = path[(head + g) % path.length]; if (pp) put(pp[0], pp[1], '=', g === 0 ? BRIGHT : GREEN); }
+      }
+      for (var i = 0; i < ch.length; i++) {
+        var K = ch[i];
+        for (var rr = 0; rr <= K.h; rr++) for (var cc2 = 0; cc2 <= K.w; cc2++) { if (rr === 0 || rr === K.h || cc2 === 0 || cc2 === K.w) { var corner = (rr === 0 || rr === K.h) && (cc2 === 0 || cc2 === K.w); put(K.cc + cc2, K.cr + rr, corner ? '+' : ((rr === 0 || rr === K.h) ? '-' : '|'), GREEN); } }
+        var lab = K.n, lx = K.cc + Math.round((K.w - lab.length) / 2), ly = K.cr + (K.h >> 1);
+        for (var c3 = 0; c3 < lab.length; c3++) put(lx + c3, ly, lab.charAt(c3), BRIGHT);
+        for (var pn = 1; pn < K.h; pn++) { put(K.cc - 1, K.cr + pn, '=', MIDG); put(K.cc + K.w + 1, K.cr + pn, '=', MIDG); }
+      }
+      label(R, 'circuit · soc');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
+  // an orbital astronomy simulation in ASCII
+  function makeAstro() {
+    var t = 0, DUR = 8000, stars = null, skey = -1;
+    var planets = [{ r: 0.16, sp: 0.0016, g: 'o', col: MIDG, ph: 0 }, { r: 0.27, sp: 0.0011, g: 'O', col: GREEN, ph: 1.3 }, { r: 0.40, sp: 0.0008, g: '@', col: BRIGHT, ph: 2.7, moon: 1 }, { r: 0.55, sp: 0.0005, g: 'o', col: GREEN, ph: 4.1 }, { r: 0.70, sp: 0.00032, g: '°', col: MIDG, ph: 5.5 }];
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 44), 9, 16), cx = R.x + R.w / 2, cy = R.y + R.h / 2, rad = Math.min(R.w, R.h) * 0.44;
+      ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
+      if (!stars || skey !== ((R.w << 1) ^ R.h)) { stars = []; var rs = xs(hashOf('astro')); for (var s = 0; s < 70; s++) stars.push([R.x + rs() % Math.max(1, Math.floor(R.w)), R.y + rs() % Math.max(1, Math.floor(R.h)), rs() % 6]); skey = (R.w << 1) ^ R.h; }
+      for (var i = 0; i < stars.length; i++) { ctx.fillStyle = stars[i][2] === 0 ? GREEN : FAINT; ctx.fillText(stars[i][2] === 0 ? '+' : '.', stars[i][0], stars[i][1]); }
+      for (var p = 0; p < planets.length; p++) { var rr = planets[p].r * rad, n = Math.max(24, Math.floor(rr * 0.45)); ctx.fillStyle = FAINT; for (var k = 0; k < n; k++) { var a = (k / n) * 6.2832; ctx.fillText('·', cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.5); } }
+      ctx.fillStyle = AMBER; ctx.fillText('@', cx, cy); for (var cr = 0; cr < 8; cr++) { var ca = cr / 8 * 6.2832 + t * 0.001; ctx.fillStyle = cr % 2 ? BRIGHT : AMBER; ctx.fillText('*', cx + Math.cos(ca) * fs * 0.95, cy + Math.sin(ca) * fs * 0.55); }
+      for (var q = 0; q < planets.length; q++) {
+        var P = planets[q], a2 = t * P.sp + P.ph, px = cx + Math.cos(a2) * P.r * rad, py = cy + Math.sin(a2) * P.r * rad * 0.5;
+        ctx.fillStyle = P.col; ctx.fillText(P.g, px, py);
+        if (P.moon) { var ma = t * 0.004, mx = px + Math.cos(ma) * fs * 1.1, my = py + Math.sin(ma) * fs * 0.7; ctx.fillStyle = MIDG; ctx.fillText('.', mx, my); }
+      }
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+      label(R, 'orbits · astro');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
   function label(R, name) { ctx.fillStyle = DIM; ctx.font = '600 ' + clamp(Math.round(R.w / 95), 11, 15) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr'; ctx.fillText('// ' + name, R.x + R.w / 2, R.y + R.h - 26); ctx.textAlign = 'start'; ctx.textBaseline = 'top'; }
 
   // ───────────────────────── window: msg — Hebrew line in a frame ─────────────────────────
@@ -665,7 +857,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyramids, makePyr3D]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyramids, makePyr3D, makePyramidPhoto, makeMenorah, makeCircuit, makeAstro]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }
