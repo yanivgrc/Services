@@ -185,13 +185,45 @@
     s.push('');
     return s;
   }
+  function buildNetstat(name) {
+    return ['Active Internet connections (w/o servers)',
+      'Proto Recv-Q Send-Q Local Address       Foreign Address      State',
+      'tcp        0      0 10.0.2.4:22         10.0.0.7:51544       ESTABLISHED',
+      'tcp        0      0 10.0.2.4:443        142.250.74.78:443    ESTABLISHED',
+      'tcp        0      0 10.0.2.4:8443       10.0.0.31:60122      TIME_WAIT',
+      'udp        0      0 10.0.2.4:51820      0.0.0.0:*            wireguard',
+      '[ok] ' + name + ' attack surface — 0 unexpected listeners', ''];
+  }
+  function buildNslookup(name) {
+    return ['Server:    10.0.0.1', 'Address:   10.0.0.1#53', '',
+      'Non-authoritative answer:', 'Name:    vault.grc-labs.io', 'Address: 10.0.2.4',
+      'vault.grc-labs.io   mail exchanger = 10 mx.grc-labs.io.',
+      '[ok] DNS resolves · DNSSEC validated', ''];
+  }
+  function buildMpremote(name) {
+    return ['Connected to MicroPython on /dev/ttyACM0', '>>> import machine, network',
+      '>>> machine.unique_id().hex()', "'a4cf12ff09b1'",
+      '>>> network.WLAN(network.STA_IF).isconnected()', 'True',
+      '>>> import secure_boot; secure_boot.verify()',
+      '[ok] firmware signature valid · ' + name + ' device trusted', ''];
+  }
+  function buildSmtp(name) {
+    return ['Trying 10.0.3.9...', '220 mx.grc-labs.io ESMTP ready',
+      'EHLO grc-labs.io', '250-mx.grc-labs.io', '250-STARTTLS', '250 AUTH LOGIN PLAIN',
+      'STARTTLS', '220 2.0.0 Ready to start TLS',
+      '[ok] TLS1.3 · ' + name + ' mail path encrypted', 'QUIT', '221 2.0.0 Bye', ''];
+  }
   function pickTrack(cmd, pkg) {
     var ln = cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     var tracks = [
       function () { return { cmd: 'pip install ' + pkg, lines: buildSetup(cmd.name, pkg) }; },
       function () { return { cmd: 'ssh ' + ln + '@vault.grc-labs.io', lines: buildSsh(cmd.name, ln) }; },
-      function () { return { cmd: 'ping -c 4 google.com', lines: buildPing(cmd.name) }; },
-      function () { return { cmd: 'python3', lines: buildPython(cmd.name, ln) }; }
+      function () { return { cmd: 'python3', lines: buildPython(cmd.name, ln) }; },
+      function () { return { cmd: 'netstat -tunap', lines: buildNetstat(cmd.name) }; },
+      function () { return { cmd: 'nslookup vault.grc-labs.io', lines: buildNslookup(cmd.name) }; },
+      function () { return { cmd: 'mpremote connect /dev/ttyACM0', lines: buildMpremote(cmd.name) }; },
+      function () { return { cmd: 'nc mx.grc-labs.io 25', lines: buildSmtp(cmd.name) }; },
+      function () { return { cmd: 'ping -c 4 google.com', lines: buildPing(cmd.name) }; }
     ];
     return tracks[(Math.random() * tracks.length) | 0]();
   }
@@ -236,7 +268,7 @@
     for (var d = 0; d < disp.length; d++) {
       var row = disp[d];
       if (row.cmd) { ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.direction = 'ltr'; ctx.fillStyle = DIM; ctx.fillText(PROMPT, x0, ty); var pw = ctx.measureText(PROMPT).width; ctx.fillStyle = BRIGHT; ctx.fillText(row.text, x0 + pw, ty); if (row.cursor && cursorOn) { var cwx = x0 + pw + ctx.measureText(row.text).width; ctx.fillStyle = BRIGHT; ctx.fillRect(cwx + 2, ty + 2, fs * 0.5, fs); } }
-      else if (row.cta) { ctx.save(); ctx.font = '600 ' + fs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'right'; ctx.fillStyle = GREEN; ctx.fillText(row.text, x0 + contentW, ty); ctx.restore(); }
+      else if (row.cta) { ctx.save(); ctx.font = '700 ' + fs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'left'; ctx.fillStyle = GREEN; ctx.fillText(row.text, x0, ty); ctx.restore(); }
       else { ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.direction = 'ltr'; ctx.fillStyle = row.color; ctx.fillText(row.text, x0, ty); }
       ty += lh;
     }
@@ -245,7 +277,7 @@
   // ───────────────────────── focus pane: pip install stream ─────────────────────────
   function makeGet(cmd) {
     var pkg = 'grc-labs-' + cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    var rows = [{ cta: true, text: CTA }, { text: '', color: INK }], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
+    var rows = [{ cta: true, text: 'צור קשר' }, { text: '', color: INK }], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
     var track = pickTrack(cmd, pkg), cmdStr = track.cmd, setup = track.lines;
     function frame(dt, R) {
       elapsed += dt; blink += dt;
@@ -413,12 +445,12 @@
     var t = 0, DUR = 7200, RAMP = '.,-~:;=!*#$@';
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.min(R.w, R.h) / 44, 9, 16), cw = fs * 0.6;
+      var fs = clamp(Math.min(R.w, R.h) / 54, 7, 14), cw = fs * 0.6;
       var cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
       var b = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < b.length; z++) { b[z] = 0; zb[z] = 0; }
       var A = t * 0.0009, B = t * 0.0006, R1 = 1, R2 = 2, K2 = 5, K1 = Math.min(cols, rows) * K2 * 0.42 / (R1 + R2);
-      for (var th = 0; th < 6.28; th += 0.07) { var ct = Math.cos(th), st = Math.sin(th);
-        for (var ph = 0; ph < 6.28; ph += 0.02) { var cp = Math.cos(ph), sp = Math.sin(ph), ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B);
+      for (var th = 0; th < 6.28; th += 0.05) { var ct = Math.cos(th), st = Math.sin(th);
+        for (var ph = 0; ph < 6.28; ph += 0.015) { var cp = Math.cos(ph), sp = Math.sin(ph), ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B);
           var circ = R2 + R1 * ct, x = circ * (cb * cp + sa * sb * sp) - R1 * st * ca * sb;
           var y = circ * (sb * cp - sa * cb * sp) + R1 * st * ca * cb, z2 = K2 + ca * circ * sp + R1 * st * sa, ooz = 1 / z2;
           var xp = Math.floor(cols / 2 + K1 * ooz * x), yp = Math.floor(rows / 2 - K1 * ooz * y * 0.5);
@@ -532,13 +564,13 @@
     var LIGHT = nrm([0.3, 0.7, -0.9]);
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.min(R.w, R.h) / 44, 9, 16), cw = fs * 0.6;
+      var fs = clamp(Math.min(R.w, R.h) / 54, 7, 14), cw = fs * 0.6;
       var cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
       var bf = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < bf.length; z++) { bf[z] = -1; zb[z] = 0; }
-      var A = 0.5, B = t * 0.0009, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B); // fixed three-quarter tilt, slow spin
+      var A = 0.78 + 0.66 * Math.sin(t * 0.0004), B = t * 0.0008, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B); // tilt sweeps from a side view up to a top-down view, while it slowly spins
       var K2 = 5, K1 = Math.min(cols, rows) * 1.15;
       function rot(p) { var x1 = p[0] * cb + p[2] * sb, z1 = -p[0] * sb + p[2] * cb; var y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca; return [x1, y2, z2]; }
-      var STEP = 22;
+      var STEP = 34;
       for (var fi = 0; fi < faces.length; fi++) {
         var f = faces[fi], rnv = rot(fn[fi]), lum = Math.max(0.06, rnv[0] * LIGHT[0] + rnv[1] * LIGHT[1] + rnv[2] * LIGHT[2]);
         var e1 = sub(f[1], f[0]), e2 = sub(f[2], f[0]), lb = lum * (RAMP.length - 1);
@@ -630,38 +662,84 @@
     }
     return { frame: frame, title: 'viz' };
   }
-  // an ASCII printed-circuit board — chips, traces, and signal pulses
-  function makeCircuit() {
-    var t = 0, DUR = 7800;
-    var chips = [{ x: 0.16, y: 0.24, w: 7, h: 4, n: 'MCU' }, { x: 0.64, y: 0.20, w: 6, h: 3, n: 'AES' }, { x: 0.38, y: 0.62, w: 8, h: 4, n: 'TPM' }, { x: 0.78, y: 0.64, w: 5, h: 3, n: 'RNG' }];
-    var links = [[0, 1], [0, 2], [1, 3], [2, 3]];
+  // an analog oscilloscope — a live CRT trace sweeping over a graticule
+  function makeScope() {
+    var t = 0, DUR = 8000;
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.round(Math.min(R.w, R.h) / 40), 9, 15), cw = fs * 0.6;
-      var cols = Math.max(30, Math.floor(R.w / cw)), rows = Math.max(18, Math.floor(R.h / fs));
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 46), 9, 15), cw = fs * 0.6;
+      var cols = Math.max(40, Math.floor(R.w / cw)), rows = Math.max(18, Math.floor(R.h / fs));
       var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       function put(c, r, ch, col) { if (c < 0 || c >= cols || r < 0 || r >= rows) return; ctx.fillStyle = col; ctx.fillText(ch, x0 + c * cw, y0 + r * fs); }
-      for (var r0 = 0; r0 < rows; r0++) for (var c0 = (r0 % 2) ? 0 : 1; c0 < cols; c0 += 2) put(c0, r0, '.', FAINT);
-      var ch = chips.map(function (k) { return { cc: Math.round(k.x * cols), cr: Math.round(k.y * rows), w: k.w, h: k.h, n: k.n }; });
-      for (var li = 0; li < links.length; li++) {
-        var A = ch[links[li][0]], B = ch[links[li][1]];
-        var ax = A.cc + A.w + 1, ay = A.cr + (A.h >> 1), bx = B.cc - 1, by = B.cr + (B.h >> 1), midx = Math.round((ax + bx) / 2), path = [];
-        for (var x = ax; x <= midx; x++) path.push([x, ay]);
-        for (var y2 = ay; y2 !== by; y2 += (by > ay ? 1 : -1)) path.push([midx, y2]);
-        for (var x2 = midx; x2 <= bx; x2++) path.push([x2, by]);
-        for (var pi = 0; pi < path.length; pi++) { var pc = path[pi], vert = pi > 0 && path[pi - 1][0] === pc[0]; put(pc[0], pc[1], vert ? '|' : '-', 'rgba(99,178,46,0.40)'); }
-        var head = Math.floor((t * 0.013 + li * 9) % path.length);
-        for (var g = 0; g < 3; g++) { var pp = path[(head + g) % path.length]; if (pp) put(pp[0], pp[1], '=', g === 0 ? BRIGHT : GREEN); }
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { if (c % 8 === 0 || r % 4 === 0) put(c, r, (c % 8 === 0 && r % 4 === 0) ? '+' : (c % 8 === 0 ? ':' : '·'), FAINT); }
+      var midR = rows / 2, head = Math.floor(t * 0.05) % cols;
+      for (var c2 = 0; c2 < cols; c2++) {
+        var ph = (c2 / cols) * Math.PI * 6 - t * 0.004, amp = 0.55 + 0.35 * Math.sin(t * 0.0011);
+        var yv = Math.sin(ph) * amp + 0.18 * Math.sin(ph * 3 + t * 0.002), rr = Math.round(midR - yv * (rows * 0.34));
+        var near = ((c2 - head + cols) % cols) < 3;
+        put(c2, rr, near ? '#' : 'o', near ? '#ffffff' : GREEN); put(c2, rr + 1, '.', MIDG);
       }
-      for (var i = 0; i < ch.length; i++) {
-        var K = ch[i];
-        for (var rr = 0; rr <= K.h; rr++) for (var cc2 = 0; cc2 <= K.w; cc2++) { if (rr === 0 || rr === K.h || cc2 === 0 || cc2 === K.w) { var corner = (rr === 0 || rr === K.h) && (cc2 === 0 || cc2 === K.w); put(K.cc + cc2, K.cr + rr, corner ? '+' : ((rr === 0 || rr === K.h) ? '-' : '|'), GREEN); } }
-        var lab = K.n, lx = K.cc + Math.round((K.w - lab.length) / 2), ly = K.cr + (K.h >> 1);
-        for (var c3 = 0; c3 < lab.length; c3++) put(lx + c3, ly, lab.charAt(c3), BRIGHT);
-        for (var pn = 1; pn < K.h; pn++) { put(K.cc - 1, K.cr + pn, '=', MIDG); put(K.cc + K.w + 1, K.cr + pn, '=', MIDG); }
+      ctx.fillStyle = AMBER; ctx.fillText('CH1  ' + (20 + Math.round(8 * Math.sin(t * 0.0011))) + 'mV/div  10µs', x0 + 6, y0 + 4);
+      ctx.fillStyle = GREEN; ctx.fillText('f ' + (1.20 + 0.30 * Math.sin(t * 0.0011)).toFixed(2) + ' kHz   TRIG o', x0 + 6, y0 + 4 + Math.round(fs * 1.4));
+      label(R, 'scope · analog');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
+  // encryption, illustrated — plaintext is consumed and turned to ciphertext, round by round
+  function makeCrypto() {
+    var t = 0, DUR = 8200;
+    var PLAIN = 'TAILORED-INFORMATION-SECURITY//GRC-LABS//PROTECT-WHAT-MATTERS//CISO-DPO-ISO27001-AUDIT-IR-IOT//';
+    var HEX = '0123456789abcdef', key = '', cipher = '';
+    var kr = xs(hashOf('grc-aes-key')); for (var i = 0; i < 64; i++) key += HEX.charAt(kr() % 16);
+    var crp = xs(hashOf('grc-cipher')); for (var j = 0; j < 600; j++) cipher += HEX.charAt(crp() % 16);
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 32), 11, 20), cw = fs * 0.62;
+      var cols = Math.max(18, Math.min(44, Math.floor((R.w * 0.84) / cw))), rows = 8, total = cols * rows;
+      var bx = R.x + Math.round((R.w - cols * cw) / 2), by = R.y + R.h * 0.32;
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      var p = clamp(t / 5400, 0, 1), front = p * total;
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
+        var idx = r * cols + c, ch, col;
+        if (idx < front - 5) { ch = cipher.charAt(idx % cipher.length); col = GREEN; }
+        else if (idx < front + 1) { ch = HEX.charAt((Math.random() * 16) | 0); col = '#ffffff'; }
+        else { ch = PLAIN.charAt(idx % PLAIN.length); col = (ch === '-' || ch === '/') ? DIM : INK; }
+        ctx.fillStyle = col; ctx.fillText(ch, bx + c * cw, by + r * fs);
       }
-      label(R, 'circuit · soc');
+      var hfs = clamp(Math.round(R.w / 40), 12, 18); ctx.font = '700 ' + hfs + 'px ' + MONO; ctx.fillStyle = AMBER; ctx.fillText('AES-256-CBC · encrypting', R.x + 18, R.y + 14);
+      ctx.font = (hfs - 3) + 'px ' + MONO; ctx.fillStyle = DIM; ctx.fillText('key ' + key.slice(0, 32) + '…', R.x + 18, R.y + 14 + Math.round(hfs * 1.5));
+      ctx.fillStyle = BRIGHT; ctx.fillText('round ' + (1 + Math.min(13, Math.floor(p * 14))) + '/14   ' + Math.round(p * 100) + '%', R.x + 18, by + rows * fs + Math.round(fs * 0.6));
+      label(R, 'cipher · aes');
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
+  // a tribute to Voyager — the dish, the booms, the golden record, turning in 3D
+  function makeVoyager() {
+    var t = 0, DUR = 9000, RAMP = '.,-~:;=!*#$@', pts = [];
+    function add(x, y, z, l) { pts.push([x, y, z, l]); }
+    for (var ring = 0.10; ring <= 1.0; ring += 0.07) { var nseg = Math.max(10, Math.round(ring * 42)); for (var s = 0; s < nseg; s++) { var a = s / nseg * 6.2832; add(ring * Math.cos(a), ring * Math.sin(a), -0.5 * ring * ring, ring > 0.93 ? 11 : 6); } }
+    for (var f = 0; f < 16; f++) add(0, 0, -0.5 + f * 0.04, 8);
+    for (var b = 0; b < 12; b++) { var ba = b / 12 * 6.2832; add(0.24 * Math.cos(ba), 0.24 * Math.sin(ba), 0.18, 9); }
+    for (var mb = 0; mb <= 1; mb += 0.025) add(0.24 + mb * 2.7, 0.0, 0.18, mb > 0.96 ? 11 : 4);
+    for (var rbi = 0; rbi <= 1; rbi += 0.045) add(-(0.24 + rbi * 1.15), -0.05, 0.18, 4);
+    for (var rg = 0; rg < 12; rg++) add(-1.42, -0.05, 0.18 + (rg - 6) * 0.028, 9);
+    for (var sbi = 0; sbi <= 1; sbi += 0.045) add(0.10, -(0.24 + sbi * 1.25), 0.18, 4);
+    add(0.10, -1.52, 0.18, 11); add(0.18, -1.52, 0.18, 9);
+    for (var gr = 0; gr < 14; gr++) { var gra = gr / 14 * 6.2832; add(0.34 + 0.13 * Math.cos(gra), 0.13 * Math.sin(gra), 0.20, 11); }
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.min(R.w, R.h) / 58, 7, 13), cw = fs * 0.6, cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
+      var bf = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < bf.length; z++) { bf[z] = -1; zb[z] = 0; }
+      var A = 0.42, B = t * 0.0006, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb2 = Math.sin(B), K2 = 5, K1 = Math.min(cols, rows) * 0.92;
+      for (var i = 0; i < pts.length; i++) { var p = pts[i], x1 = p[0] * cb + p[2] * sb2, z1 = -p[0] * sb2 + p[2] * cb, y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca, ooz = 1 / (K2 + z2), xp = Math.floor(cols / 2 + K1 * ooz * x1), yp = Math.floor(rows / 2 - K1 * ooz * y2 * 0.5); if (xp >= 0 && xp < cols && yp >= 0 && yp < rows) { var idx = yp * cols + xp; if (ooz > zb[idx]) { zb[idx] = ooz; bf[idx] = p[3]; } } }
+      var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = FAINT; for (var rd = 0; rd < rows; rd++) for (var cd = 0; cd < cols; cd++) if (bf[rd * cols + cd] < 0) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs);
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { var l = bf[r * cols + c]; if (l < 0) continue; ctx.fillStyle = l >= 10 ? BRIGHT : (l >= 6 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, l)), x0 + c * cw, y0 + r * fs); }
+      label(R, 'voyager · 1977');
       return t >= DUR;
     }
     return { frame: frame, title: 'viz' };
@@ -690,25 +768,34 @@
     return { frame: frame, title: 'viz' };
   }
   // honouring π — its digits spiral out as if being computed, one place at a time
+  // honouring π — its own digits fill in to draw the shape of the π glyph
   function makePiDigits() {
-    var t = 0, DUR = 8200, REVEAL = 6200;
+    var t = 0, DUR = 8400, REVEAL = 5600, cells = null, fs = 0, cw = 0, x0 = 0, y0 = 0, key = -1;
+    function build(R) {
+      fs = clamp(Math.round(Math.min(R.w, R.h) / 48), 9, 16); cw = fs * 0.6;
+      var gw = Math.max(20, Math.floor((R.w * 0.62) / cw)), gh = Math.max(12, Math.floor((R.h * 0.72) / fs));
+      var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
+      o.fillStyle = '#000'; o.fillRect(0, 0, gw, gh); o.fillStyle = '#fff'; o.textAlign = 'center'; o.textBaseline = 'middle';
+      var fsize = gh; o.font = '700 ' + fsize + 'px "Times New Roman", Georgia, serif';
+      while (fsize > 4 && o.measureText('π').width > gw * 0.9) { fsize--; o.font = '700 ' + fsize + 'px "Times New Roman", Georgia, serif'; }
+      o.fillText('π', gw / 2, gh / 2 + fsize * 0.04);
+      var d = o.getImageData(0, 0, gw, gh).data; cells = [];
+      for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) if (d[(r * gw + c) * 4] > 110) cells.push([c, r]);
+      x0 = R.x + Math.round((R.w - gw * cw) / 2); y0 = R.y + Math.round((R.h - gh * fs) / 2); key = (R.w << 1) ^ R.h;
+    }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.round(Math.min(R.w, R.h) / 50), 9, 15), cx = R.x + R.w / 2, cy = R.y + R.h / 2;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
-      ctx.fillStyle = FAINT; ctx.font = '700 ' + Math.round(Math.min(R.w, R.h) * 0.52) + 'px ' + MONO; ctx.fillText('π', cx, cy);
-      ctx.font = fs + 'px ' + MONO;
-      var ga = Math.PI * (3 - Math.sqrt(5)), scale = Math.min(R.w, R.h) * 0.026, maxN = 380, n = Math.floor(clamp(t / REVEAL, 0, 1) * maxN);
+      if (!cells || key !== ((R.w << 1) ^ R.h)) build(R);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      var n = Math.floor(clamp(t / REVEAL, 0, 1) * cells.length);
       for (var i = 0; i < n; i++) {
-        var rr = scale * Math.sqrt(i), a = i * ga, x = cx + rr * Math.cos(a), y = cy + rr * Math.sin(a) * 0.92, age = n - i;
-        ctx.fillStyle = age < 2 ? '#ffffff' : (age < 14 ? BRIGHT : (Math.sin(i * 2.0 - t * 0.005) > 0.93 ? BRIGHT : (age < 60 ? GREEN : MIDG)));
-        ctx.fillText(PI_D.charAt(i % PI_D.length), x, y);
+        var cell = cells[i], age = n - i;
+        ctx.fillStyle = age < 2 ? '#ffffff' : (age < 16 ? BRIGHT : (Math.sin(i * 1.7 - t * 0.005) > 0.92 ? BRIGHT : (age < 90 ? GREEN : MIDG)));
+        ctx.fillText(PI_D.charAt(i % PI_D.length), x0 + cell[0] * cw, y0 + cell[1] * fs);
       }
-      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
-      var hfs = clamp(Math.round(R.w / 46), 12, 18); ctx.font = hfs + 'px ' + MONO;
-      ctx.fillStyle = DIM; ctx.fillText('π = 3.' + PI_D.slice(1, 1 + Math.min(30, n)), R.x + 18, R.y + 14);
-      ctx.fillStyle = BRIGHT; ctx.fillText(['|', '/', '-', '\\'][Math.floor(t / 110) % 4] + '  computing digits · ' + n, R.x + 18, R.y + 14 + Math.round(hfs * 1.6));
-      label(R, 'π · spigot');
+      var hfs = clamp(Math.round(R.w / 46), 12, 18); ctx.font = hfs + 'px ' + MONO; ctx.fillStyle = DIM;
+      ctx.fillText('π = 3.' + PI_D.slice(1, 1 + Math.min(34, Math.max(0, n))), R.x + 18, R.y + 14);
+      label(R, 'π · digits');
       return t >= DUR;
     }
     return { frame: frame, title: 'viz' };
@@ -746,21 +833,21 @@
     function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
     var fnorm = faces.map(function (f) { var a = verts[f[0]], n = nrm(cross(sub(verts[f[1]], a), sub(verts[f[2]], a))); var cx = (verts[f[0]][0] + verts[f[1]][0] + verts[f[2]][0]) / 3, cy = (verts[f[0]][1] + verts[f[1]][1] + verts[f[2]][1]) / 3, cz = (verts[f[0]][2] + verts[f[1]][2] + verts[f[2]][2]) / 3; if (n[0] * cx + n[1] * cy + n[2] * cz < 0) n = [-n[0], -n[1], -n[2]]; return n; });
     var LIGHT = nrm([0.3, 0.7, -0.9]), sph = [];
-    if (opts.sphere) { var R0 = opts.sphere; for (var u = 0.0001; u < Math.PI; u += 0.20) for (var v = 0; v < 6.283; v += 0.20) sph.push([Math.sin(u) * Math.cos(v) * R0, Math.cos(u) * R0, Math.sin(u) * Math.sin(v) * R0]); }
+    if (opts.sphere) { var R0 = opts.sphere; for (var u = 0.0001; u < Math.PI; u += 0.12) for (var v = 0; v < 6.283; v += 0.12) sph.push([Math.sin(u) * Math.cos(v) * R0, Math.cos(u) * R0, Math.sin(u) * Math.sin(v) * R0]); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.min(R.w, R.h) / 44, 9, 16), cw = fs * 0.6, cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
+      var fs = clamp(Math.min(R.w, R.h) / 54, 7, 14), cw = fs * 0.6, cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
       var bf = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < bf.length; z++) { bf[z] = -1; zb[z] = 0; }
       var A = opts.tilt != null ? opts.tilt : t * 0.0009, B = t * 0.0011, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B), K2 = 5, K1 = Math.min(cols, rows) * (opts.scale || 1.0);
       function rot(p) { var x1 = p[0] * cb + p[2] * sb, z1 = -p[0] * sb + p[2] * cb, y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca; return [x1, y2, z2]; }
       function plot(rp, lvl) { var ooz = 1 / (K2 + rp[2]), xp = Math.floor(cols / 2 + K1 * ooz * rp[0]), yp = Math.floor(rows / 2 - K1 * ooz * rp[1] * 0.5); if (xp >= 0 && xp < cols && yp >= 0 && yp < rows) { var idx = yp * cols + xp; if (ooz > zb[idx]) { zb[idx] = ooz; bf[idx] = lvl; } } }
-      var STEP = 20;
+      var STEP = 34;
       for (var fi = 0; fi < faces.length; fi++) {
         var f = faces[fi], rnv = rot(fnorm[fi]), lum = Math.max(0.06, rnv[0] * LIGHT[0] + rnv[1] * LIGHT[1] + rnv[2] * LIGHT[2]), v0 = verts[f[0]], e1 = sub(verts[f[1]], v0), e2 = sub(verts[f[2]], v0);
         for (var ii = 0; ii <= STEP; ii++) for (var jj = 0; jj <= STEP - ii; jj++) { var uu = ii / STEP, vv = jj / STEP, rp = rot([v0[0] + e1[0] * uu + e2[0] * vv, v0[1] + e1[1] * uu + e2[1] * vv, v0[2] + e1[2] * uu + e2[2] * vv]), ooz = 1 / (K2 + rp[2]); plot(rp, Math.min(RAMP.length - 1, Math.max(0, Math.round(lum * (RAMP.length - 1) * (0.82 + 0.9 * ooz))))); }
       }
       for (var si = 0; si < sph.length; si++) { var rp2 = rot(sph[si]), nn = nrm(rp2), lum2 = Math.max(0.08, nn[0] * LIGHT[0] + nn[1] * LIGHT[1] + nn[2] * LIGHT[2]); plot(rp2, Math.min(RAMP.length - 1, Math.floor(lum2 * (RAMP.length - 1)))); }
-      if (opts.edges) for (var ei = 0; ei < opts.edges.length; ei++) { var ea = rot(verts[opts.edges[ei][0]]), eb = rot(verts[opts.edges[ei][1]]), steps = 28; for (var s = 0; s <= steps; s++) plot([ea[0] + (eb[0] - ea[0]) * s / steps, ea[1] + (eb[1] - ea[1]) * s / steps, ea[2] + (eb[2] - ea[2]) * s / steps], RAMP.length - 1); }
+      if (opts.edges) for (var ei = 0; ei < opts.edges.length; ei++) { var ea = rot(verts[opts.edges[ei][0]]), eb = rot(verts[opts.edges[ei][1]]), steps = 48; for (var s = 0; s <= steps; s++) plot([ea[0] + (eb[0] - ea[0]) * s / steps, ea[1] + (eb[1] - ea[1]) * s / steps, ea[2] + (eb[2] - ea[2]) * s / steps], RAMP.length - 1); }
       var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       ctx.fillStyle = FAINT; for (var rd = 0; rd < rows; rd++) for (var cd = 0; cd < cols; cd++) if (bf[rd * cols + cd] < 0) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs);
@@ -856,8 +943,9 @@
       var gw = Math.max(24, Math.floor((R.w * 0.9) / cw)), gh = Math.max(7, Math.floor((R.h * 0.42) / fs));
       var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
       o.fillStyle = '#000'; o.fillRect(0, 0, gw, gh); o.fillStyle = '#fff'; o.textAlign = 'center'; o.textBaseline = 'middle';
-      var fsize = gh; o.font = '700 ' + fsize + 'px ' + MONO.replace(/"/g, '');
-      while (fsize > 4 && o.measureText('GRC·LABS').width > gw * 0.94) { fsize--; o.font = '700 ' + fsize + 'px ' + MONO.replace(/"/g, ''); }
+      var GF = '"Space Grotesk", "IBM Plex Sans", sans-serif';                  // the site's display font
+      var fsize = gh; o.font = '700 ' + fsize + 'px ' + GF;
+      while (fsize > 4 && o.measureText('GRC·LABS').width > gw * 0.94) { fsize--; o.font = '700 ' + fsize + 'px ' + GF; }
       o.fillText('GRC·LABS', gw / 2, gh / 2 + 1);
       var d = o.getImageData(0, 0, gw, gh).data;
       blkW = gw * cw; blkH = gh * fs;
@@ -963,7 +1051,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyramids, makePyr3D, makePyramidPhoto, makeCube, makeTetraSphere, makeCircuit, makeAstro, makePiDigits, makeRF]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeScope, makeAstro, makeRF, makeCrypto, makeVoyager]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }

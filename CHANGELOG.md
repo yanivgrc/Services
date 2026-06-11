@@ -2,6 +2,19 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.21 — 2026-06-11
+
+### Added
+- Three new ASCII scenes — an analog oscilloscope with a live sweeping trace, an AES encryption illustration (plaintext turning to ciphertext round by round), and a 3D tribute to Voyager.
+- More terminal commands — netstat, nslookup, mpremote and an SMTP session — alongside the existing ones.
+
+### Changed
+- The pyramid is now a single 3D solid that turns to show top-down and side views; dropped the flat pyramid scenes and the π scene.
+- The GRC·LABS illustration now uses the site's display font.
+- Higher ASCII resolution for the 3D shapes.
+- The contact line is now a short "צור קשר", left-aligned at the top of the terminal.
+- Replaced the circuit-board scene with the oscilloscope.
+
 ## v1.20 — 2026-06-11
 
 ### Added
