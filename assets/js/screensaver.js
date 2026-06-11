@@ -1,12 +1,13 @@
 /* GRC·LABS — cyber screensaver (tmux session)
    After 9s idle: one continuous tmux-style session. A persistent status bar at
-   the bottom, content flowing inside the CLI — no full-screen swaps. Windows
-   switch with a horizontal slide; the signature "brain" window splits into two
-   panes (a focused stream on the left, a lateral thought-tree on the right) so
-   the work reads as a mind running broad and deep at once.
+   the bottom, content flowing inside the CLI. Windows switch with a matrix-rain
+   wipe (fills, then drains down and out as the next window rises up from the
+   bottom); the signature
+   "brain" window splits into two panes (a focused stream on the left, a lateral
+   CLI reasoning log on the right) so the work reads broad and deep at once.
    Windows:
-     brain   — `pip install <service>` streams in the focus pane while a thought
-               tree fans the service's sub-topics out in the lateral pane.
+     brain   — `pip install <service>` streams in the focus pane while a CLI
+               reasoning log ticks through the service's sub-topics on the right.
      viz     — full-bleed ASCII animation: golden spiral, sine, helix, lissajous,
                a rotating torus, Conway's Life, Sierpiński, the Lorenz attractor,
                a butterfly curve, golden-angle phyllotaxis, base molecules
@@ -43,7 +44,7 @@
     { he: 'אבטחת מידע בהתאמה אישית', en: 'TAILORED INFORMATION SECURITY' },
     { he: 'צרו קשר', en: 'ESTABLISH CONTACT' },
     { he: 'דברו איתנו', en: "LET'S TALK" },
-    { he: 'ספרו לנו מה אתם מגנים', en: 'TELL US WHAT YOU PROTECT' }
+    { he: 'ספרו לנו איזה אתגר תרצו לפתור', en: 'NAME YOUR CHALLENGE' }
   ];
   // digit pools — the "charset" is the decimals of π / e, not random noise
   var PI_D = '31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679';
@@ -194,46 +195,40 @@
     return phases.slice(0, 5);
   }
   function makeThink(cmd) {
-    var data = thinkData(cmd), t = 0, SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-    var STEP = 2000; // ms a phase stays "focused" before completing
+    var data = thinkData(cmd), SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'], STAT = ['ok', 'pass', 'clear', 'mapped', 'scored'], t = 0;
+    // a streaming CLI log: prompt → reasoner attaches → each phase ticks off with a tree of sub-checks
+    var script = [{ kind: 'cmd', text: 'grc-think --deep ' + cmd.name.toLowerCase(), at: 0 }, { kind: 'note', text: 'attach reasoner · context=' + cmd.name.toLowerCase(), at: 320 }], at = 520, pAts = [];
+    for (var i = 0; i < data.length; i++) {
+      pAts.push(at); script.push({ kind: 'phase', label: data[i].label, sidx: i, at: at }); at += 640;
+      var subs = data[i].subs;
+      for (var s = 0; s < subs.length; s++) { script.push({ kind: 'sub', text: subs[s], last: s === subs.length - 1, at: at }); at += 300; }
+    }
+    var finalAt = at + 240, END = finalAt + 1400;
+    script.push({ kind: 'final', at: finalAt });
     function frame(dt, R) {
-      t += dt;
-      var pad = Math.round(Math.min(R.w, R.h) * 0.05) + 8;
-      var x = R.x + pad, y = R.y + pad, w = R.w - pad * 2, h = R.h - pad * 2;
-      var n = data.length, fs = clamp(Math.round(h / (n * 3.0)), 11, 16), lh = Math.round(fs * 1.35);
-      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'middle'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
-      var rootX = x, rootY = y + h * 0.5, colX = x + w * 0.30, subX = x + w * 0.58;
-      var active = clamp(Math.floor((t - 600) / STEP), -1, n);
-      // root
-      ctx.fillStyle = BRIGHT; ctx.fillText('◆ ' + cmd.name, rootX, rootY);
-      ctx.fillStyle = DIM; ctx.font = (fs - 2) + 'px ' + MONO; ctx.fillText('reasoning', rootX, rootY + lh); ctx.font = fs + 'px ' + MONO;
-      var slotH = h / Math.max(1, n);
-      for (var i = 0; i < n; i++) {
-        var appearAt = 600 + i * 360; if (t < appearAt) continue;
-        var py = y + slotH * (i + 0.5);
-        // connector root → phase
-        ctx.strokeStyle = i <= active ? FAINT : 'rgba(99,178,46,0.12)'; ctx.lineWidth = 1; ctx.beginPath();
-        ctx.moveTo(rootX + ctx.measureText('◆ ' + cmd.name).width + 6, rootY); ctx.bezierCurveTo(colX - 22, rootY, colX - 22, py, colX - 6, py); ctx.stroke();
-        var done = i < active, isActive = i === active;
-        var mark = done ? '✓' : (isActive ? SPIN[Math.floor(t / 90) % SPIN.length] : '◦');
-        ctx.fillStyle = done ? GREEN : (isActive ? BRIGHT : DIM);
-        ctx.fillText(mark + ' ' + data[i].label, colX, py);
-        // subs fan out (lateral breadth) once the phase is reached
-        var subs = data[i].subs; if (!subs.length) continue;
-        var subReveal = appearAt + 260;
-        var sh = Math.min(lh, slotH / (subs.length + 0.5));
-        for (var s2 = 0; s2 < subs.length; s2++) {
-          var sShow = subReveal + s2 * 220; if (t < sShow) continue;
-          var sy = py + (s2 - (subs.length - 1) / 2) * sh;
-          ctx.strokeStyle = (done || isActive) ? FAINT : 'rgba(99,178,46,0.10)'; ctx.beginPath();
-          var px = colX + ctx.measureText(mark + ' ' + data[i].label).width + 6;
-          ctx.moveTo(px, py); ctx.bezierCurveTo(subX - 16, py, subX - 16, sy, subX - 4, sy); ctx.stroke();
-          ctx.font = (fs - 2) + 'px ' + MONO; ctx.fillStyle = done ? MIDG : (isActive ? GREEN : DIM);
-          ctx.fillText('· ' + subs[s2], subX, sy); ctx.font = fs + 'px ' + MONO;
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var pad = Math.round(Math.min(R.w, R.h) * 0.05) + 8, x0 = R.x + pad, y0 = R.y + pad, w = R.w - pad * 2;
+      var fs = clamp(Math.round(w / 30), 11, 16), lh = Math.round(fs * 1.6), maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      var dotW = ctx.measureText('.').width, lines = [], pi = -1;
+      for (var k = 0; k < script.length; k++) {
+        var e = script[k]; if (t < e.at) break;
+        if (e.kind === 'cmd') lines.push({ pre: PROMPT, text: e.text, pcol: DIM, col: BRIGHT });
+        else if (e.kind === 'note') lines.push({ text: '… ' + e.text, col: DIM });
+        else if (e.kind === 'phase') {
+          pi++; var done = t >= (pAts[pi + 1] != null ? pAts[pi + 1] : finalAt);
+          var mark = done ? '✓' : SPIN[Math.floor(t / 90) % SPIN.length], status = done ? STAT[e.sidx % STAT.length] : 'analyzing';
+          var head = mark + ' ' + e.label + ' ', nDots = Math.floor((w - ctx.measureText(head + ' ' + status).width) / dotW);
+          lines.push({ text: head + rep('.', clamp(nDots, 2, 80)) + ' ' + status, col: done ? GREEN : BRIGHT });
         }
+        else if (e.kind === 'sub') lines.push({ text: '  ' + (e.last ? '└─ ' : '├─ ') + e.text, col: MIDG });
+        else { lines.push({ text: '', col: INK }); lines.push({ text: '✓ reasoning complete · ' + data.length + ' vectors', col: BRIGHT }); }
       }
-      ctx.textBaseline = 'top';
-      return active >= n && t > 600 + n * STEP + 600;
+      if (lines.length > maxRows) lines = lines.slice(lines.length - maxRows);
+      var ty = y0;
+      for (var d = 0; d < lines.length; d++) { var L = lines[d]; if (L.pre) { ctx.fillStyle = L.pcol; ctx.fillText(L.pre, x0, ty); ctx.fillStyle = L.col; ctx.fillText(L.text, x0 + ctx.measureText(L.pre).width, ty); } else { ctx.fillStyle = L.col; ctx.fillText(L.text, x0, ty); } ty += lh; }
+      if (t < END && lines.length) { var ln = lines[lines.length - 1], lw = (ln.pre ? ctx.measureText(ln.pre).width : 0) + ctx.measureText(ln.text).width; if ((Math.floor(t / 520) % 2) === 0) { ctx.fillStyle = BRIGHT; ctx.fillRect(x0 + lw + 3, ty - lh + 2, fs * 0.5, fs); } }
+      return t >= END;
     }
     return { frame: frame };
   }
@@ -352,7 +347,7 @@
     return { frame: frame, title: 'viz' };
   }
   var MOLS = [
-    { name: 'H₂O', atoms: [{ e: 'O', x: 0, y: 0 }, { e: 'H', x: -0.72, y: -0.56 }, { e: 'H', x: 0.72, y: -0.56 }], bonds: [[0, 1, 1], [0, 2, 1]] },
+    { name: 'H₂O', atoms: [{ e: 'O', x: 0, y: 0 }, { e: 'H', x: -0.82, y: -0.42 }, { e: 'H', x: 0.82, y: -0.42 }], bonds: [[0, 1, 1], [0, 2, 1]] }, // H-O-H ≈ 126°
     { name: 'CO₂', atoms: [{ e: 'C', x: 0, y: 0 }, { e: 'O', x: -0.86, y: 0 }, { e: 'O', x: 0.86, y: 0 }], bonds: [[0, 1, 2], [0, 2, 2]] },
     { name: 'CH₄', atoms: [{ e: 'C', x: 0, y: 0 }, { e: 'H', x: 0, y: 0.82 }, { e: 'H', x: 0.78, y: -0.32 }, { e: 'H', x: -0.78, y: -0.32 }, { e: 'H', x: 0, y: -0.86 }], bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1], [0, 4, 1]] },
     { name: 'NH₃', atoms: [{ e: 'N', x: 0, y: 0.12 }, { e: 'H', x: 0, y: -0.74 }, { e: 'H', x: 0.74, y: 0.5 }, { e: 'H', x: -0.74, y: 0.5 }], bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1]] },
@@ -393,8 +388,23 @@
           var ddx = (c - sx) * 0.55, ddy = (y - sy), dist = Math.sqrt(ddx * ddx + ddy * ddy);
           if (dist < sr) { ch = dist < sr * 0.5 ? '@' : '*'; col = dist < sr * 0.5 ? BRIGHT : AMBER; }
           if (y === ground) { ch = '_'; col = DIM; }
-          else if (y > ground) { if (((c + y) % 9) === 0) { ch = '·'; col = FAINT; } }
-          for (var pi = 0; pi < pyr.length; pi++) { var P = pyr[pi], apex = ground - P.h; if (y > apex && y <= ground) { var hw = P.bh * ((y - apex) / Math.max(1, P.h)), d = c - P.cx; if (Math.abs(d) <= hw) { var edge = hw - Math.abs(d); if (edge < 1) { ch = d < 0 ? '/' : '\\'; col = BRIGHT; } else { var sh = Math.sin(c * 0.28 - t * 0.004 + pi) * 0.5 + 0.5; ch = sh > 0.62 ? '▓' : (sh > 0.32 ? '▒' : '░'); col = sh > 0.62 ? GREEN : MIDG; } } } }
+          else if (y > ground) {
+            var off = y - ground;
+            for (var si = 0; si < pyr.length && off <= 3; si++) { var Ps = pyr[si]; if (c >= Ps.cx - Ps.bh - off * 0.9 && c <= Ps.cx - off * 0.5) { ch = '░'; col = FAINT; } } // shadows cast down-left from the sun
+            if (!ch && ((c + y) % 9) === 0) { ch = '·'; col = FAINT; }
+          }
+          for (var pi = 0; pi < pyr.length; pi++) {
+            var P = pyr[pi], apex = ground - P.h;
+            if (y > apex && y <= ground) {
+              var frac = (y - apex) / Math.max(1, P.h), hw = P.bh * frac, d = c - P.cx, ad = Math.abs(d), edge = hw - ad;
+              if (ad <= hw) {
+                if (edge < 1) { ch = d < 0 ? '/' : '\\'; col = BRIGHT; }                                            // silhouette outline
+                else if (ad < 0.85) { ch = '│'; col = BRIGHT; }                                                     // near front edge — the 3D ridge
+                else if (d > 0) { var lit = (y & 1) === 0; ch = lit ? '▓' : '▒'; col = lit ? BRIGHT : GREEN; }       // sunlit right face
+                else { var dk = (y & 1) === 0; ch = dk ? '▒' : '░'; col = dk ? MIDG : DIM; }                         // shadowed left face
+              }
+            }
+          }
           if (ch) { ctx.fillStyle = col; ctx.fillText(ch, x0 + c * cw, y0 + y * fs); }
         }
       }
@@ -463,7 +473,7 @@
       function build(R) {
         var side = Math.min(R.w * 0.8, R.h * 0.82); fs = clamp(side / 56, 7, 13); acw = fs * 0.6; gw = Math.max(44, Math.floor(side / acw)); gh = Math.max(44, Math.floor(side / fs));
         var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d'); o.drawImage(img, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data; grid = [];
-        for (var r = 0; r < gh; r++) { var row = []; for (var c = 0; c < gw; c++) { var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - 0.16) / 0.74, 0, 1), 0.7), 0, 1); var ch, col; if (v < 0.12) { ch = ' '; col = null; } else { ch = RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))); col = v > 0.7 ? BRIGHT : (v > 0.36 ? GREEN : MIDG); } row.push({ ch: ch, col: col }); } grid.push(row); }
+        for (var r = 0; r < gh; r++) { var row = []; for (var c = 0; c < gw; c++) { var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - 0.10) / 0.82, 0, 1), 0.62), 0, 1); var ch, col; if (v < 0.08) { ch = ' '; col = null; } else { ch = RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))); col = v > 0.6 ? BRIGHT : (v > 0.3 ? GREEN : MIDG); } row.push({ ch: ch, col: col }); } grid.push(row); }
         bh = gh * fs; ax0 = R.x + Math.round((R.w - gw * acw) / 2); ay0 = R.y + Math.round((R.h - bh) / 2) - fs;
         cache = document.createElement('canvas'); cache.width = canvas.width; cache.height = canvas.height; var cc = cache.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
         for (var rr = 0; rr < gh; rr++) for (var cx2 = 0; cx2 < gw; cx2++) { var cl = grid[rr][cx2]; if (!cl.col) continue; cc.fillStyle = cl.col; cc.fillText(cl.ch, ax0 + cx2 * acw, ay0 + rr * fs); }
@@ -522,7 +532,7 @@
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
     if (n % 3 === 0) return 'brain';
-    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'viz', 'msg', 'rain', 'subject']); ilI = 0; }
+    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'msg', 'rain', 'subject']); ilI = 0; }
     return ilOrder[ilI++];
   }
   function buildWindow(type) {
@@ -564,23 +574,43 @@
     return { update: update, reset: function () { active = false; cooldown = 9000; } };
   })();
 
+  // ─────────── matrix wipe — the transition between windows ───────────
+  // Falls to fill, then drains down and out the bottom, revealing the next window.
+  var mtx = (function () {
+    var GLYPHS = 'アイウエオカキクケコサシスセソタチツテトﾊﾋﾌﾍﾎ0123456789#%&<>*+=/'.split('');
+    var fs = 16, cols = 0, drops = [], speeds = [];
+    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * -(C.h / fs)); speeds[i] = 0.6 + Math.random() * 0.85; } }
+    function draw(C, respawn) {
+      ctx.save(); clipRect(C); ctx.fillStyle = 'rgba(8,11,20,0.12)'; ctx.fillRect(C.x, C.y, C.w, C.h);
+      ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      for (var i = 0; i < cols; i++) { var ch = GLYPHS[(Math.random() * GLYPHS.length) | 0], yy = C.y + drops[i] * fs; ctx.fillStyle = Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]; if (yy > C.y - fs && yy < C.y + C.h + fs) ctx.fillText(ch, C.x + i * fs, yy); if (respawn && yy > C.y + C.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.6 + Math.random() * 0.85; } else drops[i] += speeds[i]; }
+      ctx.restore(); ctx.restore();
+    }
+    function cleared(C) { for (var i = 0; i < cols; i++) if (drops[i] * fs <= C.h + fs) return false; return true; }
+    return { reset: reset, draw: draw, cleared: cleared };
+  })();
+
   // ─────────────────────────── loop ───────────────────────────
-  var SLIDE_MS = 440, INTRO_MS = 460;
-  var cur = null, incoming = null, sliding = false, slideT = 0, introT = 0, raf = 0, last = 0;
+  var FILL_MS = 1050, DRAIN_MS = 1900, RISE_MS = 850;
+  var cur = null, incoming = null, trans = '', transT = 0, raf = 0, last = 0;
   function content() { return { x: 0, y: 0, w: W, h: H - statusH() }; }
   function frame(now) {
     if (!last) last = now; var dt = Math.min(80, now - last); last = now;
     var C = content();
-    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    if (sliding) {
-      var e = ease(Math.min(slideT / SLIDE_MS, 1)), off = e * C.w;
-      clipRect({ x: 0, y: 0, w: W, h: C.h }); cur.frame(dt, { x: C.x - off, y: C.y, w: C.w, h: C.h }); incoming.frame(dt, { x: C.x + C.w - off, y: C.y, w: C.w, h: C.h }); ctx.restore();
-      slideT += dt; if (slideT >= SLIDE_MS) { cur = incoming; incoming = null; sliding = false; introT = INTRO_MS; }
+    if (trans === 'fill') {                       // rain accumulates over the frozen outgoing window
+      mtx.draw(C, true); transT += dt;
+      if (transT >= FILL_MS) { trans = 'drain'; transT = 0; mtx.reset(C, true); }
+    } else if (trans === 'drain') {               // incoming window rises up from the bottom as the rain drains out
+      ctx.fillStyle = BG; ctx.fillRect(C.x, C.y, C.w, C.h);
+      var rise = (1 - ease(clamp(transT / RISE_MS, 0, 1))) * C.h * 0.5;
+      clipRect(C); (incoming || cur).frame(dt, { x: C.x, y: C.y + rise, w: C.w, h: C.h }); ctx.restore();
+      mtx.draw(C, false); transT += dt;
+      if (mtx.cleared(C) || transT >= DRAIN_MS) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
     } else {
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       var done = cur.frame(dt, C);
-      if (introT > 0) { introT -= dt; var a = clamp(introT / INTRO_MS, 0, 1); ctx.globalAlpha = a; ctx.fillStyle = BG; ctx.fillRect(0, 0, W, C.h); ctx.globalAlpha = 1; }
       ghost.update(dt, C, cur.title);
-      if (done) { incoming = nextWindow(); sliding = true; slideT = 0; }
+      if (done) { incoming = nextWindow(); trans = 'fill'; transT = 0; mtx.reset(C, true); }
     }
     drawStatus();
     raf = requestAnimationFrame(frame);
@@ -591,8 +621,9 @@
   function activate() {
     if (active) return; active = true; resize(); root.classList.add('on');
     if (reduceMotion) { staticFrame(); return; }
-    last = 0; winN = 0; winIdx = 0; windowsLog = []; cmdOrder = null; shapeOrder = null; msgOrder = null; ilOrder = null; sliding = false; incoming = null; introT = INTRO_MS;
-    cur = nextWindow(); ghost.reset();
+    last = 0; winN = 0; winIdx = 0; windowsLog = []; cmdOrder = null; shapeOrder = null; msgOrder = null; ilOrder = null;
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+    cur = null; incoming = nextWindow(); trans = 'fill'; transT = 0; mtx.reset(content(), true); ghost.reset();
     raf = requestAnimationFrame(frame);
   }
   function deactivate() { if (!active) return; active = false; root.classList.remove('on'); if (raf) cancelAnimationFrame(raf), raf = 0; lastActivity = performance.now(); }

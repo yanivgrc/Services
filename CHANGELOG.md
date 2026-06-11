@@ -2,6 +2,18 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.10 — 2026-06-11
+
+### Changed
+- Window transitions are back to the matrix-rain wipe — it fills, then drains down and out to reveal the next window, replacing the sideways slide.
+- The "brain" window's right pane now reads as a live CLI reasoning log — prompt, spinner, a tree of checks and a status column — instead of a drawn thought-tree.
+- Gave the Giza pyramids real depth — a sunlit face and a shadowed face meeting at a bright ridge, with shadows cast on the sand.
+- Opened up the water molecule's bond angle.
+- Changed a screensaver message line to "Name your challenge".
+
+### Fixed
+- The ASCII portrait now reads clearly — reworked tone mapping — and the subject window surfaces a little more often.
+
 ## v1.9 — 2026-06-11
 
 ### Changed
