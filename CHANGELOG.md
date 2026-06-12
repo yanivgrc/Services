@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.42 — 2026-06-12
+
+### Changed
+- The matrix rain is calmer — softer heads and dimmer, partially-faded trails, instead of brightly highlighted letters.
+- The Challenge keeps its mystery — a fresh encoded teaser sits behind the "first one's free" hint, waiting to be decoded.
+
 ## v1.41 — 2026-06-12
 
 ### Added

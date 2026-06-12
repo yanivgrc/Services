@@ -87,8 +87,8 @@
         for (var tr = 0; tr < TRAIL; tr++) {
           var row = headI - tr, yy = R.y + row * rfs;
           if (yy <= R.y - rfs || yy >= R.y + R.h) continue;
-          if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,' + intensity.toFixed(3) + ')'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
-          else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.82 + 0.10); ctx.fillStyle = 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
+          if (tr === 0) { ctx.fillStyle = 'rgba(116,194,66,' + (intensity * 0.82).toFixed(3) + ')'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); } // softer heads — not a glaring bright
+          else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.58 + 0.06); ctx.fillStyle = 'rgba(78,148,40,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }   // dimmer, partially-faded trails
         }
         rdrops[i] += rspd[i] * sp;
         if (rdrops[i] * rfs > R.h) bottomed[i] = true;
