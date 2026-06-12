@@ -79,8 +79,9 @@
 
   /* ── hero ── */
   .hero{padding:92px 0 70px; position:relative}
-  .hero-inner{display:grid; grid-template-columns:1.7fr 0.8fr; gap:50px; align-items:center}
-  @media(max-width:860px){ .hero-inner{grid-template-columns:1fr; gap:40px} .hero{padding:64px 0 56px} }
+  .hero-inner{display:grid; grid-template-columns:1fr; gap:24px}
+  .hero-copy{max-width:780px}
+  @media(max-width:860px){ .hero{padding:64px 0 56px} }
   .hero .tag{display:flex; align-items:center; gap:14px; margin-bottom:28px; flex-wrap:wrap}
   .hero .tag .bar{height:1px; flex:1; min-width:30px; background:var(--line)}
   .hero h1{font-family:var(--display); font-weight:700; font-size:clamp(44px,7.5vw,88px); line-height:.92; letter-spacing:-.02em; color:var(--hero-title); direction:ltr}
@@ -103,22 +104,13 @@
   @media(max-width:520px){ .trust img{width:44px; height:44px} .trust-txt{font-size:9.5px} }
   .portrait .pic{position:absolute; inset:14px; overflow:hidden; border:1px solid var(--line); background:var(--bg-2)}
   .portrait .pic img{width:100%; height:100%; object-fit:cover; display:block}
-  /* the GRC·LABS containment mark (WebGL) sits in the hero media slot */
-  .logo-frame .pic{background:radial-gradient(120% 120% at 50% 42%, #0c1322 0%, #080B14 80%)}
-  .logo-frame #logo{width:100%; height:100%; display:block}
-  .logo-fallback{position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:90px; line-height:1; color:#63B22E; opacity:.55}
-  html.no-logo-gl .logo-frame #logo{display:none}
-  html.no-logo-gl .logo-fallback{display:flex}
-  /* the person behind the practice — moved out of the hero, into contact */
-  .contact .who{display:flex; align-items:center; gap:16px; justify-content:center; flex-wrap:wrap; margin-top:28px; padding-top:24px; border-top:1px solid var(--line)}
-  .who-pic{position:relative; width:62px; height:62px; flex:none; overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--bg-2)}
-  .who-pic img{width:100%; height:100%; object-fit:cover; display:block}
-  html[data-theme="dark"] .who-pic .lightimg{display:none}
-  html[data-theme="light"] .who-pic .darkimg{display:none}
-  .who-txt{display:flex; flex-direction:column; gap:8px; text-align:start}
-  .who-name{font-family:var(--mono); font-size:12px; letter-spacing:.06em; color:var(--ink)}
-  .who-cred{font-size:12.5px; color:var(--ink-dim); max-width:46ch}
-  .contact .who .trust{margin:2px 0 0; justify-content:flex-start}
+  /* the GRC·LABS containment mark (WebGL) — embedded inline with the wordmark, proportional to it */
+  h1 .logo-mark{display:inline-block; width:.94em; height:.94em; vertical-align:-.13em; margin-inline-end:.18em; filter:drop-shadow(0 0 7px rgba(99,178,46,.35))}
+  h1 .logo-fallback{display:none; color:var(--green,#63B22E); margin-inline-end:.1em}
+  html.no-logo-gl h1 .logo-mark{display:none}
+  html.no-logo-gl h1 .logo-fallback{display:inline}
+  /* the person behind the practice — moved into contact, in its original framing */
+  .who-block{margin:34px auto 0; padding-top:28px; border-top:1px solid var(--line); display:flex; flex-direction:column; align-items:center; gap:2px}
   .portrait .pic::after{content:""; position:absolute; inset:0; pointer-events:none;
     background:repeating-linear-gradient(0deg, color-mix(in srgb,var(--bg) 26%,transparent) 0 1px, transparent 1px 4px);
     mix-blend-mode:overlay; opacity:.5}

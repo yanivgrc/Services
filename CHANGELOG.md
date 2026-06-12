@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.37 — 2026-06-12
+
+### Changed
+- The containment mark is now embedded inline with the GRC·LABS wordmark in the hero — sized in proportion to the text and set right beside it, a proper logo lockup instead of a separate framed panel.
+- The portrait and CISSP/CISM credentials moved into the contact section, kept in their original framing (SUBJECT // Y.DADON · CEO).
+- The screensaver's tetrahedron is now the GRC·LABS mark itself — the containment shape (a rounded tetrahedron carved by a wax-sphere cavity) raymarched into ASCII and floated beside the GRC·LABS wordmark on the matrix, with no surrounding chrome. Its spin and ASCII density drift over time.
+
 ## v1.36 — 2026-06-12
 
 ### Changed
