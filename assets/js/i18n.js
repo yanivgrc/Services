@@ -117,6 +117,8 @@
     "cl.internal":{en:"Internal",he:"פנימי"},
     "cl.fixed":{en:"Fixed",he:"תוקן"},
     "cl.removed":{en:"Removed",he:"הוסר"},
+    "cl.v132.c1":{en:"Unified every scene transition into a single, smooth move — the scene crossfades into the full matrix, the matrix holds, then drains straight down to reveal the next scene in place. Dropped the sliding “rise” so nothing jumps; every transition now reads the same as the first entrance.",
+      he:"כל המעברים בין הסצנות אוחדו לתנועה אחת חלקה — הסצנה נמסה אל תוך המטריקס המלא, המטריקס מחזיק, ואז מתנקז ישר למטה וחושף את הסצנה הבאה במקומה. ההחלקה כלפי מעלה בוטלה כך ששום דבר לא קופץ; כל מעבר נראה עכשיו כמו הכניסה הראשונה."},
     "cl.v131.c1":{en:"The matrix now holds as a full-screen moment between scenes — a randomized 2–6 seconds — and the first entrance holds for 5 seconds.",
       he:"המטריקס נשאר עכשיו כרגע מסך-מלא בין הסצנות — משך אקראי של 2–6 שניות — והכניסה הראשונה נמשכת 5 שניות."},
     "cl.v130.c1":{en:"The ASCII portrait is rebuilt from Hebrew letters, with the studio background keyed away so only the subject remains; it now lingers on screen instead of flashing past.",

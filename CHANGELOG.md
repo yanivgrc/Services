@@ -2,6 +2,11 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.32 — 2026-06-12
+
+### Changed
+- Unified every scene transition into a single, smooth move — the scene crossfades into the full matrix, the matrix holds, then drains straight down to reveal the next scene in place. Dropped the sliding "rise" so nothing jumps; every transition now reads the same as the first entrance.
+
 ## v1.31 — 2026-06-12
 
 ### Changed
