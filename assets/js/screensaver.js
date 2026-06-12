@@ -76,7 +76,7 @@
     var q = ease(clamp((t - FILL - CO - HOLD) / DIS, 0, 1)); return { a: 1 - q, rainI: 0.18 + 0.82 * q };
   }
   // short Hebrew lines planted, sparsely, inside the ASCII — found, not shown
-  var GHOSTS = ['צור קשר', 'דברו איתנו', 'מצאת אותי', 'מי קורא?', 'עדיין כאן'];
+  var GHOSTS = ['דברו איתנו', 'מצאת אותי', 'מי קורא?', 'עדיין כאן'];
 
   var style = document.createElement('style');
   style.textContent =
