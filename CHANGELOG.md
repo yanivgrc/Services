@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.36 — 2026-06-12
+
+### Changed
+- New GRC·LABS mark — a live "containment" logo (an epoxy tetrahedron with a hollow cavity, raymarched in WebGL) now leads the hero, putting the practice front and centre instead of a portrait.
+- Moved the portrait and the CISSP/CISM credentials down into the contact section — the site leads with the organization, not the person.
+
 ## v1.35 — 2026-06-12
 
 ### Changed

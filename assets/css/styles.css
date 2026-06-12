@@ -103,6 +103,22 @@
   @media(max-width:520px){ .trust img{width:44px; height:44px} .trust-txt{font-size:9.5px} }
   .portrait .pic{position:absolute; inset:14px; overflow:hidden; border:1px solid var(--line); background:var(--bg-2)}
   .portrait .pic img{width:100%; height:100%; object-fit:cover; display:block}
+  /* the GRC·LABS containment mark (WebGL) sits in the hero media slot */
+  .logo-frame .pic{background:radial-gradient(120% 120% at 50% 42%, #0c1322 0%, #080B14 80%)}
+  .logo-frame #logo{width:100%; height:100%; display:block}
+  .logo-fallback{position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:90px; line-height:1; color:#63B22E; opacity:.55}
+  html.no-logo-gl .logo-frame #logo{display:none}
+  html.no-logo-gl .logo-fallback{display:flex}
+  /* the person behind the practice — moved out of the hero, into contact */
+  .contact .who{display:flex; align-items:center; gap:16px; justify-content:center; flex-wrap:wrap; margin-top:28px; padding-top:24px; border-top:1px solid var(--line)}
+  .who-pic{position:relative; width:62px; height:62px; flex:none; overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--bg-2)}
+  .who-pic img{width:100%; height:100%; object-fit:cover; display:block}
+  html[data-theme="dark"] .who-pic .lightimg{display:none}
+  html[data-theme="light"] .who-pic .darkimg{display:none}
+  .who-txt{display:flex; flex-direction:column; gap:8px; text-align:start}
+  .who-name{font-family:var(--mono); font-size:12px; letter-spacing:.06em; color:var(--ink)}
+  .who-cred{font-size:12.5px; color:var(--ink-dim); max-width:46ch}
+  .contact .who .trust{margin:2px 0 0; justify-content:flex-start}
   .portrait .pic::after{content:""; position:absolute; inset:0; pointer-events:none;
     background:repeating-linear-gradient(0deg, color-mix(in srgb,var(--bg) 26%,transparent) 0 1px, transparent 1px 4px);
     mix-blend-mode:overlay; opacity:.5}
