@@ -117,6 +117,8 @@
     "cl.internal":{en:"Internal",he:"פנימי"},
     "cl.fixed":{en:"Fixed",he:"תוקן"},
     "cl.removed":{en:"Removed",he:"הוסר"},
+    "cl.v131.c1":{en:"The matrix now holds as a full-screen moment between scenes — a randomized 2–6 seconds — and the first entrance holds for 5 seconds.",
+      he:"המטריקס נשאר עכשיו כרגע מסך-מלא בין הסצנות — משך אקראי של 2–6 שניות — והכניסה הראשונה נמשכת 5 שניות."},
     "cl.v130.c1":{en:"The ASCII portrait is rebuilt from Hebrew letters, with the studio background keyed away so only the subject remains; it now lingers on screen instead of flashing past.",
       he:"דיוקן ה-ASCII נבנה מחדש מאותיות עבריות, והרקע הוסר כך שנשאר רק הנושא; הוא נשאר עכשיו על המסך במקום להבזיק לרגע."},
     "cl.v130.c2":{en:"The matrix is now one persistent layer shared by every scene and transition — it never resets or pops. Scenes coalesce out of it and dissolve back into it, the wipe is the same rain continuing, and it fades in and fully drains rather than cutting off mid-transition.",

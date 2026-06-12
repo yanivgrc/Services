@@ -2,6 +2,11 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.31 — 2026-06-12
+
+### Changed
+- The matrix now holds as a full-screen moment between scenes — a randomized 2–6 seconds — and the first entrance holds for 5 seconds.
+
 ## v1.30 — 2026-06-12
 
 ### Changed

@@ -1290,9 +1290,10 @@
 
   // ─────────────────────────── loop ───────────────────────────
   // The transition IS the persistent matrix: it fades up to a full curtain over the outgoing scene (fill),
-  // then drains all the way out as the next scene rises in (drain). Same rain throughout — nothing pops.
+  // holds as a full-screen matrix moment (hold, 2–6s; the first entrance is 5s), then drains all the way out
+  // as the next scene rises in (drain). Same rain throughout — nothing pops.
   var FILL_MAX = 1800, FADE_MS = 240, DRAIN_MS = 2800, RISE_MS = 950;
-  var cur = null, incoming = null, trans = '', transT = 0, raf = 0, last = 0;
+  var cur = null, incoming = null, trans = '', transT = 0, holdDur = 5000, raf = 0, last = 0;
   function content() { return { x: 0, y: 0, w: W, h: H - statusH() }; }
   function frame(now) {
     if (!last) last = now; var dt = Math.min(80, now - last) * QAMUL; last = now;
@@ -1301,7 +1302,11 @@
       var fi = clamp(transT / FADE_MS, 0, 1);
       ctx.fillStyle = 'rgba(8,11,20,' + (0.18 * fi).toFixed(3) + ')'; ctx.fillRect(C.x, C.y, C.w, C.h); // veil the outgoing scene as the rain rises
       rainState.draw(C, fi, true); transT += dt;
-      if ((rainState.reachedBottom() && transT > FADE_MS + 80) || transT >= FILL_MAX) { trans = 'drain'; transT = 0; }
+      if ((rainState.reachedBottom() && transT > FADE_MS + 80) || transT >= FILL_MAX) { trans = 'hold'; transT = 0; }
+    } else if (trans === 'hold') {                // a full-screen matrix moment between scenes
+      ctx.fillStyle = BG; ctx.fillRect(C.x, C.y, C.w, C.h);
+      rainState.draw(C, 1, true); transT += dt;
+      if (transT >= holdDur) { trans = 'drain'; transT = 0; }
     } else if (trans === 'drain') {               // the next scene rises in as the same curtain drains all the way out
       ctx.fillStyle = BG; ctx.fillRect(C.x, C.y, C.w, C.h);
       var rise = (1 - ease(clamp(transT / RISE_MS, 0, 1))) * C.h * 0.5;
@@ -1312,7 +1317,7 @@
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       var done = cur.frame(dt, C);
       ghost.update(dt, C, cur.title);
-      if (done) { incoming = nextWindow(); trans = 'fill'; transT = 0; rainState.ensure(C); rainState.markSweep(); }
+      if (done) { incoming = nextWindow(); trans = 'fill'; transT = 0; holdDur = 2000 + Math.random() * 4000; rainState.ensure(C); rainState.markSweep(); } // 2–6s of matrix between scenes
     }
     drawStatus(now);
     raf = requestAnimationFrame(frame);
@@ -1326,7 +1331,7 @@
     if (reduceMotion) { staticFrame(); return; }
     last = 0; winN = 0; winIdx = 0; windowsLog = []; cmdOrder = null; shapeOrder = null; msgOrder = null; ilOrder = null;
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    cur = null; incoming = nextWindow(); trans = 'fill'; transT = 0; rainState.ensure(content()); rainState.markSweep(); ghost.reset();
+    cur = null; incoming = nextWindow(); trans = 'fill'; transT = 0; holdDur = 5000; rainState.ensure(content()); rainState.markSweep(); ghost.reset(); // the first entrance holds 5s of matrix
     raf = requestAnimationFrame(frame);
   }
   function deactivate() { if (!active) return; active = false; root.classList.remove('on'); if (raf) cancelAnimationFrame(raf), raf = 0; lastActivity = performance.now(); }
