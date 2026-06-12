@@ -72,7 +72,7 @@
     var rfs = 16, rcols = 0, rdrops = [], rspd = [], bottomed = [], rkey = -1;
     function ensure(R) {
       if (rkey === Math.round(R.w) && rcols) return;                 // grid depends only on width, so the content area and the full screen share ONE matrix
-      rfs = clamp(Math.round(R.w / 70), 12, 20); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; bottomed = [];
+      rfs = clamp(Math.round(R.w / 84), 10, 17); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; bottomed = [];  // denser columns
       var rows = R.h / rfs;
       for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.6 + Math.random() * 0.85; bottomed[i] = false; }
       rkey = Math.round(R.w);
@@ -1158,7 +1158,7 @@
       var FILL = 700, CO = 950, HOLD = 1700, DIS = 1200, END = FILL + CO + HOLD + DIS;
       var rain = makeRainLayer();
       function build(R) {
-        var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 58, 7, 13), acw = fs * 0.6;
+        var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 74, 6, 12), acw = fs * 0.6;  // higher-resolution portrait grid
         var gw = Math.max(40, Math.floor(side / acw)), gh = Math.max(40, Math.floor(side / fs));
         var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
         // crop a centred square tight on the head, so the face fills the frame instead of floating small and low
@@ -1292,7 +1292,7 @@
   // the outgoing scene crossfades into a full matrix (fade), the matrix holds (hold, 2–6s; first entrance 5s), then
   // drains straight down to reveal the next scene IN PLACE (drain). The fall is paced — it accelerates in, settles to
   // a calm during the hold, then accelerates away as it drains. Same persistent rain throughout; nothing pops.
-  var FADE_MS = 560, FADE_MAX = 2200, DRAIN_MS = 3000;
+  var FADE_MS = 560, FADE_MAX = 2200, DRAIN_MS = 1500;
   var cur = null, incoming = null, trans = '', transT = 0, holdDur = 5000, raf = 0, last = 0;
   function content() { return { x: 0, y: 0, w: W, h: H - statusH() }; }
   function frame(now) {
@@ -1308,12 +1308,16 @@
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       rainState.draw(FS, 1, true, 0.85 + 0.75 * Math.max(0, 1 - transT / 1100)); transT += dt;
       if (transT >= holdDur) { trans = 'drain'; transT = 0; }
-    } else if (trans === 'drain') {               // the matrix accelerates away straight down, revealing the next scene (and the bar) in place
+    } else if (trans === 'drain') {               // the matrix recedes as one downward curtain, revealing the next scene (and the bar) top-to-bottom
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       clipRect(C); (incoming || cur).frame(dt, C); ctx.restore();
       drawStatus(now);
-      rainState.draw(FS, 1, false, 1.0 + 2.6 * ease(clamp(transT / 650, 0, 1))); transT += dt;
-      if (rainState.cleared(FS) || transT >= DRAIN_MS) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
+      var revP = ease(clamp(transT / DRAIN_MS, 0, 1)), revY = revP * (H + 30);     // the curtain's top edge sweeps down and off
+      ctx.save(); ctx.beginPath(); ctx.rect(0, revY, W, H - revY + 1); ctx.clip();  // matrix only below the edge; the scene is revealed above
+      rainState.draw(FS, 1, true, 1.6); ctx.restore();                             // streams keep falling within the receding curtain
+      if (revY > 2 && revY < H) { var gg = ctx.createLinearGradient(0, revY - 26, 0, revY + 8); gg.addColorStop(0, 'rgba(99,178,46,0)'); gg.addColorStop(1, 'rgba(155,232,91,0.55)'); ctx.fillStyle = gg; ctx.fillRect(0, revY - 26, W, 34); } // glowing leading edge
+      transT += dt;
+      if (revP >= 1) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
     } else {
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       var done = cur.frame(dt, C);

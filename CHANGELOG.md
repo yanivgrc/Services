@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.34 — 2026-06-12
+
+### Changed
+- The matrix exit now recedes as a single downward curtain with a glowing leading edge, revealing the next scene from the top down — it flows with the fall instead of breaking up.
+- Denser ASCII — finer matrix columns and a higher-resolution portrait.
+
 ## v1.33 — 2026-06-12
 
 ### Changed
