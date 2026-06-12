@@ -2,6 +2,17 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.24 — 2026-06-12
+
+### Added
+- More torus-style 3D surfaces — a sphere, a Möbius strip, a coil spring, and a twisted torus, all rendered like the spinning donut.
+
+### Changed
+- The "brain" window's second pane now streams varied network commands (ss, dig, ping, traceroute, arp, nmap, curl, whois) instead of the reasoning log; network commands moved out of the focus pane, which now stays on SOC work.
+- The encryption scene now runs in reverse — a big salted cipher block decrypts to reveal one line: the slogan.
+- The geometry shapes (golden spiral and the rest) now rotate continuously, so they never freeze mid-scene.
+- Removed the contact line from the terminal (it lives on the molecule and in the rotating-words scene) and dropped the oscilloscope scene (kept the audio waveform).
+
 ## v1.23 — 2026-06-12
 
 ### Added

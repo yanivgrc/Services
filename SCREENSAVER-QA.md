@@ -53,5 +53,14 @@ Worked task by task; updated after each. **Do not break approved/working functio
 ## Note
 - file:// taints the canvas (cross-origin image) → portrait getImageData throws. QA over http://localhost:8099 instead. Real site is same-origin → fine.
 
+## Round 2 (this session, verified by screenshot)
+- [x] Removed the contact CTA from the brain/TMUX focus pane (lives on molecule + rotating-words).
+- [x] Removed the electronics oscilloscope scene (kept the audio waveform).
+- [x] Brain **pane 2 → varied network commands** (ss/dig/ping/traceroute/arp/nmap/curl/whois), looping; network commands removed from pane 1 (now SOC: SIEM/triage/hunt/ssh/pip/python).
+- [x] Crypto **reversed** — big salted hex block decrypts to reveal one line: the slogan.
+- [x] More torus-style 3D surfaces — sphere, Möbius, spring, twisted-torus (shared makeSurface renderer).
+- [x] Geometry shapes (golden spiral etc.) **rotate continuously** — fixes "stuck in the middle".
+- Shape indices now: 8 torus, 9 sphere, 10 möbius, 11 spring, 12 twisted-torus, 13 molecule, 14 pyramid, 15 cube, 16 tetra+sphere, 17 audio-scope, 18 astro, 19 crypto, 20 voyager.
+
 ## Not done / for next time
 _(filled at the end)_

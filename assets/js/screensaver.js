@@ -254,12 +254,7 @@
       function () { return { cmd: 'grc-hunt run --playbook lateral', lines: buildHunt(cmd.name) }; },
       function () { return { cmd: 'ssh ' + ln + '@vault.grc-labs.io', lines: buildSsh(cmd.name, ln) }; },
       function () { return { cmd: 'pip install ' + pkg, lines: buildSetup(cmd.name, pkg) }; },
-      function () { return { cmd: 'python3', lines: buildPython(cmd.name, ln) }; },
-      function () { return { cmd: 'netstat -tunap', lines: buildNetstat(cmd.name) }; },
-      function () { return { cmd: 'nslookup vault.grc-labs.io', lines: buildNslookup(cmd.name) }; },
-      function () { return { cmd: 'mpremote connect /dev/ttyACM0', lines: buildMpremote(cmd.name) }; },
-      function () { return { cmd: 'nc mx.grc-labs.io 25', lines: buildSmtp(cmd.name) }; },
-      function () { return { cmd: 'ping -c 4 google.com', lines: buildPing(cmd.name) }; }
+      function () { return { cmd: 'python3', lines: buildPython(cmd.name, ln) }; }
     ];
     return tracks[(Math.random() * tracks.length) | 0]();
   }
@@ -315,7 +310,7 @@
   // ───────────────────────── focus pane: pip install stream ─────────────────────────
   function makeGet(cmd) {
     var pkg = 'grc-labs-' + cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    var rows = [{ cta: true, text: 'צור קשר' }, { text: '', color: INK }], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
+    var rows = [], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
     var track = pickTrack(cmd, pkg), cmdStr = track.cmd, setup = track.lines;
     function frame(dt, R) {
       elapsed += dt; blink += dt;
@@ -348,6 +343,43 @@
   }
   // the reasoning pane keeps working — an endless analysis log that streams phases,
   // ticks each off with "done · OK", then starts another pass. It never just stops.
+  // brain pane 2 — a live stream of varied network commands and their output (never idle)
+  function makeNetPane() {
+    var SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'], t = 0, emitT = 0, lines = [], queue = [];
+    var CMDS = [
+      { c: 'ss -tnp', o: ['ESTAB 0 0 10.0.2.4:22  10.0.0.7:51544  (("sshd"))', 'ESTAB 0 0 10.0.2.4:443 142.250.74.78:443'] },
+      { c: 'dig +short vault.grc-labs.io', o: ['10.0.2.4', ';; SERVER: 10.0.0.1#53 · DNSSEC ok'] },
+      { c: 'ping -c2 10.0.0.1', o: ['64 bytes from 10.0.0.1: time=0.4 ms', '64 bytes from 10.0.0.1: time=0.5 ms', '2 received · 0% loss'] },
+      { c: 'traceroute grc-labs.io', o: ['1  10.0.0.1     0.4ms', '2  100.64.0.1   3.1ms', '3  grc-labs.io  12.4ms'] },
+      { c: 'arp -a', o: ['gateway (10.0.0.1) at 00:1a:2b:3c:4d:5e', '? (10.0.0.31) at a4:cf:12:ff:09:b1'] },
+      { c: 'ip route', o: ['default via 10.0.0.1 dev wg0', '10.0.0.0/16 dev eth0 proto kernel'] },
+      { c: 'nmap -sn 10.0.5.0/24', o: ['10.0.5.1  up', '10.0.5.4  up', '2 hosts up · 0 unexpected'] },
+      { c: 'curl -sI https://grc-labs.io', o: ['HTTP/2 200', 'strict-transport-security: max-age=63072000'] },
+      { c: 'whois 185.220.101.44', o: ['netname: TOR-EXIT', 'country: RU · abuse flagged'] }
+    ];
+    function enqueue() { var k = CMDS[(Math.random() * CMDS.length) | 0]; queue.push({ k: 'cmd', text: k.c }); for (var i = 0; i < k.o.length; i++) queue.push({ k: 'out', text: k.o[i] }); queue.push({ k: 'ok' }); queue.push({ k: 'gap' }); }
+    function delayOf(it) { return it.k === 'cmd' ? 620 : it.k === 'out' ? 300 : it.k === 'ok' ? 520 : 360; }
+    function emit(it) {
+      if (it.k === 'cmd') lines.push({ pre: PROMPT, text: it.text, pcol: DIM, col: BRIGHT });
+      else if (it.k === 'out') lines.push({ text: '  ' + it.text, col: it.text.indexOf('flag') >= 0 || it.text.indexOf('TOR') >= 0 ? AMBER : INK });
+      else if (it.k === 'ok') lines.push({ text: '[ok] ' + SPIN[0] + ' link healthy', col: GREEN });
+      else lines.push({ text: '', col: INK });
+      if (lines.length > 120) lines.splice(0, lines.length - 120);
+    }
+    enqueue();
+    function frame(dt, R) {
+      t += dt; emitT += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      while (queue.length && emitT >= delayOf(queue[0])) { emitT -= delayOf(queue[0]); emit(queue.shift()); if (queue.length < 3) enqueue(); }
+      var pad = Math.round(Math.min(R.w, R.h) * 0.05) + 8, x0 = R.x + pad, y0 = R.y + pad, w = R.w - pad * 2;
+      var fs = clamp(Math.round(w / 30), 11, 16), lh = Math.round(fs * 1.6), maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      var vis = lines.length > maxRows ? lines.slice(lines.length - maxRows) : lines, ty = y0, endX = x0;
+      for (var d = 0; d < vis.length; d++) { var L = vis[d], pre = L.pre || null; if (pre) { ctx.fillStyle = L.pcol; ctx.fillText(pre, x0, ty); ctx.fillStyle = L.col; ctx.fillText(L.text, x0 + ctx.measureText(pre).width, ty); endX = x0 + ctx.measureText(pre).width + ctx.measureText(L.text).width; } else { ctx.fillStyle = L.col; ctx.fillText(L.text, x0, ty); endX = x0 + ctx.measureText(L.text).width; } ty += lh; }
+      if ((Math.floor(t / 520) % 2) === 0) { ctx.fillStyle = BRIGHT; ctx.fillRect(endX + 3, ty - lh + 2, fs * 0.5, fs); }
+      return false;
+    }
+    return { frame: frame };
+  }
   function makeThink(cmd) {
     var SPIN = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'], STAT = ['ok', 'pass', 'clear', 'mapped', 'scored', 'signed'], t = 0, emitT = 0, lines = [], queue = [], pass = 0, pending = null;
     var base = thinkData(cmd), name = cmd.name.toLowerCase();
@@ -414,7 +446,7 @@
       ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       if (mode === 'solo') { var sd = get.frame(dt, R); paneChrome(R, '1:focus', true); return sd; }
       if (!narrow) {
-        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeThink(cmd); if (mode === 'trio' && !ascii) ascii = (Math.random() < 0.5 ? makeDonut : makePyr3D)(); }
+        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeNetPane(); if (mode === 'trio' && !ascii) ascii = [makeDonut, makeSphere, makeKnot, makePyr3D, makeTetraSphere, makeCube][(Math.random() * 6) | 0](); }
         if (splitting && split < 1) split = Math.min(1, split + dt / SPLIT_MS);
         var e = ease(split), gap = split > 0 ? 6 : 0;
         var leftW = R.w * (1 - (mode === 'trio' ? 0.50 : 0.46) * e) - (split > 0 ? gap / 2 : 0);
@@ -424,10 +456,10 @@
           var rx = R.x + leftW + gap, rw = R.w - leftW - gap;
           if (mode === 'trio' && ascii) {
             var th = R.h * 0.52 - gap / 2, Tr = { x: rx, y: R.y, w: rw, h: th }, Ar = { x: rx, y: R.y + th + gap, w: rw, h: R.h - th - gap };
-            clipRect(Tr); ctx.globalAlpha = e; think.frame(dt, inset(Tr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Tr, '2:reason', false);
+            clipRect(Tr); ctx.globalAlpha = e; think.frame(dt, inset(Tr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Tr, '2:net', false);
             clipRect(Ar); ctx.globalAlpha = e; ascii.frame(dt, inset(Ar, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Ar, '3:render', false);
           } else if (think) {
-            var Rr = { x: rx, y: R.y, w: rw, h: R.h }; clipRect(Rr); ctx.globalAlpha = e; think.frame(dt, inset(Rr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Rr, '2:lateral', false);
+            var Rr = { x: rx, y: R.y, w: rw, h: R.h }; clipRect(Rr); ctx.globalAlpha = e; think.frame(dt, inset(Rr, true)); ctx.globalAlpha = 1; ctx.restore(); paneChrome(Rr, '2:net', false);
           }
         }
         return gd && (split >= 1); // the focus script drives the close; the side panes keep working until then
@@ -435,12 +467,12 @@
         // narrow: focus first, then cross-fade to the reasoning log
         if (narrowPhase === 0) {
           var done0 = get.frame(dt, R); paneChrome(R, '1:focus', true);
-          if (get.atBody() && !think) think = makeThink(cmd);
+          if (get.atBody() && !think) think = makeNetPane();
           if (done0) { narrowPhase = 1; fade = 0; }
           return false;
         } else {
           narrowT += dt; fade = Math.min(1, fade + dt / 320);
-          think.frame(dt, R); paneChrome(R, '2:lateral', true);
+          think.frame(dt, R); paneChrome(R, '2:net', true);
           if (fade < 1) { ctx.globalAlpha = 1 - fade; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.globalAlpha = 1; }
           return narrowT > 6500; // the reasoning log loops; cap its airtime on narrow screens
         }
@@ -469,7 +501,8 @@
       var gw = Math.max(8, Math.floor(R.w / cw)), gh = Math.max(8, Math.floor(R.h / fs));
       var grid = new Array(gw * gh); for (var z = 0; z < grid.length; z++) grid[z] = 0;
       var cx = (gw - 1) / 2, cy = (gh - 1) / 2, ax = side / cw, ay = side / fs;
-      shape.plot(function (nx, ny) { var c = Math.round(cx + nx * ax * 0.5), r = Math.round(cy - ny * ay * 0.5); if (c >= 0 && c < gw && r >= 0 && r < gh) grid[r * gw + c]++; }, Math.min(t / REVEAL, 1));
+      var rg = t * 0.0004, rgc = Math.cos(rg), rgs = Math.sin(rg); // slow rotation so the shape keeps turning and never feels stuck
+      shape.plot(function (nx, ny) { var rx = nx * rgc - ny * rgs, ry = nx * rgs + ny * rgc, c = Math.round(cx + rx * ax * 0.5), r = Math.round(cy - ry * ay * 0.5); if (c >= 0 && c < gw && r >= 0 && r < gh) grid[r * gw + c]++; }, Math.min(t / REVEAL, 1));
       var x0 = R.x + Math.round((R.w - gw * cw) / 2), y0 = R.y + Math.round((R.h - gh * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       ctx.fillStyle = FAINT; for (var rd = 0; rd < gh; rd++) for (var cd = 0; cd < gw; cd++) if (!grid[rd * gw + cd]) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs); // empty cells get a faint dot — gives the field form
@@ -504,6 +537,40 @@
     }
     return { frame: frame, title: 'viz' };
   }
+  // a generic parametric-surface renderer — same z-buffer + RAMP + lighting as the torus, for any smooth shape
+  function makeSurface(name, P, opts) {
+    opts = opts || {};
+    var t = 0, DUR = opts.dur || 7200, RAMP = '.,-~:;=!*#$@';
+    var du = opts.du || 0.06, dv = opts.dv || 0.05, uMax = opts.uMax || 6.283, vMax = opts.vMax || 6.283, LIGHT = [0, 0.6, -0.8];
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      var fs = clamp(Math.min(R.w, R.h) / 54, 7, 14), cw = fs * 0.6, cols = Math.max(20, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
+      var b = new Array(cols * rows), zb = new Array(cols * rows); for (var z = 0; z < b.length; z++) { b[z] = -1; zb[z] = 0; }
+      var A = t * 0.0009, B = t * 0.0011, ca = Math.cos(A), sa = Math.sin(A), cb = Math.cos(B), sb = Math.sin(B), K2 = 5, K1 = Math.min(cols, rows) * (opts.scale || 1.0);
+      function rot(p) { var x1 = p[0] * cb + p[2] * sb, z1 = -p[0] * sb + p[2] * cb, y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca; return [x1, y2, z2]; }
+      for (var u = 0; u < uMax; u += du) for (var v = 0; v < vMax; v += dv) {
+        var p0 = P(u, v), pu = P(u + du, v), pv = P(u, v + dv);
+        var nx = (pu[1] - p0[1]) * (pv[2] - p0[2]) - (pu[2] - p0[2]) * (pv[1] - p0[1]);
+        var ny = (pu[2] - p0[2]) * (pv[0] - p0[0]) - (pu[0] - p0[0]) * (pv[2] - p0[2]);
+        var nz = (pu[0] - p0[0]) * (pv[1] - p0[1]) - (pu[1] - p0[1]) * (pv[0] - p0[0]);
+        var rp = rot(p0), rn = rot([nx, ny, nz]), nl = Math.sqrt(rn[0] * rn[0] + rn[1] * rn[1] + rn[2] * rn[2]) || 1;
+        var lum = Math.abs((rn[0] * LIGHT[0] + rn[1] * LIGHT[1] + rn[2] * LIGHT[2]) / nl), ooz = 1 / (K2 + rp[2]);
+        var xp = Math.floor(cols / 2 + K1 * ooz * rp[0]), yp = Math.floor(rows / 2 - K1 * ooz * rp[1] * 0.5);
+        if (xp >= 0 && xp < cols && yp >= 0 && yp < rows) { var idx = yp * cols + xp; if (ooz > zb[idx]) { zb[idx] = ooz; b[idx] = Math.min(RAMP.length - 1, Math.max(0, Math.floor(lum * (RAMP.length - 1)))); } }
+      }
+      var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = FAINT; for (var rd = 0; rd < rows; rd++) for (var cd = 0; cd < cols; cd++) if (b[rd * cols + cd] < 0) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs);
+      for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { var l = b[r * cols + c]; if (l < 0) continue; ctx.fillStyle = l >= 8 ? BRIGHT : (l >= 4 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(l), x0 + c * cw, y0 + r * fs); }
+      label(R, name);
+      return t >= DUR;
+    }
+    return { frame: frame, title: 'viz' };
+  }
+  function makeSphere() { return makeSurface('sphere · rot', function (u, v) { var su = Math.sin(u); return [1.35 * su * Math.cos(v), 1.35 * Math.cos(u), 1.35 * su * Math.sin(v)]; }, { uMax: Math.PI + 0.05, du: 0.05, dv: 0.045, scale: 1.5 }); }
+  function makeMobius() { return makeSurface('möbius', function (u, v) { var w = (v - 0.4) * 0.95, h = 1 + w * Math.cos(u / 2); return [1.3 * h * Math.cos(u), 1.3 * w * Math.sin(u / 2), 1.3 * h * Math.sin(u)]; }, { vMax: 0.8, du: 0.04, dv: 0.04, scale: 1.25 }); }
+  function makeSpring() { return makeSurface('spring · coil', function (u, v) { var R2 = 1.0, R1 = 0.27, pitch = 0.105; return [(R2 + R1 * Math.cos(v)) * Math.cos(u), u * pitch - 4 * Math.PI * pitch + R1 * Math.sin(v), (R2 + R1 * Math.cos(v)) * Math.sin(u)]; }, { uMax: 8 * Math.PI, du: 0.06, dv: 0.10, scale: 1.25 }); }
+  function makeKnot() { return makeSurface('torus · knot', function (u, v) { var k = 2.0, R2 = 1.6, R1 = 0.55, cv = Math.cos(v + k * u); return [(R2 + R1 * cv) * Math.cos(u), R1 * Math.sin(v + k * u), (R2 + R1 * cv) * Math.sin(u)]; }, { du: 0.035, dv: 0.05, scale: 0.85 }); }
   function makeLife() {
     var t = 0, DUR = 8000, acc = 0, STEP = 130, grid = null, cols = 0, rows = 0, age = null, key = -1;
     function build(R) { var fs = clamp(Math.min(R.w, R.h) / 60, 8, 13), cw = fs * 0.62; cols = Math.max(24, Math.floor(R.w / cw)); rows = Math.max(20, Math.floor(R.h / fs)); grid = new Array(cols * rows); age = new Array(cols * rows); for (var i = 0; i < grid.length; i++) { grid[i] = Math.random() < 0.30 ? 1 : 0; age[i] = 0; } key = (R.w << 1) ^ R.h; build.fs = fs; build.cw = cw; }
@@ -727,31 +794,33 @@
     }
     return { frame: frame, title: 'viz' };
   }
-  // encryption, illustrated — plaintext is consumed and turned to ciphertext, round by round
+  // decryption, illustrated — a big salted cipher block decrypts to reveal one line: the slogan
   function makeCrypto() {
-    var t = 0, DUR = 8200;
-    var PLAIN = 'TAILORED-INFORMATION-SECURITY//GRC-LABS//PROTECT-WHAT-MATTERS//CISO-DPO-ISO27001-AUDIT-IR-IOT//';
-    var HEX = '0123456789abcdef', key = '', cipher = '';
-    var kr = xs(hashOf('grc-aes-key')); for (var i = 0; i < 64; i++) key += HEX.charAt(kr() % 16);
-    var crp = xs(hashOf('grc-cipher')); for (var j = 0; j < 600; j++) cipher += HEX.charAt(crp() % 16);
+    var t = 0, DUR = 8600, REVEAL = 5600, SLOGAN = 'TAILORED INFORMATION SECURITY';
+    var HEX = '0123456789abcdef', key = '', salt = '', cipher = '';
+    var kr = xs(hashOf('grc-aes-key')); for (var i = 0; i < 48; i++) key += HEX.charAt(kr() % 16);
+    var sr = xs(hashOf('grc-salt')); for (var i2 = 0; i2 < 16; i2++) salt += HEX.charAt(sr() % 16);
+    var crp = xs(hashOf('grc-cipher')); for (var j = 0; j < 2400; j++) cipher += HEX.charAt(crp() % 16);
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.round(Math.min(R.w, R.h) / 32), 11, 20), cw = fs * 0.62;
-      var cols = Math.max(18, Math.min(44, Math.floor((R.w * 0.84) / cw))), rows = 8, total = cols * rows;
-      var bx = R.x + Math.round((R.w - cols * cw) / 2), by = R.y + R.h * 0.32;
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 28), 12, 22), cw = fs * 0.62;
+      var cols = Math.max(30, Math.min(58, Math.floor((R.w * 0.88) / cw))), rows = 13;
+      var bx = R.x + Math.round((R.w - cols * cw) / 2), by = R.y + R.h * 0.26;
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
-      var p = clamp(t / 5400, 0, 1), front = p * total;
+      var p = clamp(t / REVEAL, 0, 1), sRow = rows >> 1, sCol = Math.max(0, (cols - SLOGAN.length) >> 1), revC = Math.floor(p * SLOGAN.length);
       for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
-        var idx = r * cols + c, ch, col;
-        if (idx < front - 5) { ch = cipher.charAt(idx % cipher.length); col = GREEN; }
-        else if (idx < front + 1) { ch = HEX.charAt((Math.random() * 16) | 0); col = '#ffffff'; }
-        else { ch = PLAIN.charAt(idx % PLAIN.length); col = (ch === '-' || ch === '/') ? DIM : INK; }
+        var ch, col, si = c - sCol;
+        if (r === sRow && si >= 0 && si < SLOGAN.length) {
+          if (si < revC) { ch = SLOGAN.charAt(si); col = '#ffffff'; }
+          else if (si < revC + 4) { ch = HEX.charAt((Math.random() * 16) | 0); col = BRIGHT; }
+          else { ch = cipher.charAt((r * cols + c) % cipher.length); col = GREEN; }
+        } else { ch = cipher.charAt((r * cols + c) % cipher.length); col = Math.abs(r - sRow) <= 1 ? GREEN : MIDG; }
         ctx.fillStyle = col; ctx.fillText(ch, bx + c * cw, by + r * fs);
       }
-      var hfs = clamp(Math.round(R.w / 40), 12, 18); ctx.font = '700 ' + hfs + 'px ' + MONO; ctx.fillStyle = AMBER; ctx.fillText('AES-256-CBC · encrypting', R.x + 18, R.y + 14);
-      ctx.font = (hfs - 3) + 'px ' + MONO; ctx.fillStyle = DIM; ctx.fillText('key ' + key.slice(0, 32) + '…', R.x + 18, R.y + 14 + Math.round(hfs * 1.5));
-      ctx.fillStyle = BRIGHT; ctx.fillText('round ' + (1 + Math.min(13, Math.floor(p * 14))) + '/14   ' + Math.round(p * 100) + '%', R.x + 18, by + rows * fs + Math.round(fs * 0.6));
-      label(R, 'cipher · aes');
+      var hfs = clamp(Math.round(R.w / 42), 12, 18); ctx.font = '700 ' + hfs + 'px ' + MONO; ctx.fillStyle = AMBER; ctx.fillText('AES-256-CBC · decrypting', R.x + 18, R.y + 14);
+      ctx.font = (hfs - 3) + 'px ' + MONO; ctx.fillStyle = DIM; ctx.fillText('salt ' + salt, R.x + 18, R.y + 14 + Math.round(hfs * 1.5)); ctx.fillText('key  ' + key.slice(0, 32) + '…', R.x + 18, R.y + 14 + Math.round(hfs * 2.7));
+      ctx.fillStyle = BRIGHT; ctx.fillText('plaintext recovered · ' + Math.round(p * 100) + '%', bx, by + rows * fs + Math.round(fs * 0.6));
+      label(R, 'cipher · decrypt');
       return t >= DUR;
     }
     return { frame: frame, title: 'viz' };
@@ -1098,7 +1167,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeLife, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeScope, makeAudioScope, makeAstro, makeCrypto, makeVoyager]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeMobius, makeSpring, makeKnot, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeAudioScope, makeAstro, makeCrypto, makeVoyager]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }
