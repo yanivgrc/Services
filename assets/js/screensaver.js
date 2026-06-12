@@ -1079,8 +1079,10 @@
       var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       var r00 = cy, r02 = -sy, r10 = -sp * sy, r11 = cp, r12 = -sp * cy, r20 = cp * sy, r21 = sp, r22 = cp * cy;
       var rox = -9 * sy, roy = -9 * sp * cy, roz = 9 * cp * cy;
-      var S = Math.min(R.w * 0.42, R.h * 0.84), rows = clamp(Math.round(den * 0.40), 38, 72), fs = S / rows, acw = fs * 0.6, cols = Math.round(rows / 0.6);
-      var cxw = R.x + R.w * 0.31, cyc = R.y + R.h * 0.5, lx = cxw - cols * acw / 2, ly = cyc - rows * fs / 2;
+      var wf = clamp(Math.round(R.w / 13), 28, 86), wordFont = '700 ' + wf + 'px "Space Grotesk", "IBM Plex Sans", sans-serif';
+      ctx.font = wordFont; var wordW = ctx.measureText('GRC·LABS').width, grcW = ctx.measureText('GRC·').width;
+      var S = Math.min(R.w * 0.40, R.h * 0.74), gap = Math.max(18, R.w * 0.02), rows = clamp(Math.round(den * 0.40), 38, 72), fs = S / rows, acw = fs * 0.6, cols = Math.round(rows / 0.6);
+      var lockW = cols * acw + gap + wordW, startX = R.x + (R.w - lockW) / 2, cyc = R.y + R.h * 0.45, lx = startX, ly = cyc - rows * fs / 2;  // a big, centred logo lockup
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       for (var r = 0; r < rows; r++) {
         var uy = (rows * 0.5 - (r + 0.5)) / rows;
@@ -1102,9 +1104,11 @@
           ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length))), lx + c * acw, ly + r * fs);
         }
       }
-      var wf = clamp(Math.round(R.w / 15), 26, 62); ctx.font = '700 ' + wf + 'px "Space Grotesk", "IBM Plex Sans", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
-      var wx = cxw + cols * acw / 2 + R.w * 0.03;
-      ctx.fillStyle = INK; ctx.fillText('GRC·', wx, cyc); ctx.fillStyle = GREEN; ctx.fillText('LABS', wx + ctx.measureText('GRC·').width, cyc);
+      ctx.font = wordFont; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
+      var wx = startX + cols * acw + gap;
+      ctx.fillStyle = INK; ctx.fillText('GRC·', wx, cyc); ctx.fillStyle = GREEN; ctx.fillText('LABS', wx + grcW, cyc);
+      var cfs = clamp(Math.round(R.w / 70), 11, 16); ctx.font = '600 ' + cfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = DIM;
+      ctx.fillText('© ' + (new Date()).getFullYear() + ' GRC·LABS · ALL RIGHTS RESERVED', R.x + R.w / 2, R.y + R.h * 0.86);  // copyright
       ctx.textAlign = 'start'; ctx.textBaseline = 'top';
       return t >= DUR;
     }

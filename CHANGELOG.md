@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.39 — 2026-06-12
+
+### Changed
+- The Labs section's project files were taken down while the work is reorganized — a "coming soon" placeholder stands in their place.
+- The Challenge is paused with an "update soon — to be continued" note; its terms & conditions are in preparation.
+- The screensaver now shows a large GRC·LABS logo lockup — the containment mark beside the wordmark — with an "© GRC·LABS — all rights reserved" line. (Copyright notices are also carried in the source headers.)
+
 ## v1.38 — 2026-06-12
 
 ### Changed

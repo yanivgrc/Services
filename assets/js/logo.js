@@ -1,5 +1,6 @@
 /* GRC·LABS mark — the "containment breach": an epoxy tetrahedron with a hollow wax-sphere cavity,
-   raymarched in a single fragment shader. Dependency-free WebGL; degrades to a static asset if WebGL is unavailable. */
+   raymarched in a single fragment shader. Dependency-free WebGL; degrades to a static asset if WebGL is unavailable.
+   © 2026 GRC·LABS / Yaniv Dadon — all rights reserved. www.grc-labs.com */
 (function () {
   var cvs = document.getElementById('logo');
   if (!cvs) return;
