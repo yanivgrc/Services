@@ -83,5 +83,13 @@ Worked task by task; updated after each. **Do not break approved/working functio
 - [x] **Menorah forms FROM the matrix motion** — no longer an alpha-blended image. Each cell scrambles through matrix glyphs, condenses as a downward-sweeping wave reaches it, then locks into its menorah glyph (brief bright flash on lock); on exit the last-formed cells unlock first back into falling glyphs. FILL 700 / CO 1700 / HOLD 2200 / DIS 1700. Verified mid-formation + fully formed.
 - [x] **Cochlea → snail (שבלול), not horn (שופר)** — flattened the vertical climb (0.26·u → 0.07·u), more coils (uMax 5π→6π), tighter inward taper. Reads as a flat coiled shell with an aperture. Verified.
 
+## Round 6 (this session, verified)
+- [x] **Dense matrix everywhere** — rewrote the rain (background layer, dedicated window, AND the between-scene wipe) as full falling streams with bright heads + fading trails. Drops seed in-view, trail ≈55% of rows, low-alpha floor (0.20) so it's never sparse. Verified.
+- [x] **Hebrew in the matrix** — `HEB_RAIN` letters stream alongside katakana/kanji/greek/symbols; Hebrew cells highlight amber. Verified.
+- [x] **π removed from the rain completely** — no PI_D streaming, no π glyph (stripped from `RAIN_BASE` and the menorah scramble set); deleted the dead `makePiDigits` (π·digits) scene. Verified.
+- [x] **צור קשר on Voyager and Audio** — bright Hebrew CTA at the top of both scenes. Verified.
+- [x] **Removed TRANSMIT** — deleted `makeWords` and dropped `'msg'` from the window rotation + dispatch.
+- [x] **Menorah centering bug fixed** — `build()` cached `ox/oy` from the first R it saw, which was the rise-in transition (R.y = C.h·0.5 ≈ 389); the cache key `(R.w<<1)^R.h` ignored R.y so it never recomputed. Now only the layout (fs/cells/blkW/blkH) is cached; `ox/oy` are recomputed each frame from the live R. Verified centred via bounding-box probe + screenshot.
+
 ## Not done / for next time
 _(filled at the end)_

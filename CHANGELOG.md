@@ -2,6 +2,17 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.28 — 2026-06-12
+
+### Changed
+- The matrix rain is now a dense, full curtain — every column a falling stream with a bright head and a fading trail — and never thins to a few stray drops. Hebrew letters now stream through it alongside the katakana.
+- Removed π from the rain entirely (and dropped the standalone π-digits scene).
+- The "צור קשר" call-to-action now appears on the Voyager and audio-waveform scenes.
+- Fixed the Menorah's centering — it was rendering low and clipped; it now sits centred in the frame.
+
+### Removed
+- The "transmit" rotating-words scene.
+
 ## v1.27 — 2026-06-12
 
 ### Changed

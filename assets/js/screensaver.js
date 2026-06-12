@@ -54,19 +54,32 @@
   var PI_D = '31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679';
   var E_D = '27182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274';
   function constPick() { return Math.random() < 0.5 ? { d: PI_D, s: 'π' } : { d: E_D, s: 'e' }; }
-  // the rain charset — katakana (the "looks like Chinese" glyphs), a few kanji, Greek, symbols, and the streaming value of π
+  // the rain charset — katakana (the "looks like Chinese" glyphs), a few kanji, Greek and symbols (Hebrew added below)
   var KANA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンﾊﾋﾌﾍﾎ';
   var KANJI = '日月火水木金土山川田力心目耳口手中大小上下天空雨風';
   var GLY_GREEK = 'πΣΔΛΦΩΘΞΨμβαλσ';
   var GLY_SYM = '#%&<>*+=/¥§∞';
-  function rainChar(cptr, i) {
-    var roll = Math.random();
-    if (roll < 0.40) return { ch: KANA.charAt((Math.random() * KANA.length) | 0), amber: false };
-    if (roll < 0.55) return { ch: KANJI.charAt((Math.random() * KANJI.length) | 0), amber: false };
-    if (roll < 0.74) return { ch: PI_D.charAt(cptr[i]++ % PI_D.length), amber: false };
-    if (roll < 0.82) return { ch: 'π', amber: true };
-    if (roll < 0.91) return { ch: GLY_GREEK.charAt((Math.random() * GLY_GREEK.length) | 0), amber: false };
-    return { ch: GLY_SYM.charAt((Math.random() * GLY_SYM.length) | 0), amber: false };
+  var HEB_RAIN = 'אבגדהוזחטיכךלמםנןסעפףצץקרשת';                              // Hebrew letters stream in the rain too
+  var RAIN_BASE = KANA + KANJI + HEB_RAIN + '0123456789' + GLY_GREEK.replace('π', '') + GLY_SYM; // no π anywhere in the rain
+  function streamCh(i, row) { var h = ((i * 374761393) ^ (row * 668265263)) >>> 0; return RAIN_BASE.charAt(h % RAIN_BASE.length); }
+  function isHebCh(ch) { return HEB_RAIN.indexOf(ch) >= 0; }
+  // a dense, full matrix — every column is a falling stream with a bright head and a fading trail; never thinned to a few drops
+  function drawMatrix(R, rfs, rcols, rdrops, rspd, intensity) {
+    clipRect(R);
+    ctx.font = rfs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+    var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55));
+    for (var i = 0; i < rcols; i++) {
+      var headI = Math.floor(rdrops[i]), x = R.x + i * rfs;
+      for (var tr = 0; tr < TRAIL; tr++) {
+        var row = headI - tr, yy = R.y + row * rfs;
+        if (yy <= R.y - rfs || yy >= R.y + R.h) continue;
+        if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,' + intensity.toFixed(3) + ')'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
+        else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.82 + 0.10); ctx.fillStyle = isHebCh(ch) ? 'rgba(240,180,41,' + a.toFixed(3) + ')' : 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
+      }
+      rdrops[i] += rspd[i];
+      if ((Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.55 + Math.random() * 0.8; }
+    }
+    ctx.restore();
   }
   // eased crossfade for things that coalesce out of the matrix and dissolve back — smooth in and out
   function coalesceMix(t, FILL, CO, HOLD, DIS) {
@@ -791,6 +804,8 @@
         var amp = sig * env, h = Math.round(Math.abs(amp) * half), dir = amp >= 0 ? -1 : 1;
         for (var k = 0; k <= h; k++) { var rr = mid + dir * k, edge = k >= h - 1; put(c, rr, edge ? '#' : '|', edge ? '#ffffff' : (k < h * 0.5 ? GREEN : MIDG)); }
       }
+      var afs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + afs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.12);
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       label(R, 'audio · scope');
       return t >= DUR;
     }
@@ -873,14 +888,13 @@
   function makeMenorah() {
     // the menorah is not drawn as an image — it is GROWN out of the rain: each cell scrambles
     // through matrix glyphs, condenses as the forming wave reaches it, then locks into its glyph.
-    var t = 0, cells = null, fs = 0, cw = 0, ox = 0, oy = 0, key = -1, rain = makeRainLayer();
+    var t = 0, cells = null, fs = 0, cw = 0, blkW = 0, blkH = 0, key = -1, rain = makeRainLayer();
     var FILL = 700, CO = 1700, HOLD = 2200, DIS = 1700, END = FILL + CO + HOLD + DIS;
-    var SCR = KANA + KANJI + GLY_GREEK + '0123456789';
+    var SCR = KANA + KANJI + '0123456789';
     function build(R) {
       var nrows = MENORAH_ART.length, ncols = 0, i; for (i = 0; i < nrows; i++) ncols = Math.max(ncols, MENORAH_ART[i].length);
       fs = Math.max(5, Math.min((R.w * 0.88) / (ncols * 0.6), (R.h * 0.82) / nrows)); cw = fs * 0.6;
-      var blkW = ncols * cw, blkH = nrows * fs;
-      ox = R.x + (R.w - blkW) / 2; oy = R.y + (R.h - blkH) / 2;
+      blkW = ncols * cw; blkH = nrows * fs;                  // layout depends only on R.w/R.h; ox/oy are recomputed per-frame so transition offsets don't get cached
       cells = [];
       for (var r = 0; r < nrows; r++) { var line = MENORAH_ART[r]; for (var c = 0; c < line.length; c++) { var ch = line.charAt(c); if (ch === ' ') continue;
         var col = (ch === '#' || ch === '%') ? BRIGHT : ((ch === '*' || ch === '+') ? GREEN : MIDG);
@@ -902,6 +916,7 @@
       rain.draw(R, rainI);
       if (t < FILL) return false;
       ctx.save(); clipRect(R); ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      var ox = R.x + (R.w - blkW) / 2, oy = R.y + (R.h - blkH) / 2;  // centred on the live region each frame
       var tick = Math.floor(t / 70);
       var formP = clamp((t - FILL) / CO, 0, 1);
       var disQ = t > FILL + CO + HOLD ? clamp((t - FILL - CO - HOLD) / DIS, 0, 1) : 0;
@@ -949,7 +964,8 @@
       var dcx = x0 + cols * cw / 2, dcy = y0 + rows * fs * 0.42, maxR = Math.min(R.w, R.h) * 0.46; // light transmission signals from the dish
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (var w = 0; w < 4; w++) { var wp = (t / 2600 + w / 4) % 1, rr = wp * maxR; if (rr < 10) continue; ctx.fillStyle = wp < 0.45 ? GREEN : FAINT; var np = Math.max(14, Math.floor(rr * 0.32)); for (var k = 0; k < np; k++) { var ang = k / np * 6.2832; ctx.fillText('.', dcx + Math.cos(ang) * rr, dcy + Math.sin(ang) * rr * 0.55); } }
-      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
+      var vfs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + vfs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.10);
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       label(R, 'voyager · 1977');
       return t >= DUR;
     }
@@ -974,39 +990,6 @@
       }
       ctx.textAlign = 'start'; ctx.textBaseline = 'top';
       label(R, 'orbits · astro');
-      return t >= DUR;
-    }
-    return { frame: frame, title: 'viz' };
-  }
-  // honouring π — its digits spiral out as if being computed, one place at a time
-  // honouring π — its own digits fill in to draw the shape of the π glyph
-  function makePiDigits() {
-    var t = 0, DUR = 8400, REVEAL = 5600, cells = null, fs = 0, cw = 0, x0 = 0, y0 = 0, key = -1;
-    function build(R) {
-      fs = clamp(Math.round(Math.min(R.w, R.h) / 48), 9, 16); cw = fs * 0.6;
-      var gw = Math.max(20, Math.floor((R.w * 0.62) / cw)), gh = Math.max(12, Math.floor((R.h * 0.72) / fs));
-      var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
-      o.fillStyle = '#000'; o.fillRect(0, 0, gw, gh); o.fillStyle = '#fff'; o.textAlign = 'center'; o.textBaseline = 'middle';
-      var fsize = gh; o.font = '700 ' + fsize + 'px "Times New Roman", Georgia, serif';
-      while (fsize > 4 && o.measureText('π').width > gw * 0.9) { fsize--; o.font = '700 ' + fsize + 'px "Times New Roman", Georgia, serif'; }
-      o.fillText('π', gw / 2, gh / 2 + fsize * 0.04);
-      var d = o.getImageData(0, 0, gw, gh).data; cells = [];
-      for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) if (d[(r * gw + c) * 4] > 110) cells.push([c, r]);
-      x0 = R.x + Math.round((R.w - gw * cw) / 2); y0 = R.y + Math.round((R.h - gh * fs) / 2); key = (R.w << 1) ^ R.h;
-    }
-    function frame(dt, R) {
-      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      if (!cells || key !== ((R.w << 1) ^ R.h)) build(R);
-      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
-      var n = Math.floor(clamp(t / REVEAL, 0, 1) * cells.length);
-      for (var i = 0; i < n; i++) {
-        var cell = cells[i], age = n - i;
-        ctx.fillStyle = age < 2 ? '#ffffff' : (age < 16 ? BRIGHT : (Math.sin(i * 1.7 - t * 0.005) > 0.92 ? BRIGHT : (age < 90 ? GREEN : MIDG)));
-        ctx.fillText(PI_D.charAt(i % PI_D.length), x0 + cell[0] * cw, y0 + cell[1] * fs);
-      }
-      var hfs = clamp(Math.round(R.w / 46), 12, 18); ctx.font = hfs + 'px ' + MONO; ctx.fillStyle = DIM;
-      ctx.fillText('π = 3.' + PI_D.slice(1, 1 + Math.min(34, Math.max(0, n))), R.x + 18, R.y + 14);
-      label(R, 'π · digits');
       return t >= DUR;
     }
     return { frame: frame, title: 'viz' };
@@ -1089,62 +1072,24 @@
   }
 
   // ───────────────────────── window: rain — matrix as content ─────────────────────────
-  // rotating words — slogan, contact, LinkedIn, teasers — each scrambles in like the site title, then out
-  function makeWords() {
-    var t = 0, DEC = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&/<>*+', HEB = 'אבגדהוזחטיכלמנסעפצקרשת0123456789', CYCLE = 2700;
-    var lines = [
-      { tx: 'GRC·LABS', col: BRIGHT, rtl: false },
-      { tx: 'TAILORED INFORMATION SECURITY', col: GREEN, rtl: false },
-      { tx: 'ספר לנו על האתגרים שלך', col: BRIGHT, rtl: true },
-      { tx: 'linkedin.com/in/yaniv-dadon', col: AMBER, rtl: false }
-    ];
-    if (Math.random() < 0.4) lines.push(Math.random() < 0.5 ? { tx: 'version upgrade soon ..', col: GREEN, rtl: false } : { tx: 'coming soon ..', col: BRIGHT, rtl: false }); // teaser shows only occasionally
-    function keep(ch) { return ch === ' ' || ch === '·' || ch === '.' || ch === '/' || ch === '-'; }
-    function frame(dt, R) {
-      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var i = Math.floor(t / CYCLE) % lines.length, lt = t % CYCLE, L = lines[i];
-      var rev = clamp(lt / 650, 0, 1), out = lt > 2050 ? clamp((lt - 2050) / 600, 0, 1) : 0;
-      var settled = Math.floor(rev * L.tx.length) - Math.floor(out * L.tx.length), pool = L.rtl ? HEB : DEC, s = '';
-      for (var k = 0; k < L.tx.length; k++) { var ch = L.tx.charAt(k); s += (keep(ch) || k < settled) ? ch : pool.charAt((Math.random() * pool.length) | 0); }
-      var cx = R.x + R.w / 2, cy = R.y + R.h / 2, fs = clamp(Math.round(R.w / (L.tx.length * 0.72)), 20, 52);
-      ctx.font = '600 ' + clamp(Math.round(R.w / 60), 11, 16) + 'px ' + MONO; ctx.direction = 'ltr'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = DIM; ctx.fillText('// GRC·LABS', cx, cy - fs * 1.0);
-      ctx.font = '700 ' + fs + 'px ' + (L.rtl ? HEBF : MONO); ctx.direction = L.rtl ? 'rtl' : 'ltr'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = (rev >= 1 && out === 0) ? L.col : GREEN; ctx.fillText(s, cx, cy);
-      ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      label(R, 'transmit');
-      return t >= CYCLE * lines.length;
-    }
-    return { frame: frame, title: 'msg' };
-  }
   function makeRain() {
-    var t = 0, DUR = 6000, fs = 16, cols = 0, drops = [], spd = [], cptr = [], key = -1;
-    function build(R) { fs = clamp(Math.round(R.w / 70), 12, 20); cols = Math.ceil(R.w / fs); drops = []; spd = []; cptr = []; for (var i = 0; i < cols; i++) { drops[i] = Math.floor(Math.random() * -(R.h / fs)); spd[i] = 0.55 + Math.random() * 0.8; cptr[i] = (Math.random() * PI_D.length) | 0; } key = (R.w << 1) ^ R.h; }
+    var t = 0, DUR = 6000, fs = 16, cols = 0, drops = [], spd = [], key = -1;
+    function build(R) { fs = clamp(Math.round(R.w / 70), 12, 20); cols = Math.ceil(R.w / fs); drops = []; spd = []; var rows = R.h / fs; for (var i = 0; i < cols; i++) { drops[i] = Math.floor(Math.random() * rows); spd[i] = 0.55 + Math.random() * 0.8; } key = (R.w << 1) ^ R.h; }
     function frame(dt, R) {
       t += dt; if (key !== ((R.w << 1) ^ R.h)) build(R);
-      ctx.save(); clipRect(R); ctx.fillStyle = 'rgba(8,11,20,0.14)'; ctx.fillRect(R.x, R.y, R.w, R.h);
-      ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      for (var i = 0; i < cols; i++) { var g = rainChar(cptr, i), yy = R.y + drops[i] * fs; ctx.fillStyle = g.amber ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]); if (yy > R.y) ctx.fillText(g.ch, R.x + i * fs, yy); if (yy > R.y + R.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); spd[i] = 0.55 + Math.random() * 0.8; } else drops[i] += spd[i]; }
-      ctx.restore(); ctx.restore();
-      label(R, 'rain · π');
+      ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      drawMatrix(R, fs, cols, drops, spd, 1);
+      label(R, 'matrix · rain');
       return t >= DUR;
     }
     return { frame: frame, title: 'rain' };
   }
 
-  // a reusable matrix-rain layer (streaming π) — things coalesce out of it and dissolve back in
+  // a reusable matrix-rain layer — a full curtain things coalesce out of and dissolve back into
   function makeRainLayer() {
-    var rfs = 16, rcols = 0, rdrops = [], rspd = [], rcptr = [], rkey = -1;
-    function ensure(R) { if (rkey === ((R.w << 1) ^ R.h)) return; rfs = clamp(Math.round(R.w / 70), 12, 20); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; rcptr = []; for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * -(R.h / rfs)); rspd[i] = 0.55 + Math.random() * 0.8; rcptr[i] = (Math.random() * PI_D.length) | 0; } rkey = (R.w << 1) ^ R.h; }
-    function draw(R, intensity) {
-      ensure(R); ctx.save(); clipRect(R); ctx.fillStyle = 'rgba(8,11,20,0.18)'; ctx.fillRect(R.x, R.y, R.w, R.h);
-      ctx.font = rfs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      for (var i = 0; i < rcols; i++) {
-        var yy = R.y + rdrops[i] * rfs;
-        if (Math.random() <= intensity) { var g = rainChar(rcptr, i); ctx.fillStyle = g.amber ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]); if (yy > R.y && yy < R.y + R.h) ctx.fillText(g.ch, R.x + i * rfs, yy); }
-        if (yy > R.y + R.h && Math.random() > 0.975) rdrops[i] = Math.floor(Math.random() * -8); else rdrops[i] += rspd[i];
-      }
-      ctx.restore(); ctx.restore();
-    }
+    var rfs = 16, rcols = 0, rdrops = [], rspd = [], rkey = -1;
+    function ensure(R) { if (rkey === ((R.w << 1) ^ R.h)) return; rfs = clamp(Math.round(R.w / 70), 12, 20); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; var rows = R.h / rfs; for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.55 + Math.random() * 0.8; } rkey = (R.w << 1) ^ R.h; }
+    function draw(R, intensity) { ensure(R); drawMatrix(R, rfs, rcols, rdrops, rspd, Math.max(0.20, intensity)); }
     return { draw: draw };
   }
 
@@ -1277,13 +1222,12 @@
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
     if (n % 3 === 0) return 'brain';
-    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'msg', 'subject']); ilI = 0; } // viz scenes, matrix rain, rotating words, and the face coalescing from the rain
+    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'subject']); ilI = 0; } // viz scenes, matrix rain, and the face coalescing from the rain
     return ilOrder[ilI++];
   }
   function buildWindow(type) {
     if (type === 'brain') return makeBrain(nextCmd());
     if (type === 'viz') return nextViz();
-    if (type === 'msg') return makeWords();
     if (type === 'rain') return makeRain();
     if (type === 'brand') return makeBrand();
     if (type === 'subject') return portrait.scene();
@@ -1323,21 +1267,27 @@
   // ─────────── matrix wipe — the transition between windows ───────────
   // Falls to fill, then drains down and out the bottom, revealing the next window.
   var mtx = (function () {
-    // a rich rain — katakana, kanji, Greek, symbols, and the streaming value of π (in amber)
-    var fs = 16, cols = 0, drops = [], speeds = [], cptr = [];
-    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; cptr = []; for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * -(C.h / fs)); speeds[i] = 0.6 + Math.random() * 0.85; cptr[i] = (Math.random() * PI_D.length) | 0; } }
+    // a dense, full matrix — katakana, kanji, Hebrew, Greek and symbols; each column a falling stream with a bright head and a fading trail
+    var fs = 16, cols = 0, drops = [], speeds = [], TRAIL = 16;
+    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; var rows = C.h / fs; TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * rows); speeds[i] = 0.6 + Math.random() * 0.85; } }
     function draw(C, respawn) {
-      ctx.save(); clipRect(C); ctx.fillStyle = 'rgba(8,11,20,0.12)'; ctx.fillRect(C.x, C.y, C.w, C.h);
+      clipRect(C);
+      if (respawn) { ctx.fillStyle = 'rgba(8,11,20,0.16)'; ctx.fillRect(C.x, C.y, C.w, C.h); } // fill phase: progressively veil the outgoing window
       ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       for (var i = 0; i < cols; i++) {
-        var g = rainChar(cptr, i), yy = C.y + drops[i] * fs;
-        ctx.fillStyle = g.amber ? AMBER : (Math.random() > 0.94 ? BRIGHT : GREENS[(Math.random() * GREENS.length) | 0]);
-        if (yy > C.y - fs && yy < C.y + C.h + fs) ctx.fillText(g.ch, C.x + i * fs, yy);
-        if (respawn && yy > C.y + C.h && Math.random() > 0.975) { drops[i] = Math.floor(Math.random() * -8); speeds[i] = 0.6 + Math.random() * 0.85; } else drops[i] += speeds[i];
+        var headI = Math.floor(drops[i]), x = C.x + i * fs;
+        for (var tr = 0; tr < TRAIL; tr++) {
+          var row = headI - tr, yy = C.y + row * fs;
+          if (yy <= C.y - fs || yy >= C.y + C.h) continue;
+          if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,1)'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
+          else { var ch = streamCh(i, row), a = (1 - tr / TRAIL) * 0.82 + 0.10; ctx.fillStyle = isHebCh(ch) ? 'rgba(240,180,41,' + a.toFixed(3) + ')' : 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
+        }
+        drops[i] += speeds[i];
+        if (respawn && (Math.floor(drops[i]) - TRAIL) * fs > C.h) { drops[i] = -(Math.random() * 6); speeds[i] = 0.6 + Math.random() * 0.85; }
       }
-      ctx.restore(); ctx.restore();
+      ctx.restore();
     }
-    function cleared(C) { for (var i = 0; i < cols; i++) if (drops[i] * fs <= C.h + fs) return false; return true; }
+    function cleared(C) { for (var i = 0; i < cols; i++) if ((Math.floor(drops[i]) - TRAIL) * fs <= C.h) return false; return true; }
     return { reset: reset, draw: draw, cleared: cleared };
   })();
 
