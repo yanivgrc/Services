@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.41 — 2026-06-12
+
+### Added
+- A new screensaver mode — **BREACH** — the GRC·LABS containment mark rendered full-screen as phosphor-green ASCII: an epoxy tetrahedron with a spherical cavity carved out of it, raymarched and turning slowly at fixed parameters. It takes the place of the ASCII-portrait mode in the rotation.
+
+### Changed
+- The hero logo's body carries more green, and the mark now fades in only after the wordmark's decrypt animation settles — so it no longer jitters beside the shifting letters.
+
 ## v1.40 — 2026-06-12
 
 ### Changed

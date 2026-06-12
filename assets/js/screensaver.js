@@ -1052,67 +1052,57 @@
     var F = [[0, 1, 2], [0, 2, 3], [5, 4, 7], [5, 7, 6], [4, 0, 3], [4, 3, 7], [1, 5, 6], [1, 6, 2], [4, 5, 1], [4, 1, 0], [3, 2, 6], [3, 6, 7]];
     return makeSolid3D('cube · 3d', V, F, { scale: 1.25 });
   }
-  // the GRC·LABS containment mark — the breach SDF (rounded tetrahedron carved by a wax-sphere cavity), raymarched
-  // into ASCII and floated beside the wordmark on a faint matrix. The spin and ASCII density drift over time.
+  // BREACH — the GRC·LABS containment mark, FULL-SCREEN, in uniform phosphor-green ASCII: a rounded epoxy
+  // tetrahedron with a spherical cavity carved out of it (max(tetra, −sphere)), raymarched on the CPU and
+  // sampled to a monospace grid where char density = luminance. Parameters are LOCKED to the brand prototype.
   function makeLogo() {
-    var t = 0, DUR = 10000, rain = makeRainLayer();
-    var TET = 1.94, SPH = 0.95, ROUND = 0.021, ROT = 0.75, RIN = TET / 3, DEN = 186;   // the user's parameters
-    var den = DEN, rotM = 1, denT = DEN, rotT = 1, varyT = 0, yaw = 0;
-    var RAMP = " .,:;!i><~+?][}{)(|\\/trxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@";
+    var t = 0, DUR = 9500, yaw = 0;
+    var SPH = 0.95, ROUND = 0.021, VIS = 0.10, ROT = 0.75, RIN = 1.94 / 3, DEN = 186; // locked: tetra R=1.94, cavity 0.95, edge 0.021, ghost 0.10, spin 0.75, 186 cols
+    var RAMP = " .'`^,:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
     var N0x = 0.57735, N0y = 0.57735, N0z = 0.57735, N1x = 0.57735, N1y = -0.57735, N1z = -0.57735,
         N2x = -0.57735, N2y = 0.57735, N2z = -0.57735, N3x = -0.57735, N3y = -0.57735, N3z = 0.57735;
     var Lx = 0.5, Ly = 0.72, Lz = 0.48, Lm = Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz); Lx /= Lm; Ly /= Lm; Lz /= Lm;
     function smax(a, b, k) { var h = 0.5 + 0.5 * (a - b) / k; h = h < 0 ? 0 : (h > 1 ? 1 : h); return b + (a - b) * h + k * h * (1 - h); }
-    function mapB(x, y, z) {
-      var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z;
-      var tet = smax(smax(a, b, ROUND), smax(c, d, ROUND), ROUND) - RIN;
-      var sph = Math.sqrt(x * x + y * y + z * z) - SPH;
-      return tet > -sph ? tet : -sph;                                   // max(tetra, -sphere) → solid tetra minus the cavity
-    }
+    function mapB(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var tet = smax(smax(a, b, ROUND), smax(c, d, ROUND), ROUND) - RIN; var sph = Math.sqrt(x * x + y * y + z * z) - SPH; return tet > -sph ? tet : -sph; }
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
     function frame(dt, R) {
-      t += dt; varyT += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      rain.draw(R, 0.15);                                               // floats on a faint matrix
-      if (varyT > 2800) { varyT = 0; denT = 120 + Math.random() * 66; rotT = 0.6 + Math.random() * 1.05; } // play with density + spin now and then
-      var k = Math.min(1, dt / 520); den += (denT - den) * k; rotM += (rotT - rotM) * k;
-      yaw += 0.006 * ROT * rotM * (dt / 16.67); var pitch = Math.sin(t * 0.00045) * 0.30;
-      var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-      var r00 = cy, r02 = -sy, r10 = -sp * sy, r11 = cp, r12 = -sp * cy, r20 = cp * sy, r21 = sp, r22 = cp * cy;
-      var rox = -9 * sy, roy = -9 * sp * cy, roz = 9 * cp * cy;
-      var wf = clamp(Math.round(R.w / 13), 28, 86), wordFont = '700 ' + wf + 'px "Space Grotesk", "IBM Plex Sans", sans-serif';
-      ctx.font = wordFont; var wordW = ctx.measureText('GRC·LABS').width, grcW = ctx.measureText('GRC·').width;
-      var S = Math.min(R.w * 0.40, R.h * 0.74), gap = Math.max(18, R.w * 0.02), rows = clamp(Math.round(den * 0.40), 38, 72), fs = S / rows, acw = fs * 0.6, cols = Math.round(rows / 0.6);
-      var lockW = cols * acw + gap + wordW, startX = R.x + (R.w - lockW) / 2, cyc = R.y + R.h * 0.45, lx = startX, ly = cyc - rows * fs / 2;  // a big, centred logo lockup
-      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      yaw += 0.006 * ROT * (dt / 16.67); var pitch = Math.sin(t * 0.0002025) * 0.35;   // locked spin: yaw += 0.006·0.75/frame, pitch = sin(t·0.27·0.75)·0.35
+      var cyr = Math.cos(yaw), syr = Math.sin(yaw), cpr = Math.cos(pitch), spr = Math.sin(pitch);
+      var r00 = cyr, r02 = -syr, r10 = -spr * syr, r11 = cpr, r12 = -spr * cyr, r20 = cpr * syr, r21 = spr, r22 = cpr * cyr;
+      var rox = -9 * syr, roy = -9 * spr * cyr, roz = 9 * cpr * cyr;
+      var cols = DEN, rows = Math.max(24, Math.round(cols * (R.h / R.w) * 0.5)), aspect = R.w / R.h;
+      var fs = Math.min(R.w / cols * 1.65, R.h / rows), acw = R.w / cols, x0 = R.x, y0 = R.y + (R.h - rows * fs) / 2;
+      ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr'; ctx.fillStyle = GREEN; // uniform green; the form is carried by char density
       for (var r = 0; r < rows; r++) {
-        var uy = (rows * 0.5 - (r + 0.5)) / rows;
+        var uy = 0.5 - (r + 0.5) / rows;
         for (var c = 0; c < cols; c++) {
-          var ux = ((c + 0.5) - cols * 0.5) / rows;
+          var ux = aspect * ((c + 0.5) / cols - 0.5);
           var dx = ux, dy = uy, dz = -1.7, dl = Math.sqrt(dx * dx + dy * dy + dz * dz); dx /= dl; dy /= dl; dz /= dl;
           var rdx = r00 * dx + r02 * dz, rdy = r10 * dx + r11 * dy + r12 * dz, rdz = r20 * dx + r21 * dy + r22 * dz;
           var tt = 0, hit = false, px = 0, py = 0, pz = 0, dd, i;
-          for (i = 0; i < 42; i++) { px = rox + rdx * tt; py = roy + rdy * tt; pz = roz + rdz * tt; dd = mapB(px, py, pz); if (dd < 0.002) { hit = true; break; } tt += dd * 0.85; if (tt > 20) break; }
-          if (!hit) continue;
-          var e = 0.02, nx = mapB(px + e, py, pz) - mapB(px - e, py, pz), ny = mapB(px, py + e, pz) - mapB(px, py - e, pz), nz = mapB(px, py, pz + e) - mapB(px, py, pz - e);
-          var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= nl; ny /= nl; nz /= nl;
-          var dk = nx * Lx + ny * Ly + nz * Lz; if (dk < 0) dk = 0;
-          var vdot = -(nx * rdx + ny * rdy + nz * rdz); if (vdot < 0) vdot = 0; var fres = (1 - vdot) * (1 - vdot) * (1 - vdot);
-          var inner = Math.abs(Math.sqrt(px * px + py * py + pz * pz) - SPH) < 0.03, lum;
-          if (inner) lum = 0.13 + 0.42 * dk + 0.16 * fres; else lum = 0.20 + 0.64 * dk + 0.15 * edgeGlow(px, py, pz) + 0.22 * fres;
-          if (lum > 1) lum = 1; if (lum < 0.05) continue;
-          ctx.fillStyle = lum > 0.72 ? BRIGHT : (lum > 0.40 ? GREEN : MIDG);
-          ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length))), lx + c * acw, ly + r * fs);
+          for (i = 0; i < 44; i++) { px = rox + rdx * tt; py = roy + rdy * tt; pz = roz + rdz * tt; dd = mapB(px, py, pz); if (dd < 0.002) { hit = true; break; } tt += dd * 0.85; if (tt > 20) break; }
+          var lum = 0;
+          if (hit) {
+            var e = 0.02, nx = mapB(px + e, py, pz) - mapB(px - e, py, pz), ny = mapB(px, py + e, pz) - mapB(px, py - e, pz), nz = mapB(px, py, pz + e) - mapB(px, py, pz - e);
+            var nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+            var dk = nx * Lx + ny * Ly + nz * Lz; if (dk < 0) dk = 0;
+            var vdot = -(nx * rdx + ny * rdy + nz * rdz); if (vdot < 0) vdot = 0; var fres = (1 - vdot) * (1 - vdot) * (1 - vdot);
+            var inner = Math.abs(Math.sqrt(px * px + py * py + pz * pz) - SPH) < 0.03;
+            if (inner) lum = 0.16 + 0.5 * dk + 0.16 * fres; else lum = 0.22 + 0.66 * dk + 0.18 * edgeGlow(px, py, pz) + 0.24 * fres;
+          }
+          var bq = rox * rdx + roy * rdy + roz * rdz, c2 = rox * rox + roy * roy + roz * roz - SPH * SPH, disc = bq * bq - c2; // faint wax-sphere ghost (u_svis)
+          if (disc > 0) { var tn = -bq - Math.sqrt(disc); if (tn > 0 && (!hit || tn < tt)) { var gx = rox + rdx * tn, gy = roy + rdy * tn, gz = roz + rdz * tn, glen = Math.sqrt(gx * gx + gy * gy + gz * gz) || 1, gd = -(gx / glen * rdx + gy / glen * rdy + gz / glen * rdz); if (gd < 0) gd = 0; var gfr = (1 - gd) * (1 - gd) * (1 - gd), ga = VIS * (0.12 + 0.88 * gfr); lum = lum * (1 - ga) + (0.35 + 0.75 * gfr) * ga; } }
+          if (lum <= 0.04) continue; if (lum > 1) lum = 1;
+          ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length))), x0 + c * acw, y0 + r * fs);
         }
       }
-      ctx.font = wordFont; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
-      var wx = startX + cols * acw + gap;
-      ctx.fillStyle = INK; ctx.fillText('GRC·', wx, cyc); ctx.fillStyle = GREEN; ctx.fillText('LABS', wx + grcW, cyc);
-      var cfs = clamp(Math.round(R.w / 70), 11, 16); ctx.font = '600 ' + cfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = DIM;
-      ctx.fillText('© ' + (new Date()).getFullYear() + ' GRC·LABS · ALL RIGHTS RESERVED', R.x + R.w / 2, R.y + R.h * 0.86);  // copyright
+      var cfs = clamp(Math.round(R.w / 82), 11, 15); ctx.font = '600 ' + cfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = DIM;
+      ctx.fillText('© ' + (new Date()).getFullYear() + ' GRC·LABS · ALL RIGHTS RESERVED', R.x + R.w / 2, R.y + R.h - cfs * 1.7);  // copyright
       ctx.textAlign = 'start'; ctx.textBaseline = 'top';
       return t >= DUR;
     }
-    return { frame: frame, title: 'viz' };
+    return { frame: frame, title: 'breach' };
   }
   function label(R, name) { ctx.fillStyle = DIM; ctx.font = '600 ' + clamp(Math.round(R.w / 95), 11, 15) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr'; ctx.fillText('// ' + name, R.x + R.w / 2, R.y + R.h - 26); ctx.textAlign = 'start'; ctx.textBaseline = 'top'; }
 
@@ -1292,7 +1282,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeSpring, makeKnot, makeCochlea, makeMolecule, makePyr3D, makeCube, makeLogo, makeAudioScope, makeAstro, makeCrypto, makeVoyager, makeMenorah]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeSpring, makeKnot, makeCochlea, makeMolecule, makePyr3D, makeCube, makeAudioScope, makeAstro, makeCrypto, makeVoyager, makeMenorah]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }
@@ -1304,7 +1294,7 @@
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
     if (n % 3 === 0) return 'brain';
-    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'subject']); ilI = 0; } // viz scenes, matrix rain, and the face coalescing from the rain
+    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'breach']); ilI = 0; } // viz scenes, matrix rain, and the BREACH containment mark (replaces the portrait-ASCII slot)
     return ilOrder[ilI++];
   }
   function buildWindow(type) {
@@ -1312,7 +1302,8 @@
     if (type === 'viz') return nextViz();
     if (type === 'rain') return makeRain();
     if (type === 'brand') return makeBrand();
-    if (type === 'subject') return portrait.scene();
+    if (type === 'breach') return makeLogo();
+    if (type === 'subject') return portrait.scene();   // retired from the rotation; reachable via ?win=subject
     return nextViz();
   }
   function nextWindow() {

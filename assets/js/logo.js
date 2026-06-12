@@ -39,7 +39,7 @@
     'vec3 hh=normalize(lk+vd);float spec=pow(max(dot(n,hh),0.0),46.0);float fres=pow(1.0-max(dot(n,vd),0.0),3.0);' +
     'bool inner=abs(length(p)-u_rs)<0.02;' +
     'if(inner){col=CAVITY*0.5+GREEN*(dk*0.45+df*0.18)+GREEN*fres*0.18+GREEN*0.05;}' +
-    'else{col=EPOXY*0.55+GREEN*(dk*0.70+df*0.22)+SPECC*spec*0.55+GREEN*fres*0.38+GREEN*edgeGlow(p)*0.30;}}' +
+    'else{col=EPOXY*0.42+GREEN*(0.24+dk*0.90+df*0.28)+SPECC*spec*0.5+GREEN*fres*0.46+GREEN*edgeGlow(p)*0.34;}}' +
     'if(u_svis>0.001){float b=dot(ro,rd);float c2=dot(ro,ro)-u_rs*u_rs;float disc=b*b-c2;' +
     'if(disc>0.0){float tn=-b-sqrt(disc);if(tn>0.0&&(!hit||tn<tt)){vec3 sp=ro+rd*tn;vec3 sn=normalize(sp);' +
     'float fr=pow(1.0-max(dot(sn,-rd),0.0),3.0);float a=clamp(u_svis*(0.12+0.88*fr),0.0,1.0);vec3 shell=GREEN*(0.35+0.75*fr);col=mix(col,shell,a);}}}' +
@@ -65,6 +65,7 @@
   var PR = Math.min(window.devicePixelRatio || 1, 2);
   function resize() { var r = cvs.getBoundingClientRect(); var w = Math.max(1, Math.round(r.width * PR)), h = Math.max(1, Math.round(r.height * PR)); if (w !== cvs.width || h !== cvs.height) { cvs.width = w; cvs.height = h; } gl.viewport(0, 0, cvs.width, cvs.height); }
   window.addEventListener('resize', resize); resize();
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(resize); } // re-fit once the display font has loaded
 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var t = 0, vis = true, raf = 0;
@@ -76,8 +77,10 @@
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop() { raf = requestAnimationFrame(loop); if (!vis) return; t += 0.016; render(); }
-  if (reduce) { render(); }                       // a single still frame, honour reduced motion
-  else { loop(); }
+  // fade the mark in only AFTER the heading's decrypt scramble settles — while the wordmark width is shifting
+  // frame-to-frame the mark would otherwise slide/jitter beside it. (Shown at once under reduced motion.)
+  if (reduce) { render(); cvs.style.opacity = '1'; }
+  else { loop(); setTimeout(function () { cvs.style.opacity = '1'; }, 1300); }
   // pause the loop when the logo scrolls out of view
   if ('IntersectionObserver' in window) { new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }, { threshold: 0.01 }).observe(cvs); }
 })();
