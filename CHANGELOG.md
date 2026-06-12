@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.27 — 2026-06-12
+
+### Changed
+- The Menorah is now grown out of the matrix itself — its glyphs condense from the falling rain and lock into shape in a downward sweep, then unravel back into the rain, instead of fading in as an image.
+- Reshaped the 3D cochlea into a flatter, snail-like coil — a winding shell with an open aperture, less like an upright horn.
+- Restored the original ASCII portrait — the earlier, softer tone-mapped renderings — replacing the edge-detected sketch version.
+
 ## v1.26 — 2026-06-12
 
 ### Added

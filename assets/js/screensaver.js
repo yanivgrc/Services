@@ -572,7 +572,7 @@
   function makeSpring() { return makeSurface('spring · coil', function (u, v) { var R2 = 1.0, R1 = 0.27, pitch = 0.105; return [(R2 + R1 * Math.cos(v)) * Math.cos(u), u * pitch - 4 * Math.PI * pitch + R1 * Math.sin(v), (R2 + R1 * Math.cos(v)) * Math.sin(u)]; }, { uMax: 8 * Math.PI, du: 0.06, dv: 0.10, scale: 1.25 }); }
   function makeKnot() { return makeSurface('torus · knot', function (u, v) { var k = 2.0, R2 = 1.6, R1 = 0.55, cv = Math.cos(v + k * u); return [(R2 + R1 * cv) * Math.cos(u), R1 * Math.sin(v + k * u), (R2 + R1 * cv) * Math.sin(u)]; }, { du: 0.035, dv: 0.05, scale: 0.85 }); }
   // a cochlea / nautilus shell — a logarithmic spiral tube winding in toward the centre
-  function makeCochlea() { return makeSurface('cochlea · 3d', function (u, v) { var s = Math.exp(-0.20 * u), R = 1.6 * s, tube = 0.55 * s; return [(R + tube * Math.cos(v)) * Math.cos(u), tube * Math.sin(v) + 0.26 * u - 2.0, (R + tube * Math.cos(v)) * Math.sin(u)]; }, { uMax: 5 * Math.PI, du: 0.045, dv: 0.12, scale: 1.6 }); }
+  function makeCochlea() { return makeSurface('cochlea · 3d', function (u, v) { var s = Math.exp(-0.18 * u), R = 1.7 * s, tube = 0.62 * s; return [(R + tube * Math.cos(v)) * Math.cos(u), tube * Math.sin(v) + 0.07 * u - 0.66, (R + tube * Math.cos(v)) * Math.sin(u)]; }, { uMax: 6 * Math.PI, du: 0.04, dv: 0.12, scale: 1.7 }); }
   function makeLife() {
     var t = 0, DUR = 8000, acc = 0, STEP = 130, grid = null, cols = 0, rows = 0, age = null, key = -1;
     function build(R) { var fs = clamp(Math.min(R.w, R.h) / 60, 8, 13), cw = fs * 0.62; cols = Math.max(24, Math.floor(R.w / cw)); rows = Math.max(20, Math.floor(R.h / fs)); grid = new Array(cols * rows); age = new Array(cols * rows); for (var i = 0; i < grid.length; i++) { grid[i] = Math.random() < 0.30 ? 1 : 0; age[i] = 0; } key = (R.w << 1) ^ R.h; build.fs = fs; build.cw = cw; }
@@ -871,24 +871,54 @@
     '                     **********+************************'
   ];
   function makeMenorah() {
-    var t = 0, blk = null, blkW = 0, blkH = 0, key = -1, rain = makeRainLayer();
-    var FILL = 620, CO = 1100, HOLD = 2400, DIS = 1300, END = FILL + CO + HOLD + DIS;
+    // the menorah is not drawn as an image — it is GROWN out of the rain: each cell scrambles
+    // through matrix glyphs, condenses as the forming wave reaches it, then locks into its glyph.
+    var t = 0, cells = null, fs = 0, cw = 0, ox = 0, oy = 0, key = -1, rain = makeRainLayer();
+    var FILL = 700, CO = 1700, HOLD = 2200, DIS = 1700, END = FILL + CO + HOLD + DIS;
+    var SCR = KANA + KANJI + GLY_GREEK + '0123456789';
     function build(R) {
       var nrows = MENORAH_ART.length, ncols = 0, i; for (i = 0; i < nrows; i++) ncols = Math.max(ncols, MENORAH_ART[i].length);
-      var fs = Math.max(5, Math.min((R.w * 0.88) / (ncols * 0.6), (R.h * 0.82) / nrows)), cw = fs * 0.6;
-      blkW = ncols * cw; blkH = nrows * fs;
-      blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
-      var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
-      for (var r = 0; r < nrows; r++) { var line = MENORAH_ART[r]; for (var c = 0; c < line.length; c++) { var ch = line.charAt(c); if (ch === ' ') continue; cc.fillStyle = (ch === '#' || ch === '%') ? BRIGHT : ((ch === '*' || ch === '+') ? GREEN : MIDG); cc.fillText(ch, c * cw, r * fs); } }
+      fs = Math.max(5, Math.min((R.w * 0.88) / (ncols * 0.6), (R.h * 0.82) / nrows)); cw = fs * 0.6;
+      var blkW = ncols * cw, blkH = nrows * fs;
+      ox = R.x + (R.w - blkW) / 2; oy = R.y + (R.h - blkH) / 2;
+      cells = [];
+      for (var r = 0; r < nrows; r++) { var line = MENORAH_ART[r]; for (var c = 0; c < line.length; c++) { var ch = line.charAt(c); if (ch === ' ') continue;
+        var col = (ch === '#' || ch === '%') ? BRIGHT : ((ch === '*' || ch === '+') ? GREEN : MIDG);
+        var hsh = hashOf(r + '_' + c);
+        var st = clamp((r / nrows) * 0.60 + ((hsh % 1000) / 1000) * 0.40, 0, 0.999); // downward sweep + per-cell jitter
+        cells.push({ c: c, r: r, ch: ch, col: col, st: st, seed: hsh });
+      } }
       key = (R.w << 1) ^ R.h;
     }
+    function scrCh(seed, tick) { return SCR.charAt((seed + tick) % SCR.length); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
-      var m = coalesceMix(t, FILL, CO, HOLD, DIS);
-      rain.draw(R, m.rainI);
-      if (m.a > 0.01) { var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2; ctx.globalAlpha = m.a; ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH); ctx.globalAlpha = 1; }
-      if (m.a > 0.85) label(R, 'menorah · temple');
+      if (!cells || key !== ((R.w << 1) ^ R.h)) build(R);
+      var rainI;
+      if (t < FILL) rainI = 1;
+      else if (t < FILL + CO) rainI = 1 - 0.80 * ((t - FILL) / CO);
+      else if (t < FILL + CO + HOLD) rainI = 0.16;
+      else rainI = 0.18 + 0.78 * clamp((t - FILL - CO - HOLD) / DIS, 0, 1);
+      rain.draw(R, rainI);
+      if (t < FILL) return false;
+      ctx.save(); clipRect(R); ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      var tick = Math.floor(t / 70);
+      var formP = clamp((t - FILL) / CO, 0, 1);
+      var disQ = t > FILL + CO + HOLD ? clamp((t - FILL - CO - HOLD) / DIS, 0, 1) : 0;
+      for (var k = 0; k < cells.length; k++) {
+        var cell = cells[k], x = ox + cell.c * cw, y = oy + cell.r * fs;
+        var unlock = disQ - (1 - cell.st);                       // last-formed cells dissolve first
+        if (unlock >= 0) { if (Math.random() < 0.65 - 0.5 * unlock) { ctx.fillStyle = GREENS[cell.seed % GREENS.length]; ctx.fillText(scrCh(cell.seed, tick + cell.c), x, y); } continue; }
+        var lockOn = formP - cell.st;
+        if (lockOn >= 0) {                                       // settled into the menorah glyph
+          ctx.fillStyle = lockOn < 0.045 ? BRIGHT : cell.col; ctx.fillText(cell.ch, x, y);
+        } else {                                                 // still rain — condenses as the wave nears
+          var near = clamp((formP - (cell.st - 0.22)) / 0.22, 0, 1);
+          if (Math.random() < 0.30 + 0.62 * near) { ctx.fillStyle = near > 0.5 ? GREEN : MIDG; ctx.fillText(scrCh(cell.seed, tick + cell.r * 3 + cell.c), x, y); }
+        }
+      }
+      ctx.restore();
+      if (formP >= 1 && disQ === 0) label(R, 'menorah · temple');
       return t >= END;
     }
     return { frame: frame, title: 'viz' };
@@ -1153,14 +1183,14 @@
   // ───────────────────────── window: subject — ASCII portrait (retired; ?win=subject) ─────────────────────────
   // a few portrait renderings to compare — cycle with ?face=N, or it rotates each appearance
   var FACE_VARIANTS = [
-    { id: 'v1·clean', ramp: " .:-=+*#@", lo: 0.18, span: 0.72, gamma: 0.85, hi: 0.60, mid: 0.34, blank: 0.17 },
-    { id: 'v2·ink', ramp: " .:=#@", lo: 0.17, span: 0.74, gamma: 0.95, hi: 0.55, mid: 0.32, blank: 0.18 },
-    { id: 'v3·line', ramp: " .:-+o*#@", lo: 0.16, span: 0.74, gamma: 0.80, hi: 0.60, mid: 0.34, blank: 0.15 }
+    { id: 'v1·soft', ramp: " .,:;-~=+*coaeUXEZ%#8B@", lo: 0.16, span: 0.74, gamma: 0.70, hi: 0.70, mid: 0.36, blank: 0.12 },
+    { id: 'v2·hard', ramp: " .:-=+ox*#%@MW", lo: 0.10, span: 0.82, gamma: 0.85, hi: 0.60, mid: 0.30, blank: 0.10 },
+    { id: 'v3·block', ramp: " .:-+*coe%#", lo: 0.13, span: 0.78, gamma: 0.72, hi: 0.64, mid: 0.34, blank: 0.10 }
   ];
   var faceVar = 0;
   var portrait = (function () {
     var img = new Image(), ready = false, failed = false;
-    img.onload = function () { ready = true; }; img.onerror = function () { failed = true; }; img.src = 'assets/img/portrait-light.jpg';
+    img.onload = function () { ready = true; }; img.onerror = function () { failed = true; }; img.src = 'assets/img/portrait-dark.jpg';
     function scene() {
       var t = 0, blk = null, blkW = 0, blkH = 0, key = -1;
       var V = FACE_VARIANTS[FORCE_FACE >= 0 ? (FORCE_FACE % FACE_VARIANTS.length) : (faceVar++ % FACE_VARIANTS.length)], RAMP = V.ramp;
@@ -1168,25 +1198,19 @@
       var FILL = 700, CO = 850, HOLD = 350, DIS = 1050, END = FILL + CO + HOLD + DIS;
       var rain = makeRainLayer();
       function build(R) {
-        var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 46, 8, 17), acw = fs * 0.6;
+        var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 58, 7, 13), acw = fs * 0.6;
         var gw = Math.max(40, Math.floor(side / acw)), gh = Math.max(40, Math.floor(side / fs));
         var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
         // crop a centred square tight on the head, so the face fills the frame instead of floating small and low
         var iw = img.naturalWidth || img.width || 720, ih = img.naturalHeight || img.height || 720, cs = Math.min(iw, ih) * 0.76, isx = (iw - cs) / 2, isy = clamp(ih * 0.47 - cs / 2, 0, ih - cs);
-        o.drawImage(img, 0, 0, 1, 1, 0, 0, 1, 1); var bgp = o.getImageData(0, 0, 1, 1).data, bg0 = bgp[0], bg1 = bgp[1], bg2 = bgp[2]; // the source corner is the true background colour — chroma-key it out
         o.drawImage(img, isx, isy, cs, cs, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data;
         var bh = gh * fs; blkW = gw * acw; blkH = bh + Math.round(fs * 2.2);
         blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
         var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
-        var lumg = new Array(gw * gh); // luminance grid, with the background chroma-keyed to -1
-        for (var r0 = 0; r0 < gh; r0++) for (var c0 = 0; c0 < gw; c0++) { var ii = (r0 * gw + c0) * 4, ddr = d[ii] - bg0, ddg = d[ii + 1] - bg1, ddb = d[ii + 2] - bg2; lumg[r0 * gw + c0] = (ddr * ddr + ddg * ddg + ddb * ddb < 3400) ? -1 : (0.299 * d[ii] + 0.587 * d[ii + 1] + 0.114 * d[ii + 2]) / 255; }
         for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) {
-          var L = lumg[r * gw + c]; if (L < 0) continue;
-          var lr = c + 1 < gw ? lumg[r * gw + c + 1] : L, ll = c > 0 ? lumg[r * gw + c - 1] : L, ld = r + 1 < gh ? lumg[(r + 1) * gw + c] : L, lu = r > 0 ? lumg[(r - 1) * gw + c] : L;
-          var gx = (lr >= 0 && ll >= 0) ? lr - ll : 0, gy = (ld >= 0 && lu >= 0) ? ld - lu : 0, edge = Math.sqrt(gx * gx + gy * gy);
-          var v = clamp(Math.pow(clamp((L - V.lo) / V.span, 0, 1), V.gamma), 0, 1);
-          if (edge > 0.20) { cc.fillStyle = edge > 0.42 ? '#ffffff' : BRIGHT; cc.fillText(edge > 0.42 ? '#' : '*', c * acw, r * fs); } // crisp feature edges
-          else if (v >= V.blank) { cc.fillStyle = v > V.hi ? GREEN : (v > V.mid ? MIDG : 'rgba(99,178,46,0.32)'); cc.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))), c * acw, r * fs); } // subtle tonal fill
+          var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - V.lo) / V.span, 0, 1), V.gamma), 0, 1);
+          if (v < V.blank) continue;
+          cc.fillStyle = v > V.hi ? BRIGHT : (v > V.mid ? GREEN : MIDG); cc.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))), c * acw, r * fs);
         }
         cc.fillStyle = DIM; cc.font = '700 ' + Math.max(11, Math.round(fs)) + 'px ' + MONO.replace(/"/g, ''); cc.textAlign = 'center'; cc.fillText('SUBJECT // Y.DADON — CEO', blkW / 2, bh + fs * 0.5);
         key = (R.w << 1) ^ R.h;

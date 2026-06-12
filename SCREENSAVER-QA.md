@@ -78,5 +78,10 @@ Worked task by task; updated after each. **Do not break approved/working functio
 - [x] **Face** recreated with edge detection — crisp feature outlines + subtle tonal fill (sketch look). Verified.
 - Shape indices now: 8 torus, 9 sphere, 10 spring, 11 twisted-torus, 12 cochlea, 13 molecule, 14 pyramid, 15 cube, 16 tetra+sphere, 17 audio, 18 astro, 19 crypto, 20 voyager, 21 menorah.
 
+## Round 5 (this session, verified)
+- [x] **Face → reverted to the first versions** — back to `portrait-dark.jpg` + simple luminance→RAMP sampling with the original v1·soft / v2·hard / v3·block variants (dropped the chroma-key + edge-detection rendering). Verified — the face emerges/dissolves through the matrix as before.
+- [x] **Menorah forms FROM the matrix motion** — no longer an alpha-blended image. Each cell scrambles through matrix glyphs, condenses as a downward-sweeping wave reaches it, then locks into its menorah glyph (brief bright flash on lock); on exit the last-formed cells unlock first back into falling glyphs. FILL 700 / CO 1700 / HOLD 2200 / DIS 1700. Verified mid-formation + fully formed.
+- [x] **Cochlea → snail (שבלול), not horn (שופר)** — flattened the vertical climb (0.26·u → 0.07·u), more coils (uMax 5π→6π), tighter inward taper. Reads as a flat coiled shell with an aperture. Verified.
+
 ## Not done / for next time
 _(filled at the end)_
