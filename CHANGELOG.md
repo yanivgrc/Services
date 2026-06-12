@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.33 — 2026-06-12
+
+### Changed
+- The matrix moment now fills the whole screen — it covers the tmux bar (no bare green line) and recedes to bring the bar back together with the next scene, so every scene truly passes through the matrix.
+- Fixed the remaining jump between scenes: each transition now crossfades in from an already-full curtain instead of building up from empty.
+- Gave the fall a pulse — it accelerates as it sweeps in, settles to a calm during the hold, then accelerates away as it drains.
+
 ## v1.32 — 2026-06-12
 
 ### Changed

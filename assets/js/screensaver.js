@@ -71,15 +71,15 @@
   var rainState = (function () {
     var rfs = 16, rcols = 0, rdrops = [], rspd = [], bottomed = [], rkey = -1;
     function ensure(R) {
-      var k = (Math.round(R.w) << 1) ^ Math.round(R.h);
-      if (k === rkey && rcols) return;
+      if (rkey === Math.round(R.w) && rcols) return;                 // grid depends only on width, so the content area and the full screen share ONE matrix
       rfs = clamp(Math.round(R.w / 70), 12, 20); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; bottomed = [];
       var rows = R.h / rfs;
       for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.6 + Math.random() * 0.85; bottomed[i] = false; }
-      rkey = k;
+      rkey = Math.round(R.w);
     }
-    function draw(R, intensity, respawn) {
-      ensure(R); clipRect(R);
+    function fill(R) { ensure(R); var rows = R.h / rfs; for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); bottomed[i] = false; } } // spread a full curtain across the screen — so a transition crossfades in a FULL matrix, never building from empty
+    function draw(R, intensity, respawn, speed) {
+      ensure(R); clipRect(R); var sp = speed || 1;
       ctx.font = rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55));
       for (var i = 0; i < rcols; i++) {
@@ -90,16 +90,15 @@
           if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,' + intensity.toFixed(3) + ')'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
           else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.82 + 0.10); ctx.fillStyle = 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
         }
-        rdrops[i] += rspd[i];
+        rdrops[i] += rspd[i] * sp;
         if (rdrops[i] * rfs > R.h) bottomed[i] = true;
         if (respawn && (Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.6 + Math.random() * 0.85; }
       }
       ctx.restore();
     }
-    function markSweep() { for (var i = 0; i < rcols; i++) bottomed[i] = false; }          // begin tracking a full-height coverage sweep
     function reachedBottom() { if (!rcols) return false; for (var i = 0; i < rcols; i++) if (!bottomed[i]) return false; return true; }
     function cleared(R) { var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < rcols; i++) if ((Math.floor(rdrops[i]) - TRAIL) * rfs <= R.h) return false; return true; }
-    return { draw: draw, ensure: ensure, markSweep: markSweep, reachedBottom: reachedBottom, cleared: cleared };
+    return { draw: draw, ensure: ensure, fill: fill, reachedBottom: reachedBottom, cleared: cleared };
   })();
   // eased crossfade for things that coalesce out of the matrix and dissolve back — smooth in and out
   function coalesceMix(t, FILL, CO, HOLD, DIS) {
@@ -1289,37 +1288,39 @@
   })();
 
   // ─────────────────────────── loop ───────────────────────────
-  // ONE transition, identical everywhere: the outgoing scene crossfades into the full matrix (fade), the matrix
-  // holds as a full-screen moment (hold, 2–6s; the first entrance is 5s), then drains straight down and off to
-  // reveal the next scene IN PLACE (drain) — no sliding, nothing pops. Same persistent rain throughout.
-  var FADE_MS = 520, FADE_MAX = 2000, DRAIN_MS = 2800;
+  // ONE transition, identical everywhere, over the WHOLE screen (covering the tmux bar so no bare green line shows):
+  // the outgoing scene crossfades into a full matrix (fade), the matrix holds (hold, 2–6s; first entrance 5s), then
+  // drains straight down to reveal the next scene IN PLACE (drain). The fall is paced — it accelerates in, settles to
+  // a calm during the hold, then accelerates away as it drains. Same persistent rain throughout; nothing pops.
+  var FADE_MS = 560, FADE_MAX = 2200, DRAIN_MS = 3000;
   var cur = null, incoming = null, trans = '', transT = 0, holdDur = 5000, raf = 0, last = 0;
   function content() { return { x: 0, y: 0, w: W, h: H - statusH() }; }
   function frame(now) {
     if (!last) last = now; var dt = Math.min(80, now - last) * QAMUL; last = now;
-    var C = content();
-    if (trans === 'fade') {                       // the outgoing scene fades to black as the matrix crossfades in over it
+    var C = content(), FS = { x: 0, y: 0, w: W, h: H };
+    if (trans === 'fade') {                       // the outgoing scene fades to black as a full matrix crossfades in over the whole screen
       var fi = clamp(transT / FADE_MS, 0, 1);
-      ctx.fillStyle = 'rgba(8,11,20,0.14)'; ctx.fillRect(C.x, C.y, C.w, C.h);   // steadily veil the outgoing scene to black
-      ctx.globalAlpha = fi; rainState.draw(C, 1, true); ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(8,11,20,0.14)'; ctx.fillRect(0, 0, W, H);            // steadily veil the outgoing scene (and the tmux bar) to black
+      ctx.globalAlpha = fi; rainState.draw(FS, 1, true, 0.5 + 1.1 * ease(fi)); ctx.globalAlpha = 1;   // accelerate the fall in
       transT += dt;
       if ((fi >= 1 && rainState.reachedBottom()) || transT >= FADE_MAX) { trans = 'hold'; transT = 0; }
-    } else if (trans === 'hold') {                // the full-screen matrix moment
-      ctx.fillStyle = BG; ctx.fillRect(C.x, C.y, C.w, C.h);
-      rainState.draw(C, 1, true); transT += dt;
+    } else if (trans === 'hold') {                // the full-screen matrix moment — the fall settles to a calm
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+      rainState.draw(FS, 1, true, 0.85 + 0.75 * Math.max(0, 1 - transT / 1100)); transT += dt;
       if (transT >= holdDur) { trans = 'drain'; transT = 0; }
-    } else if (trans === 'drain') {               // the matrix drains straight down and off, revealing the next scene in place
-      ctx.fillStyle = BG; ctx.fillRect(C.x, C.y, C.w, C.h);
+    } else if (trans === 'drain') {               // the matrix accelerates away straight down, revealing the next scene (and the bar) in place
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       clipRect(C); (incoming || cur).frame(dt, C); ctx.restore();
-      rainState.draw(C, 1, false); transT += dt;
-      if (rainState.cleared(C) || transT >= DRAIN_MS) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
+      drawStatus(now);
+      rainState.draw(FS, 1, false, 1.0 + 2.6 * ease(clamp(transT / 650, 0, 1))); transT += dt;
+      if (rainState.cleared(FS) || transT >= DRAIN_MS) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
     } else {
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       var done = cur.frame(dt, C);
       ghost.update(dt, C, cur.title);
-      if (done) { incoming = nextWindow(); trans = 'fade'; transT = 0; holdDur = 2000 + Math.random() * 4000; rainState.ensure(C); rainState.markSweep(); } // 2–6s of matrix between scenes
+      drawStatus(now);
+      if (done) { incoming = nextWindow(); trans = 'fade'; transT = 0; holdDur = 2000 + Math.random() * 4000; rainState.fill(FS); } // 2–6s of matrix between scenes, starting from a full curtain
     }
-    drawStatus(now);
     raf = requestAnimationFrame(frame);
   }
 
@@ -1331,7 +1332,7 @@
     if (reduceMotion) { staticFrame(); return; }
     last = 0; winN = 0; winIdx = 0; windowsLog = []; cmdOrder = null; shapeOrder = null; msgOrder = null; ilOrder = null;
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    cur = null; incoming = nextWindow(); trans = 'fade'; transT = 0; holdDur = 5000; rainState.ensure(content()); rainState.markSweep(); ghost.reset(); // the first entrance holds 5s of matrix
+    cur = null; incoming = nextWindow(); trans = 'fade'; transT = 0; holdDur = 5000; rainState.fill({ x: 0, y: 0, w: W, h: H }); ghost.reset(); // the first entrance holds 5s of matrix
     raf = requestAnimationFrame(frame);
   }
   function deactivate() { if (!active) return; active = false; root.classList.remove('on'); if (raf) cancelAnimationFrame(raf), raf = 0; lastActivity = performance.now(); }

@@ -105,6 +105,13 @@ Worked task by task; updated after each. **Do not break approved/working functio
 - [x] **Matrix recedes behind formed shapes** — dropped the rain-layer intensity floor; the portrait fades the rain to ~20% as the face forms so the portrait reads cleanly (the dense look is still carried by the transitions and the rain window, which pass full intensity).
 - QA tools added: `C:\grcqa\burst.js` (multi-frame capture + brightest-green scoring to find a formed frame), `probe.js`.
 
+## Round 9 (this session, verified)
+- [x] **Killed the jump between matrices** — root cause: after a drain the streams are off-screen below, so the next fade built the matrix up from empty (looked like a reset). Now `rainState.fill(FS)` reseeds a full spread curtain at each fade start, and the fade crossfades it in (globalAlpha 0→1) — a full matrix appears immediately, no build-up. Also keyed the grid on WIDTH only so the content area and the full screen share one matrix (no reseed when switching).
+- [x] **Paced fall (accelerate/decelerate)** — added a speed multiplier to `rainState.draw`. Fade accelerates in (0.5→1.6), hold settles to a calm (~1.6→0.85), drain accelerates away (1.0→3.6).
+- [x] **Full-screen matrix / tmux green line** — transitions now draw the matrix over the whole screen (0,0,W,H), covering the tmux bar and its green divider line during fade/hold; `drawStatus` is skipped then and the bar returns during the drain, revealed in place with the scene.
+- [x] **Every scene through the matrix** — the unified full-screen matrix now brackets every scene (each dissolves into the full matrix and emerges as it drains), giving the "one connected system" feel the user asked for. (Per-shape letter-by-letter coalesce for the live 3D scenes remains a larger future effort; the menorah/face/brand already do it.)
+- Verified: full-screen matrix at 4s has no status bar/green line; drain at ~7.6s reveals the SOC scene + tmux bar in place; no runtime errors.
+
 ## Not done / for next time
 - Hebrew face in a true STAM/sofer script would need a hosted monospace Hebrew font; Courier New is the grid-safe stand-in.
 - Beard chroma-key is marginal (beard black is close to the bg gray) — `bgT` is tuned per-variant; if a future photo has a different background, retune.
