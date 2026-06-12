@@ -2,6 +2,20 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.23 — 2026-06-12
+
+### Added
+- A rotating-words scene — the slogan, the contact line, LinkedIn and "coming soon" teasers scramble in like the site title.
+- Real SOC operations in the terminal — SIEM detection of hostile sources, alert triage (MITRE technique + IOC enrichment), and threat hunting.
+
+### Changed
+- The molecule is now true 3D — rotating, with depth-shaded atoms and bonds.
+- The 3D solids (cube, tetrahedron, pyramid) read clearly as 3D now — ambient light plus a depth gradient across each face — and are zoomed in; the pyramid uses precise Giza proportions and sweeps from a top-down to a side view.
+- The portrait now uses the brighter artwork with its background removed.
+- Shortened the matrix wipe between scenes.
+- Added a copyright notice (code and footer).
+- Removed the RF scene.
+
 ## v1.22 — 2026-06-11
 
 ### Added

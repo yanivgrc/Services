@@ -1,0 +1,57 @@
+# Screensaver — QA & improvement checklist
+
+Living checklist for the GRC·LABS cyber screensaver (`assets/js/screensaver.js`).
+Worked task by task; updated after each. **Do not break approved/working functionality.**
+
+## QA method (real visual QA)
+- Headless Chrome screenshots → reviewed as images.
+- Harness: `chrome --headless=new --no-sandbox --user-data-dir=C:\grcqa\prof --screenshot=C:\grcqa\<n>.png --window-size=1280,800 --virtual-time-budget=<ms> "file:///…/index.html?saver=now&win=<w>&shape=<n>"`
+- `?saver=now` forces full opacity instantly (no fade) for capture — dev-path only.
+- Scene shape indices (VIZ_BUILDERS): 0-7 point shapes (spiral/sin/helix/lissajous/sierpinski/lorenz/butterfly/phyllotaxis), 8 torus, 9 life, 10 molecule, 11 pyramid-3d, 12 cube, 13 tetra+sphere, 14 scope, 15 audio-scope, 16 astro, 17 crypto, 18 voyager. Windows: brain, viz, msg, rain, subject, (brand=retired).
+
+## Tasks
+- [x] Stand up real screenshot QA (Chrome headless + puppeteer-core + http server)
+- [x] **Molecule → true 3D** (rotating, depth atoms/bonds, CTA kept) — verified
+- [x] **3D solids shading** — ambient + depth gradient; zoomed; reads 3D — verified (cube/pyramid/tetra)
+- [x] **Pyramids** — precise Giza proportions, top↔side sweep, ASCII — verified
+- [x] **Portrait** — portrait-light.jpg + background chroma-keyed out — verified over http
+- [x] **Shorten matrix wipe**
+- [x] **Rotating-words scene** + "version upgrade soon..", "coming soon.." — verified
+- [x] **LinkedIn link** — in the rotating-words scene (linkedin.com/in/yaniv-dadon) — verified
+- [x] **Copyright** — code header + footer ©
+- [x] **Remove RF** dead code
+- [x] **GET more realistic** — SOC tracks (SIEM detection, triage w/ MITRE+IOCs, threat hunt) — verified
+- [~] **ASCII-only for the art** — geometric shapes are ASCII; orbit/audio/labels still use `·` (U+00B7) — minor, deferred
+- [~] status-bar bottom-right overlap — looks like small-font scaling, not a double-draw; OK
+- [x] Verify key scenes (torus/molecule/brain/words/portrait/cube/pyramid/tetra) — no breakage
+- [ ] Commit + push
+
+## QA findings (per scene) — from real screenshots
+- **molecule (10):** flat 2D circles + thin lines. → make 3D (rotating, depth-shaded). [TASK]
+- **3D solids cube(12)/pyramid(11)/tetra(13)/voyager(18):** flat-per-face luminance → each face is a flat fill of ONE repeated char → reads flat. Fix: ambient + a depth gradient *within* each face so the char varies across it. Lighting also too harsh on the cube (one face bright, others invisible). Shapes a bit small.
+- **pyramid (11):** tilt-sweep top view looks like a flat slab of `====`; needs the depth-gradient fix to read 3D from above.
+- **tetra+sphere (13):** good — wireframe cage + shaded sphere + dot field. Could be larger.
+- **audio scope (15):** good waveform; signal a touch busy.
+- **crypto (17):** good — AES, key, hex block, rounds. Centered OK.
+- **voyager (18):** recognizable (dish+booms) but cluttered/small.
+- **brain/GET:** reads like a product menu ("To receive X service…"), not SOC operations. → make it read like real SOC work. [TASK] CTA "צור קשר" at top scrolls off as content fills.
+- **status bar:** bottom-right `y.dadon@grc-labs  HH:MM` looks doubled/garbled at small size — verify it isn't drawn twice.
+- **rain/matrix:** rich charset (katakana/kanji/π/Greek) looks great.
+
+## Done this session (verified by screenshot over http://localhost)
+- Real screenshot QA harness (Chrome headless + puppeteer-core + local http server).
+- `?saver=now` forces opacity; `?qa=N` time-multiplier (dev aids).
+- **3D solids reworked** — ambient + depth gradient within faces → cube/pyramid/tetra now read clearly 3D (verified). Zoomed in.
+- **Pyramid** — converged onto shared renderer, precise Giza ratio, tilt sweep top↔side, ASCII-only (verified).
+- **Molecule → 3D** — real 3D coords, rotation, depth-sized/shaded atoms + bonds, CTA kept (verified, NH₃).
+- **Portrait** — portrait-light.jpg (brighter) + background chroma-keyed out from the source corner colour (verified over http; file:// taints getImageData — not a real bug).
+- **Matrix wipe shortened** (fill 1050→620, drain 1900→1050, rise 850→620).
+- **RF** dead code removed.
+- **Copyright** — header comment in screensaver.js + © line in index footer.
+- Found existing asset: `assets/img/linkedin_thumb_image.png`.
+
+## Note
+- file:// taints the canvas (cross-origin image) → portrait getImageData throws. QA over http://localhost:8099 instead. Real site is same-origin → fine.
+
+## Not done / for next time
+_(filled at the end)_
