@@ -68,5 +68,15 @@ Worked task by task; updated after each. **Do not break approved/working functio
 - [x] **Face recreated** — posterized ramps (clean v1·clean/v2·ink/v3·line), higher contrast, slightly lower res → reads clearly now (no new photo available, so recreated the ASCII). Verified.
 - Cicada: offered as an alternative to the butterfly; did the butterfly instead. Cicada (prime-cycle insect) could be a future scene.
 
+## Round 4 (this session, verified)
+- [x] Menorah → **green**, coalesces in/out through the matrix. Verified.
+- [x] Removed the **Möbius** strip.
+- [x] **"Coming soon"** teasers now appear only ~40% of the time (one teaser, randomized).
+- [x] Added a **3D cochlea** (logarithmic spiral shell). Verified.
+- [x] **Voyager** broadcasts light transmission signal rings from its dish. Verified.
+- [x] **Solar system** orbital plane tilts over time — a shifting perspective.
+- [x] **Face** recreated with edge detection — crisp feature outlines + subtle tonal fill (sketch look). Verified.
+- Shape indices now: 8 torus, 9 sphere, 10 spring, 11 twisted-torus, 12 cochlea, 13 molecule, 14 pyramid, 15 cube, 16 tetra+sphere, 17 audio, 18 astro, 19 crypto, 20 voyager, 21 menorah.
+
 ## Not done / for next time
 _(filled at the end)_

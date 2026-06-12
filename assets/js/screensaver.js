@@ -571,6 +571,8 @@
   function makeMobius() { return makeSurface('möbius', function (u, v) { var w = (v - 0.4) * 0.95, h = 1 + w * Math.cos(u / 2); return [1.3 * h * Math.cos(u), 1.3 * w * Math.sin(u / 2), 1.3 * h * Math.sin(u)]; }, { vMax: 0.8, du: 0.04, dv: 0.04, scale: 1.25 }); }
   function makeSpring() { return makeSurface('spring · coil', function (u, v) { var R2 = 1.0, R1 = 0.27, pitch = 0.105; return [(R2 + R1 * Math.cos(v)) * Math.cos(u), u * pitch - 4 * Math.PI * pitch + R1 * Math.sin(v), (R2 + R1 * Math.cos(v)) * Math.sin(u)]; }, { uMax: 8 * Math.PI, du: 0.06, dv: 0.10, scale: 1.25 }); }
   function makeKnot() { return makeSurface('torus · knot', function (u, v) { var k = 2.0, R2 = 1.6, R1 = 0.55, cv = Math.cos(v + k * u); return [(R2 + R1 * cv) * Math.cos(u), R1 * Math.sin(v + k * u), (R2 + R1 * cv) * Math.sin(u)]; }, { du: 0.035, dv: 0.05, scale: 0.85 }); }
+  // a cochlea / nautilus shell — a logarithmic spiral tube winding in toward the centre
+  function makeCochlea() { return makeSurface('cochlea · 3d', function (u, v) { var s = Math.exp(-0.20 * u), R = 1.6 * s, tube = 0.55 * s; return [(R + tube * Math.cos(v)) * Math.cos(u), tube * Math.sin(v) + 0.26 * u - 2.0, (R + tube * Math.cos(v)) * Math.sin(u)]; }, { uMax: 5 * Math.PI, du: 0.045, dv: 0.12, scale: 1.6 }); }
   function makeLife() {
     var t = 0, DUR = 8000, acc = 0, STEP = 130, grid = null, cols = 0, rows = 0, age = null, key = -1;
     function build(R) { var fs = clamp(Math.min(R.w, R.h) / 60, 8, 13), cw = fs * 0.62; cols = Math.max(24, Math.floor(R.w / cw)); rows = Math.max(20, Math.floor(R.h / fs)); grid = new Array(cols * rows); age = new Array(cols * rows); for (var i = 0; i < grid.length; i++) { grid[i] = Math.random() < 0.30 ? 1 : 0; age[i] = 0; } key = (R.w << 1) ^ R.h; build.fs = fs; build.cw = cw; }
@@ -870,14 +872,14 @@
   ];
   function makeMenorah() {
     var t = 0, blk = null, blkW = 0, blkH = 0, key = -1, rain = makeRainLayer();
-    var FILL = 620, CO = 1100, HOLD = 2400, DIS = 1300, END = FILL + CO + HOLD + DIS, GOLDDIM = 'rgba(240,180,41,0.5)';
+    var FILL = 620, CO = 1100, HOLD = 2400, DIS = 1300, END = FILL + CO + HOLD + DIS;
     function build(R) {
       var nrows = MENORAH_ART.length, ncols = 0, i; for (i = 0; i < nrows; i++) ncols = Math.max(ncols, MENORAH_ART[i].length);
       var fs = Math.max(5, Math.min((R.w * 0.88) / (ncols * 0.6), (R.h * 0.82) / nrows)), cw = fs * 0.6;
       blkW = ncols * cw; blkH = nrows * fs;
       blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
       var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
-      for (var r = 0; r < nrows; r++) { var line = MENORAH_ART[r]; for (var c = 0; c < line.length; c++) { var ch = line.charAt(c); if (ch === ' ') continue; cc.fillStyle = (ch === '#' || ch === '%') ? '#ffffff' : ((ch === '*' || ch === '+') ? AMBER : GOLDDIM); cc.fillText(ch, c * cw, r * fs); } }
+      for (var r = 0; r < nrows; r++) { var line = MENORAH_ART[r]; for (var c = 0; c < line.length; c++) { var ch = line.charAt(c); if (ch === ' ') continue; cc.fillStyle = (ch === '#' || ch === '%') ? BRIGHT : ((ch === '*' || ch === '+') ? GREEN : MIDG); cc.fillText(ch, c * cw, r * fs); } }
       key = (R.w << 1) ^ R.h;
     }
     function frame(dt, R) {
@@ -914,6 +916,10 @@
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       ctx.fillStyle = FAINT; for (var rd = 0; rd < rows; rd++) for (var cd = 0; cd < cols; cd++) if (bf[rd * cols + cd] < 0) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs);
       for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { var l = bf[r * cols + c]; if (l < 0) continue; ctx.fillStyle = l >= 10 ? BRIGHT : (l >= 6 ? GREEN : MIDG); ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, l)), x0 + c * cw, y0 + r * fs); }
+      var dcx = x0 + cols * cw / 2, dcy = y0 + rows * fs * 0.42, maxR = Math.min(R.w, R.h) * 0.46; // light transmission signals from the dish
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (var w = 0; w < 4; w++) { var wp = (t / 2600 + w / 4) % 1, rr = wp * maxR; if (rr < 10) continue; ctx.fillStyle = wp < 0.45 ? GREEN : FAINT; var np = Math.max(14, Math.floor(rr * 0.32)); for (var k = 0; k < np; k++) { var ang = k / np * 6.2832; ctx.fillText('.', dcx + Math.cos(ang) * rr, dcy + Math.sin(ang) * rr * 0.55); } }
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
       label(R, 'voyager · 1977');
       return t >= DUR;
     }
@@ -925,14 +931,14 @@
     var planets = [{ r: 0.16, sp: 0.0016, g: 'o', col: MIDG, ph: 0 }, { r: 0.27, sp: 0.0011, g: 'O', col: GREEN, ph: 1.3 }, { r: 0.40, sp: 0.0008, g: '@', col: BRIGHT, ph: 2.7, moon: 1 }, { r: 0.55, sp: 0.0005, g: 'o', col: GREEN, ph: 4.1 }, { r: 0.70, sp: 0.00032, g: '°', col: MIDG, ph: 5.5 }];
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.round(Math.min(R.w, R.h) / 44), 9, 16), cx = R.x + R.w / 2, cy = R.y + R.h / 2, rad = Math.min(R.w, R.h) * 0.44;
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 44), 9, 16), cx = R.x + R.w / 2, cy = R.y + R.h / 2, rad = Math.min(R.w, R.h) * 0.44, tilt = 0.14 + 0.44 * (0.5 + 0.5 * Math.sin(t * 0.00016)); // the orbital plane tilts over time — a shifting perspective
       ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
       if (!stars || skey !== ((R.w << 1) ^ R.h)) { stars = []; var rs = xs(hashOf('astro')); for (var s = 0; s < 70; s++) stars.push([R.x + rs() % Math.max(1, Math.floor(R.w)), R.y + rs() % Math.max(1, Math.floor(R.h)), rs() % 6]); skey = (R.w << 1) ^ R.h; }
       for (var i = 0; i < stars.length; i++) { ctx.fillStyle = stars[i][2] === 0 ? GREEN : FAINT; ctx.fillText(stars[i][2] === 0 ? '+' : '.', stars[i][0], stars[i][1]); }
-      for (var p = 0; p < planets.length; p++) { var rr = planets[p].r * rad, n = Math.max(24, Math.floor(rr * 0.45)); ctx.fillStyle = FAINT; for (var k = 0; k < n; k++) { var a = (k / n) * 6.2832; ctx.fillText('·', cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.5); } }
+      for (var p = 0; p < planets.length; p++) { var rr = planets[p].r * rad, n = Math.max(24, Math.floor(rr * 0.45)); ctx.fillStyle = FAINT; for (var k = 0; k < n; k++) { var a = (k / n) * 6.2832; ctx.fillText('.', cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * tilt); } }
       ctx.fillStyle = AMBER; ctx.fillText('@', cx, cy); for (var cr = 0; cr < 8; cr++) { var ca = cr / 8 * 6.2832 + t * 0.001; ctx.fillStyle = cr % 2 ? BRIGHT : AMBER; ctx.fillText('*', cx + Math.cos(ca) * fs * 0.95, cy + Math.sin(ca) * fs * 0.55); }
       for (var q = 0; q < planets.length; q++) {
-        var P = planets[q], a2 = t * P.sp + P.ph, px = cx + Math.cos(a2) * P.r * rad, py = cy + Math.sin(a2) * P.r * rad * 0.5;
+        var P = planets[q], a2 = t * P.sp + P.ph, px = cx + Math.cos(a2) * P.r * rad, py = cy + Math.sin(a2) * P.r * rad * tilt;
         ctx.fillStyle = P.col; ctx.fillText(P.g, px, py);
         if (P.moon) { var ma = t * 0.004, mx = px + Math.cos(ma) * fs * 1.1, my = py + Math.sin(ma) * fs * 0.7; ctx.fillStyle = MIDG; ctx.fillText('.', mx, my); }
       }
@@ -1060,10 +1066,9 @@
       { tx: 'GRC·LABS', col: BRIGHT, rtl: false },
       { tx: 'TAILORED INFORMATION SECURITY', col: GREEN, rtl: false },
       { tx: 'ספר לנו על האתגרים שלך', col: BRIGHT, rtl: true },
-      { tx: 'linkedin.com/in/yaniv-dadon', col: AMBER, rtl: false },
-      { tx: 'version upgrade soon ..', col: GREEN, rtl: false },
-      { tx: 'coming soon ..', col: BRIGHT, rtl: false }
+      { tx: 'linkedin.com/in/yaniv-dadon', col: AMBER, rtl: false }
     ];
+    if (Math.random() < 0.4) lines.push(Math.random() < 0.5 ? { tx: 'version upgrade soon ..', col: GREEN, rtl: false } : { tx: 'coming soon ..', col: BRIGHT, rtl: false }); // teaser shows only occasionally
     function keep(ch) { return ch === ' ' || ch === '·' || ch === '.' || ch === '/' || ch === '-'; }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
@@ -1173,12 +1178,15 @@
         var bh = gh * fs; blkW = gw * acw; blkH = bh + Math.round(fs * 2.2);
         blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
         var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
+        var lumg = new Array(gw * gh); // luminance grid, with the background chroma-keyed to -1
+        for (var r0 = 0; r0 < gh; r0++) for (var c0 = 0; c0 < gw; c0++) { var ii = (r0 * gw + c0) * 4, ddr = d[ii] - bg0, ddg = d[ii + 1] - bg1, ddb = d[ii + 2] - bg2; lumg[r0 * gw + c0] = (ddr * ddr + ddg * ddg + ddb * ddb < 3400) ? -1 : (0.299 * d[ii] + 0.587 * d[ii + 1] + 0.114 * d[ii + 2]) / 255; }
         for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) {
-          var i = (r * gw + c) * 4, dr = d[i] - bg0, dg = d[i + 1] - bg1, db = d[i + 2] - bg2;
-          if (dr * dr + dg * dg + db * db < 3400) continue; // background — drop it
-          var lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - V.lo) / V.span, 0, 1), V.gamma), 0, 1);
-          if (v < V.blank) continue;
-          cc.fillStyle = v > V.hi ? BRIGHT : (v > V.mid ? GREEN : MIDG); cc.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))), c * acw, r * fs);
+          var L = lumg[r * gw + c]; if (L < 0) continue;
+          var lr = c + 1 < gw ? lumg[r * gw + c + 1] : L, ll = c > 0 ? lumg[r * gw + c - 1] : L, ld = r + 1 < gh ? lumg[(r + 1) * gw + c] : L, lu = r > 0 ? lumg[(r - 1) * gw + c] : L;
+          var gx = (lr >= 0 && ll >= 0) ? lr - ll : 0, gy = (ld >= 0 && lu >= 0) ? ld - lu : 0, edge = Math.sqrt(gx * gx + gy * gy);
+          var v = clamp(Math.pow(clamp((L - V.lo) / V.span, 0, 1), V.gamma), 0, 1);
+          if (edge > 0.20) { cc.fillStyle = edge > 0.42 ? '#ffffff' : BRIGHT; cc.fillText(edge > 0.42 ? '#' : '*', c * acw, r * fs); } // crisp feature edges
+          else if (v >= V.blank) { cc.fillStyle = v > V.hi ? GREEN : (v > V.mid ? MIDG : 'rgba(99,178,46,0.32)'); cc.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))), c * acw, r * fs); } // subtle tonal fill
         }
         cc.fillStyle = DIM; cc.font = '700 ' + Math.max(11, Math.round(fs)) + 'px ' + MONO.replace(/"/g, ''); cc.textAlign = 'center'; cc.fillText('SUBJECT // Y.DADON — CEO', blkW / 2, bh + fs * 0.5);
         key = (R.w << 1) ^ R.h;
@@ -1233,7 +1241,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeMobius, makeSpring, makeKnot, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeAudioScope, makeAstro, makeCrypto, makeVoyager, makeMenorah]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeSpring, makeKnot, makeCochlea, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeAudioScope, makeAstro, makeCrypto, makeVoyager, makeMenorah]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }

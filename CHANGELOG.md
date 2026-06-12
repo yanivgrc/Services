@@ -2,6 +2,18 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.26 — 2026-06-12
+
+### Added
+- A 3D cochlea — a logarithmic spiral shell winding inward, rendered like the torus.
+
+### Changed
+- The Menorah is now green and coalesces in and out through the matrix.
+- The solar system's orbital plane tilts over time — a shifting perspective.
+- Voyager broadcasts light transmission signals from its dish.
+- The portrait is rendered with edge detection — a cleaner, sketch-like face.
+- "Coming soon" teasers appear far less often, and removed the Möbius strip.
+
 ## v1.25 — 2026-06-12
 
 ### Added
