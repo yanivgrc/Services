@@ -1,5 +1,5 @@
 /* GRC·LABS — cyber screensaver (tmux session)
-   © 2026 GRC·LABS / Yaniv Dadon — all rights reserved. www.grc-labs.com
+   © 2026 GRC·LABS — all rights reserved. www.grc-labs.com
    After 9s idle: one continuous tmux-style session. A persistent status bar at
    the bottom, content flowing inside the CLI. Windows switch with a matrix-rain
    wipe (fills, then drains down and out as the next window rises up from the

@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.40 — 2026-06-12
+
+### Changed
+- GRC·LABS now presents as a company. The hero leads with what the company does — taking what you run and rebuilding it into the version you've pictured, across several disciplines at once, for design and prototyping that's quiet, efficient and innovative — and drops the personal "working CISO / 20+ years" framing.
+- Copyright is now the company's alone — "© 2026 GRC·LABS — all rights reserved" in the footer, the screensaver and the source headers.
+- Added a quiet note in contact: the team is growing (hiring soon).
+
 ## v1.39 — 2026-06-12
 
 ### Changed
