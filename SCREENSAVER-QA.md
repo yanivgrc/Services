@@ -97,5 +97,16 @@ Worked task by task; updated after each. **Do not break approved/working functio
 - [x] **Unified alphabet** — added the shape RAMP chars (`.,-~:;=!*#$@`, `RAMP_CH`) to `RAIN_BASE` so the matrix and the 3D/shape scenes share one vocabulary. Verified.
 - [x] **Full-screen transitions** — the wipe was cutting off mid-screen because FILL ended on a fixed 620ms and re-seeded at fill→drain. Now: fill runs until `mtx.reachedBottom()` (every column has swept the full height) with a 1700ms cap, NO mid-reset (the full curtain carries straight into the drain), drain 1500ms / rise 900ms. Verified across fill/drain/reveal frames — rain covers top-to-bottom, new window revealed centred.
 
+## Round 8 (this session, verified)
+- [x] **New Hebrew ASCII portrait + background removed** — the subject is rebuilt from Hebrew letters (`HEB_FACE` ramp, light→dense), rendered in monospace Hebrew (Courier New) so the grid stays aligned. The gray studio background is chroma-keyed out (sample the four corners → key pixels within `V.bgT` distance), keeping both the near-black beard and the white face. Two-tier colour (bright face / solid-green beard). Verified via burst capture (`burst.js`).
+- [x] **Portrait lingers** — HOLD 350→1700ms so the face actually reads (and is QA-catchable).
+- [x] **One persistent matrix** — replaced the three separate rain instances (per-scene `makeRainLayer`, `makeRain`, transition `mtx`) with a single shared `rainState`. Every scene and the wipe draw the SAME streams, so the matrix never resets/pops between a scene and the transition — addresses "the matrix just disappears / things appear and vanish."
+- [x] **Smooth transitions** — fill fades the rain up (FADE_MS 240) and runs until `reachedBottom()` (full-height coverage); drain runs until `cleared()` (the whole curtain has drained) with a generous 2800ms cap so it never cuts off mid-wipe. RISE 950.
+- [x] **Matrix recedes behind formed shapes** — dropped the rain-layer intensity floor; the portrait fades the rain to ~20% as the face forms so the portrait reads cleanly (the dense look is still carried by the transitions and the rain window, which pass full intensity).
+- QA tools added: `C:\grcqa\burst.js` (multi-frame capture + brightest-green scoring to find a formed frame), `probe.js`.
+
 ## Not done / for next time
+- Hebrew face in a true STAM/sofer script would need a hosted monospace Hebrew font; Courier New is the grid-safe stand-in.
+- Beard chroma-key is marginal (beard black is close to the bg gray) — `bgT` is tuned per-variant; if a future photo has a different background, retune.
+
 _(filled at the end)_

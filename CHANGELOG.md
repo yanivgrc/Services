@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.30 — 2026-06-12
+
+### Changed
+- The ASCII portrait is rebuilt from Hebrew letters, with the studio background keyed away so only the subject remains; it now lingers on screen instead of flashing past.
+- The matrix is now one persistent layer shared by every scene and every transition — it never resets or pops. Scenes coalesce out of it and dissolve back into it, the between-scene wipe is the same rain continuing, and it fades in and fully drains rather than cutting off mid-transition.
+- Behind a formed shape (the portrait, the wordmark) the matrix now recedes, so the shape reads cleanly.
+
 ## v1.29 — 2026-06-12
 
 ### Changed

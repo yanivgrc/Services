@@ -65,24 +65,42 @@
   var RAMP_CH = '.,-~:;=!*#$@';                                              // the same ASCII the 3D/shape scenes shade with — shared so the matrix and the shapes read as one alphabet
   var RAIN_BASE = KANA + KANJI + HEB_RAIN + '0123456789' + GLY_GREEK.replace('π', '') + GLY_SYM + RAMP_CH; // no π anywhere in the rain
   function streamCh(i, row) { var h = ((i * 374761393) ^ (row * 668265263)) >>> 0; return RAIN_BASE.charAt(h % RAIN_BASE.length); }
-  // a dense, full matrix — every column is a falling stream with a bright head and a fading trail; never thinned to a few drops
-  function drawMatrix(R, rfs, rcols, rdrops, rspd, intensity) {
-    clipRect(R);
-    ctx.font = rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-    var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55));
-    for (var i = 0; i < rcols; i++) {
-      var headI = Math.floor(rdrops[i]), x = R.x + i * rfs;
-      for (var tr = 0; tr < TRAIL; tr++) {
-        var row = headI - tr, yy = R.y + row * rfs;
-        if (yy <= R.y - rfs || yy >= R.y + R.h) continue;
-        if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,' + intensity.toFixed(3) + ')'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
-        else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.82 + 0.10); ctx.fillStyle = 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
-      }
-      rdrops[i] += rspd[i];
-      if ((Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.55 + Math.random() * 0.8; }
+  // ONE persistent matrix for the whole session — every scene and every transition draws THIS same rain, so the
+  // streams never reset or jump; scenes coalesce out of it and dissolve back into it, and the wipe is the same rain
+  // continuing. A dense, full curtain: each column a falling stream with a bright head and a fading trail.
+  var rainState = (function () {
+    var rfs = 16, rcols = 0, rdrops = [], rspd = [], bottomed = [], rkey = -1;
+    function ensure(R) {
+      var k = (Math.round(R.w) << 1) ^ Math.round(R.h);
+      if (k === rkey && rcols) return;
+      rfs = clamp(Math.round(R.w / 70), 12, 20); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; bottomed = [];
+      var rows = R.h / rfs;
+      for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.6 + Math.random() * 0.85; bottomed[i] = false; }
+      rkey = k;
     }
-    ctx.restore();
-  }
+    function draw(R, intensity, respawn) {
+      ensure(R); clipRect(R);
+      ctx.font = rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55));
+      for (var i = 0; i < rcols; i++) {
+        var headI = Math.floor(rdrops[i]), x = R.x + i * rfs;
+        for (var tr = 0; tr < TRAIL; tr++) {
+          var row = headI - tr, yy = R.y + row * rfs;
+          if (yy <= R.y - rfs || yy >= R.y + R.h) continue;
+          if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,' + intensity.toFixed(3) + ')'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
+          else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.82 + 0.10); ctx.fillStyle = 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
+        }
+        rdrops[i] += rspd[i];
+        if (rdrops[i] * rfs > R.h) bottomed[i] = true;
+        if (respawn && (Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.6 + Math.random() * 0.85; }
+      }
+      ctx.restore();
+    }
+    function markSweep() { for (var i = 0; i < rcols; i++) bottomed[i] = false; }          // begin tracking a full-height coverage sweep
+    function reachedBottom() { if (!rcols) return false; for (var i = 0; i < rcols; i++) if (!bottomed[i]) return false; return true; }
+    function cleared(R) { var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < rcols; i++) if ((Math.floor(rdrops[i]) - TRAIL) * rfs <= R.h) return false; return true; }
+    return { draw: draw, ensure: ensure, markSweep: markSweep, reachedBottom: reachedBottom, cleared: cleared };
+  })();
   // eased crossfade for things that coalesce out of the matrix and dissolve back — smooth in and out
   function coalesceMix(t, FILL, CO, HOLD, DIS) {
     if (t < FILL) return { a: 0, rainI: 1 };
@@ -1073,27 +1091,21 @@
     return { frame: frame, title: 'msg' };
   }
 
-  // ───────────────────────── window: rain — matrix as content ─────────────────────────
+  // ───────────────────────── window: rain — the persistent matrix, as content ─────────────────────────
   function makeRain() {
-    var t = 0, DUR = 6000, fs = 16, cols = 0, drops = [], spd = [], key = -1;
-    function build(R) { fs = clamp(Math.round(R.w / 70), 12, 20); cols = Math.ceil(R.w / fs); drops = []; spd = []; var rows = R.h / fs; for (var i = 0; i < cols; i++) { drops[i] = Math.floor(Math.random() * rows); spd[i] = 0.55 + Math.random() * 0.8; } key = (R.w << 1) ^ R.h; }
+    var t = 0, DUR = 6000;
     function frame(dt, R) {
-      t += dt; if (key !== ((R.w << 1) ^ R.h)) build(R);
-      ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      drawMatrix(R, fs, cols, drops, spd, 1);
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      rainState.draw(R, 1, true);
       label(R, 'matrix · rain');
       return t >= DUR;
     }
     return { frame: frame, title: 'rain' };
   }
 
-  // a reusable matrix-rain layer — a full curtain things coalesce out of and dissolve back into
-  function makeRainLayer() {
-    var rfs = 16, rcols = 0, rdrops = [], rspd = [], rkey = -1;
-    function ensure(R) { if (rkey === ((R.w << 1) ^ R.h)) return; rfs = clamp(Math.round(R.w / 70), 12, 20); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; var rows = R.h / rfs; for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.55 + Math.random() * 0.8; } rkey = (R.w << 1) ^ R.h; }
-    function draw(R, intensity) { ensure(R); drawMatrix(R, rfs, rcols, rdrops, rspd, Math.max(0.20, intensity)); }
-    return { draw: draw };
-  }
+  // every scene's rain layer is the SAME shared matrix — so it stays continuous across scenes and transitions.
+  // (no intensity floor here: behind a formed shape the matrix recedes to reveal it; the dense look is carried by the transitions and the rain window, which pass full intensity.)
+  function makeRainLayer() { return { draw: function (R, intensity) { rainState.draw(R, intensity, true); } }; }
 
   // ───────────────────────── window: brand — GRC·LABS out of the matrix ─────────────────────────
   function makeBrand() {
@@ -1127,12 +1139,14 @@
     return { frame: frame, title: 'brand' };
   }
 
-  // ───────────────────────── window: subject — ASCII portrait (retired; ?win=subject) ─────────────────────────
-  // a few portrait renderings to compare — cycle with ?face=N, or it rotates each appearance
+  // ───────────────────────── window: subject — ASCII portrait, built from Hebrew letters, background keyed out ─────────────────────────
+  // a few renderings to compare — cycle with ?face=N, or it rotates each appearance.
+  // The face is composed of Hebrew letters (light→dense by visual weight); the gray studio background is chroma-keyed away.
+  var HEB_FACE = " יוןזרדךלנהחכתעצבסמקאשםט";
   var FACE_VARIANTS = [
-    { id: 'v1·soft', ramp: " .,:;-~=+*coaeUXEZ%#8B@", lo: 0.16, span: 0.74, gamma: 0.70, hi: 0.70, mid: 0.36, blank: 0.12 },
-    { id: 'v2·hard', ramp: " .:-=+ox*#%@MW", lo: 0.10, span: 0.82, gamma: 0.85, hi: 0.60, mid: 0.30, blank: 0.10 },
-    { id: 'v3·block', ramp: " .:-+*coe%#", lo: 0.13, span: 0.78, gamma: 0.72, hi: 0.64, mid: 0.34, blank: 0.10 }
+    { id: 'אבן·heb', ramp: HEB_FACE, lo: 0.14, span: 0.74, gamma: 0.72, hi: 0.64, mid: 0.30, bgT: 820, floor: 0.40 },
+    { id: 'אות·heb', ramp: " יזרדלנהחכתעבסמקאשםט", lo: 0.10, span: 0.82, gamma: 0.85, hi: 0.58, mid: 0.26, bgT: 980, floor: 0.34 },
+    { id: 'דיו·heb', ramp: " יוךלנהחכתעבסמקאשםט", lo: 0.12, span: 0.78, gamma: 0.72, hi: 0.62, mid: 0.30, bgT: 700, floor: 0.46 }
   ];
   var faceVar = 0;
   var portrait = (function () {
@@ -1142,7 +1156,7 @@
       var t = 0, blk = null, blkW = 0, blkH = 0, key = -1;
       var V = FACE_VARIANTS[FORCE_FACE >= 0 ? (FORCE_FACE % FACE_VARIANTS.length) : (faceVar++ % FACE_VARIANTS.length)], RAMP = V.ramp;
       // the face shows only for a moment — it coalesces out of the matrix and quickly dissolves back
-      var FILL = 700, CO = 850, HOLD = 350, DIS = 1050, END = FILL + CO + HOLD + DIS;
+      var FILL = 700, CO = 950, HOLD = 1700, DIS = 1200, END = FILL + CO + HOLD + DIS;
       var rain = makeRainLayer();
       function build(R) {
         var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 58, 7, 13), acw = fs * 0.6;
@@ -1153,11 +1167,19 @@
         o.drawImage(img, isx, isy, cs, cs, 0, 0, gw, gh); var d = o.getImageData(0, 0, gw, gh).data;
         var bh = gh * fs; blkW = gw * acw; blkH = bh + Math.round(fs * 2.2);
         blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
-        var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
+        var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px "Courier New", "Miriam Mono CLM", monospace'; cc.textBaseline = 'top'; cc.textAlign = 'start';
+        // sample the studio background from the four corners, then key it out — keep the subject (near-black beard + white face), drop the gray
+        function corner(x, y) { var k = (y * gw + x) * 4; return [d[k], d[k + 1], d[k + 2]]; }
+        var a0 = corner(0, 0), a1 = corner(gw - 1, 0), a2 = corner(0, gh - 1), a3 = corner(gw - 1, gh - 1);
+        var bg0 = (a0[0] + a1[0] + a2[0] + a3[0]) / 4, bg1 = (a0[1] + a1[1] + a2[1] + a3[1]) / 4, bg2 = (a0[2] + a1[2] + a2[2] + a3[2]) / 4, bgEdge = Math.sqrt(V.bgT);
         for (var r = 0; r < gh; r++) for (var c = 0; c < gw; c++) {
-          var i = (r * gw + c) * 4, lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, v = clamp(Math.pow(clamp((lum - V.lo) / V.span, 0, 1), V.gamma), 0, 1);
-          if (v < V.blank) continue;
-          cc.fillStyle = v > V.hi ? BRIGHT : (v > V.mid ? GREEN : MIDG); cc.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))), c * acw, r * fs);
+          var i = (r * gw + c) * 4, pr = d[i], pg = d[i + 1], pb = d[i + 2];
+          var dr = pr - bg0, dg = pg - bg1, db = pb - bg2, dist = dr * dr + dg * dg + db * db;
+          if (dist < V.bgT) continue;                                                   // background → transparent
+          var lum = (0.299 * pr + 0.587 * pg + 0.114 * pb) / 255, v = clamp(Math.pow(clamp((lum - V.lo) / V.span, 0, 1), V.gamma), 0, 1);
+          var ink = clamp((Math.sqrt(dist) - bgEdge) / 130, 0, 1), w = Math.max(V.floor, ink, v);    // every subject cell shows a letter; denser where the ink is stronger
+          var col = v > V.hi ? BRIGHT : (v > V.mid || ink > 0.5 ? GREEN : MIDG);                       // bright face; the dark-but-solid beard reads as green, not faint
+          cc.fillStyle = col; cc.fillText(RAMP.charAt(Math.min(RAMP.length - 1, 1 + Math.floor(w * (RAMP.length - 1)))), c * acw, r * fs);
         }
         cc.fillStyle = DIM; cc.font = '700 ' + Math.max(11, Math.round(fs)) + 'px ' + MONO.replace(/"/g, ''); cc.textAlign = 'center'; cc.fillText('SUBJECT // Y.DADON — CEO', blkW / 2, bh + fs * 0.5);
         key = (R.w << 1) ^ R.h;
@@ -1168,7 +1190,7 @@
         if (!ready) { ctx.fillStyle = DIM; ctx.font = '700 ' + Math.round(R.w / 42) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.fillText('// DECRYPTING SUBJECT ...', R.x + R.w / 2, R.y + R.h / 2); ctx.textAlign = 'start'; return false; }
         if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
         var m = coalesceMix(t, FILL, CO, HOLD, DIS), faceA = m.a, rainI = m.rainI;
-        rain.draw(R, rainI);
+        rain.draw(R, rainI * (1 - 0.78 * faceA));        // as the face forms, the matrix recedes behind it so the portrait reads clearly
         if (faceA > 0.01) { var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2; ctx.globalAlpha = faceA; ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH); ctx.globalAlpha = 1; }
         if (faceA > 0.85) label(R, 'subject · ' + V.id);
         return t >= END;
@@ -1266,56 +1288,31 @@
     return { update: update, reset: function () { active = false; cooldown = 9000; } };
   })();
 
-  // ─────────── matrix wipe — the transition between windows ───────────
-  // Falls to fill, then drains down and out the bottom, revealing the next window.
-  var mtx = (function () {
-    // a dense, full matrix — katakana, kanji, Hebrew, Greek, symbols and the shape ASCII; each column a falling stream with a bright head and a fading trail
-    var fs = 16, cols = 0, drops = [], speeds = [], bottomed = [], TRAIL = 16;
-    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; bottomed = []; var rows = C.h / fs; TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * rows); speeds[i] = 0.6 + Math.random() * 0.85; bottomed[i] = false; } }
-    function draw(C, respawn) {
-      clipRect(C);
-      if (respawn) { ctx.fillStyle = 'rgba(8,11,20,0.16)'; ctx.fillRect(C.x, C.y, C.w, C.h); } // fill phase: progressively veil the outgoing window
-      ctx.font = fs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      for (var i = 0; i < cols; i++) {
-        var headI = Math.floor(drops[i]), x = C.x + i * fs;
-        for (var tr = 0; tr < TRAIL; tr++) {
-          var row = headI - tr, yy = C.y + row * fs;
-          if (yy <= C.y - fs || yy >= C.y + C.h) continue;
-          if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,1)'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
-          else { var ch = streamCh(i, row), a = (1 - tr / TRAIL) * 0.82 + 0.10; ctx.fillStyle = 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
-        }
-        drops[i] += speeds[i];
-        if (drops[i] * fs > C.h) bottomed[i] = true;                  // this column has swept the full height at least once
-        if (respawn && (Math.floor(drops[i]) - TRAIL) * fs > C.h) { drops[i] = -(Math.random() * 6); speeds[i] = 0.6 + Math.random() * 0.85; }
-      }
-      ctx.restore();
-    }
-    function reachedBottom() { if (!cols) return false; for (var i = 0; i < cols; i++) if (!bottomed[i]) return false; return true; } // the curtain has covered the whole screen
-    function cleared(C) { for (var i = 0; i < cols; i++) if ((Math.floor(drops[i]) - TRAIL) * fs <= C.h) return false; return true; }
-    return { reset: reset, draw: draw, reachedBottom: reachedBottom, cleared: cleared };
-  })();
-
   // ─────────────────────────── loop ───────────────────────────
-  var FILL_MAX = 1700, DRAIN_MS = 1500, RISE_MS = 900;
+  // The transition IS the persistent matrix: it fades up to a full curtain over the outgoing scene (fill),
+  // then drains all the way out as the next scene rises in (drain). Same rain throughout — nothing pops.
+  var FILL_MAX = 1800, FADE_MS = 240, DRAIN_MS = 2800, RISE_MS = 950;
   var cur = null, incoming = null, trans = '', transT = 0, raf = 0, last = 0;
   function content() { return { x: 0, y: 0, w: W, h: H - statusH() }; }
   function frame(now) {
     if (!last) last = now; var dt = Math.min(80, now - last) * QAMUL; last = now;
     var C = content();
-    if (trans === 'fill') {                       // rain falls from the top until it has covered the whole screen
-      mtx.draw(C, true); transT += dt;
-      if (mtx.reachedBottom() || transT >= FILL_MAX) { trans = 'drain'; transT = 0; } // no reset — the full curtain carries straight into the drain
-    } else if (trans === 'drain') {               // incoming window rises up from the bottom as the full curtain drains out
+    if (trans === 'fill') {                       // the matrix fades up and falls until it has covered the whole screen
+      var fi = clamp(transT / FADE_MS, 0, 1);
+      ctx.fillStyle = 'rgba(8,11,20,' + (0.18 * fi).toFixed(3) + ')'; ctx.fillRect(C.x, C.y, C.w, C.h); // veil the outgoing scene as the rain rises
+      rainState.draw(C, fi, true); transT += dt;
+      if ((rainState.reachedBottom() && transT > FADE_MS + 80) || transT >= FILL_MAX) { trans = 'drain'; transT = 0; }
+    } else if (trans === 'drain') {               // the next scene rises in as the same curtain drains all the way out
       ctx.fillStyle = BG; ctx.fillRect(C.x, C.y, C.w, C.h);
       var rise = (1 - ease(clamp(transT / RISE_MS, 0, 1))) * C.h * 0.5;
       clipRect(C); (incoming || cur).frame(dt, { x: C.x, y: C.y + rise, w: C.w, h: C.h }); ctx.restore();
-      mtx.draw(C, false); transT += dt;
-      if (mtx.cleared(C) || transT >= DRAIN_MS) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
+      rainState.draw(C, 1, false); transT += dt;
+      if (rainState.cleared(C) || transT >= DRAIN_MS) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
     } else {
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       var done = cur.frame(dt, C);
       ghost.update(dt, C, cur.title);
-      if (done) { incoming = nextWindow(); trans = 'fill'; transT = 0; mtx.reset(C, true); }
+      if (done) { incoming = nextWindow(); trans = 'fill'; transT = 0; rainState.ensure(C); rainState.markSweep(); }
     }
     drawStatus(now);
     raf = requestAnimationFrame(frame);
@@ -1329,7 +1326,7 @@
     if (reduceMotion) { staticFrame(); return; }
     last = 0; winN = 0; winIdx = 0; windowsLog = []; cmdOrder = null; shapeOrder = null; msgOrder = null; ilOrder = null;
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    cur = null; incoming = nextWindow(); trans = 'fill'; transT = 0; mtx.reset(content(), true); ghost.reset();
+    cur = null; incoming = nextWindow(); trans = 'fill'; transT = 0; rainState.ensure(content()); rainState.markSweep(); ghost.reset();
     raf = requestAnimationFrame(frame);
   }
   function deactivate() { if (!active) return; active = false; root.classList.remove('on'); if (raf) cancelAnimationFrame(raf), raf = 0; lastActivity = performance.now(); }
