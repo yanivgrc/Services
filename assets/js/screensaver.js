@@ -77,7 +77,7 @@
       for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.6 + Math.random() * 0.85; bottomed[i] = false; }
       rkey = Math.round(R.w);
     }
-    function fill(R) { ensure(R); var rows = R.h / rfs; for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); bottomed[i] = false; } } // spread a full curtain across the screen — so a transition crossfades in a FULL matrix, never building from empty
+    function fill(R) { ensure(R); var rows = R.h / rfs; for (var i = 0; i < rcols; i++) { rdrops[i] = -Math.floor(Math.random() * rows * 0.95); bottomed[i] = false; } } // seed the heads ABOVE the top so the curtain falls IN from the top and fills down the screen, not all at once
     function draw(R, intensity, respawn, speed) {
       ensure(R); clipRect(R); var sp = speed || 1;
       ctx.font = rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
@@ -320,7 +320,7 @@
 
   function drawConsole(rows, R, activeCmd, cursorOn, thinkLine) {
     var pad = Math.round(Math.min(R.w, R.h) * 0.04) + 6;
-    var contentW = R.w - pad * 2, fs = clamp(Math.round(contentW / 46), 12, 19), lh = Math.round(fs * 1.5);
+    var contentW = R.w - pad * 2, fs = clamp(Math.round(W / 78), 12, 18), lh = Math.round(fs * 1.5);  // font keyed to the whole window, so panes keep the same size when the window splits
     var x0 = R.x + pad, topY = R.y + pad, maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));
     ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start';
     var disp = [];
@@ -342,11 +342,12 @@
   // ───────────────────────── focus pane: pip install stream ─────────────────────────
   function makeGet(cmd) {
     var pkg = 'grc-labs-' + cmd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    var rows = [], phase = 'cmd', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
+    var rows = [], phase = 'wait', typed = 0, t = 0, setupIdx = 0, bodyIdx = 0, holdT = 0, blink = 0, elapsed = 0, thinkT = 0, thought = false, gapT = 0;
     var track = pickTrack(cmd, pkg), cmdStr = track.cmd, setup = track.lines;
     function frame(dt, R) {
       elapsed += dt; blink += dt;
-      if (phase === 'cmd') { typed += dt / 56; if (typed >= cmdStr.length) { typed = cmdStr.length; rows.push({ cmd: true, text: cmdStr }); phase = 'setup'; t = 0; } }
+      if (phase === 'wait') { t += dt; if (t > 780) { phase = 'cmd'; t = 0; } }   // a real terminal: the cursor sits and blinks at the prompt before anything is typed
+      else if (phase === 'cmd') { typed += dt / 56; if (typed >= cmdStr.length) { typed = cmdStr.length; rows.push({ cmd: true, text: cmdStr }); phase = 'setup'; t = 0; } }
       else if (phase === 'setup') { t += dt; var sl = setup[setupIdx], c0 = sl ? sl.charAt(0) : ''; var need = (c0 === '$') ? 480 : ((c0 === '+' || c0 === '|') ? 55 : (sl === '' ? 360 : 150)); if (setupIdx < setup.length && t > need) { rows.push(setupRow(sl)); setupIdx++; t = 0; } if (setupIdx >= setup.length) { phase = 'gap'; gapT = 0; rows.push({ text: '', color: INK }); } }
       else if (phase === 'gap') { gapT += dt; if (gapT > 440) { phase = 'body'; bodyIdx = 0; t = 0; } }
       else if (phase === 'body') {
@@ -356,7 +357,7 @@
       else if (phase === 'think') { thinkT += dt; if (thinkT > 1700) { phase = 'body'; t = 0; } }
       else if (phase === 'resultHold') { t += dt; if (t > 1600) phase = 'done'; }
       if (elapsed > 60000) phase = 'done';
-      var activeCmd = (phase === 'cmd') ? cmdStr.slice(0, Math.floor(typed)) : (phase === 'resultHold' ? '' : null);
+      var activeCmd = (phase === 'cmd') ? cmdStr.slice(0, Math.floor(typed)) : ((phase === 'wait' || phase === 'resultHold') ? '' : null);  // 'wait' shows the bare prompt + blinking cursor
       drawConsole(rows, R, activeCmd, (Math.floor(blink / 560) % 2) === 0, (phase === 'think') ? thinkStr(thinkT) : null);
       return phase === 'done';
     }
@@ -403,7 +404,7 @@
       t += dt; emitT += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       while (queue.length && emitT >= delayOf(queue[0])) { emitT -= delayOf(queue[0]); emit(queue.shift()); if (queue.length < 3) enqueue(); }
       var pad = Math.round(Math.min(R.w, R.h) * 0.05) + 8, x0 = R.x + pad, y0 = R.y + pad, w = R.w - pad * 2;
-      var fs = clamp(Math.round(w / 30), 11, 16), lh = Math.round(fs * 1.6), maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));
+      var fs = clamp(Math.round(W / 86), 11, 15), lh = Math.round(fs * 1.6), maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));  // keyed to the window, not the pane — no shrink on split
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       var vis = lines.length > maxRows ? lines.slice(lines.length - maxRows) : lines, ty = y0, endX = x0;
       for (var d = 0; d < vis.length; d++) { var L = vis[d], pre = L.pre || null; if (pre) { ctx.fillStyle = L.pcol; ctx.fillText(pre, x0, ty); ctx.fillStyle = L.col; ctx.fillText(L.text, x0 + ctx.measureText(pre).width, ty); endX = x0 + ctx.measureText(pre).width + ctx.measureText(L.text).width; } else { ctx.fillStyle = L.col; ctx.fillText(L.text, x0, ty); endX = x0 + ctx.measureText(L.text).width; } ty += lh; }
@@ -439,7 +440,7 @@
       t += dt; emitT += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       while (queue.length && emitT >= delayOf(queue[0])) { emitT -= delayOf(queue[0]); emit(queue.shift()); if (queue.length < 3) enqueue(); }
       var pad = Math.round(Math.min(R.w, R.h) * 0.05) + 8, x0 = R.x + pad, y0 = R.y + pad, w = R.w - pad * 2;
-      var fs = clamp(Math.round(w / 30), 11, 16), lh = Math.round(fs * 1.6), maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));
+      var fs = clamp(Math.round(W / 86), 11, 15), lh = Math.round(fs * 1.6), maxRows = Math.max(4, Math.floor((R.h - pad * 2) / lh));  // keyed to the window, not the pane — no shrink on split
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       var dotW = ctx.measureText('.').width, vis = lines.length > maxRows ? lines.slice(lines.length - maxRows) : lines, ty = y0, endX = x0;
       for (var d = 0; d < vis.length; d++) {
@@ -1298,12 +1299,11 @@
   function frame(now) {
     if (!last) last = now; var dt = Math.min(80, now - last) * QAMUL; last = now;
     var C = content(), FS = { x: 0, y: 0, w: W, h: H };
-    if (trans === 'fade') {                       // the outgoing scene fades to black as a full matrix crossfades in over the whole screen
-      var fi = clamp(transT / FADE_MS, 0, 1);
-      ctx.fillStyle = 'rgba(8,11,20,0.14)'; ctx.fillRect(0, 0, W, H);            // steadily veil the outgoing scene (and the tmux bar) to black
-      ctx.globalAlpha = fi; rainState.draw(FS, 1, true, 0.5 + 1.1 * ease(fi)); ctx.globalAlpha = 1;   // accelerate the fall in
+    if (trans === 'fade') {                       // the matrix cascades IN from the top, filling down the screen, while the outgoing scene fades to black beneath it
+      ctx.fillStyle = 'rgba(8,11,20,0.13)'; ctx.fillRect(0, 0, W, H);            // steadily veil the outgoing scene (and the tmux bar) to black
+      rainState.draw(FS, 1, true, 1.0 + 0.7 * ease(clamp(transT / 700, 0, 1))); // the fall accelerates as it pours in
       transT += dt;
-      if ((fi >= 1 && rainState.reachedBottom()) || transT >= FADE_MAX) { trans = 'hold'; transT = 0; }
+      if ((rainState.reachedBottom() && transT > 550) || transT >= FADE_MAX) { trans = 'hold'; transT = 0; }
     } else if (trans === 'hold') {                // the full-screen matrix moment — the fall settles to a calm
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
       rainState.draw(FS, 1, true, 0.85 + 0.75 * Math.max(0, 1 - transT / 1100)); transT += dt;

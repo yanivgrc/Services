@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.35 — 2026-06-12
+
+### Changed
+- The screensaver now enters elegantly — the matrix pours in from the top and fills down the screen, instead of appearing everywhere at once.
+- A new terminal window now opens like a real session: the cursor blinks at the prompt for a beat before the command types in.
+- Split panes keep their font size — the text no longer shrinks when the window splits.
+
 ## v1.34 — 2026-06-12
 
 ### Changed
