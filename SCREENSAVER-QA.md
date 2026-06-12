@@ -62,5 +62,11 @@ Worked task by task; updated after each. **Do not break approved/working functio
 - [x] Geometry shapes (golden spiral etc.) **rotate continuously** — fixes "stuck in the middle".
 - Shape indices now: 8 torus, 9 sphere, 10 möbius, 11 spring, 12 twisted-torus, 13 molecule, 14 pyramid, 15 cube, 16 tetra+sphere, 17 audio-scope, 18 astro, 19 crypto, 20 voyager.
 
+## Round 3 (this session, verified)
+- [x] **Menorah** — supplied Knesset-Menorah ASCII art rendered in gold, coalescing out of the matrix (shape 21). Verified.
+- [x] **Butterfly** — densified (2600→5200 pts) so the wings fill in. Verified.
+- [x] **Face recreated** — posterized ramps (clean v1·clean/v2·ink/v3·line), higher contrast, slightly lower res → reads clearly now (no new photo available, so recreated the ASCII). Verified.
+- Cicada: offered as an alternative to the butterfly; did the butterfly instead. Cicada (prime-cycle insect) could be a future scene.
+
 ## Not done / for next time
 _(filled at the end)_

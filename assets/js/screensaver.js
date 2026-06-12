@@ -490,7 +490,7 @@
     { name: 'lissajous · 5:4', plot: function (add, prog) { var N = Math.floor(prog * 1400), d = Math.PI / 4; for (var i = 0; i < N; i++) { var u = (i / 1400) * Math.PI * 2; add(0.98 * Math.sin(5 * u + d), 0.98 * Math.sin(4 * u)); } } },
     { name: 'sierpiński · chaos game', plot: function (add, prog) { var V = [[0, 0.96], [-0.92, -0.86], [0.92, -0.86]], N = Math.floor(prog * 5200), r = xs(1337), x = 0, y = 0; for (var i = 0; i < N; i++) { var v = V[r() % 3]; x = (x + v[0]) / 2; y = (y + v[1]) / 2; if (i > 10) add(x, y); } } },
     { name: 'lorenz · chaos', plot: function (add, prog) { var N = Math.floor(prog * 3200), x = 0.1, y = 0, z = 0, h = 0.009; for (var i = 0; i < N; i++) { var dx = 10 * (y - x), dy = x * (28 - z) - y, dz = x * y - (8 / 3) * z; x += dx * h; y += dy * h; z += dz * h; if (i > 50) add(x / 26, (z - 25) / 28); } } },
-    { name: 'butterfly · curve', plot: function (add, prog) { var N = Math.floor(prog * 2600), TT = 24 * Math.PI; for (var i = 0; i < N; i++) { var u = (i / 2600) * TT, e = Math.exp(Math.cos(u)) - 2 * Math.cos(4 * u) - Math.pow(Math.sin(u / 12), 5); add(Math.sin(u) * e / 4.3, Math.cos(u) * e / 4.3); } } },
+    { name: 'butterfly · curve', plot: function (add, prog) { var N = Math.floor(prog * 5200), TT = 24 * Math.PI; for (var i = 0; i < N; i++) { var u = (i / 5200) * TT, e = Math.exp(Math.cos(u)) - 2 * Math.cos(4 * u) - Math.pow(Math.sin(u / 12), 5); add(Math.sin(u) * e / 4.3, Math.cos(u) * e / 4.3); } } },
     { name: 'phyllotaxis · φ', plot: function (add, prog) { var N = Math.floor(prog * 1500), ga = Math.PI * (3 - Math.sqrt(5)); for (var i = 0; i < N; i++) { var rr = Math.sqrt(i / 1500), a = i * ga; add(rr * Math.cos(a), rr * Math.sin(a)); } } }
   ];
   function makePointGeo(shape) {
@@ -825,6 +825,72 @@
     }
     return { frame: frame, title: 'viz' };
   }
+  // the Knesset Menorah — rendered from supplied ASCII art, coalescing out of the matrix in gold
+  var MENORAH_ART = [
+    '    ======+   --====+  =======  ===+=++::*+=+===   ======   +====',
+    '    -::::--   -:::-=   :-----   :==-=-::.:==-=-.    +=-=     ++++',
+    '     ====-    ++===+   -++*==.  :=+==+-.::=+=+=-   =+++=+   -+=+=',
+    '     #*+*=     #*#+     +++--.. .=+*++....:%++=     #%+++    ##%*',
+    '     ***--.    +=#=     *++:::. .=+*=+.....***+     #+-*+    #**=+',
+    '     +*+==    :++==-    #*+--   .:**++.....*=-+    .#+==-    #-+==',
+    '    .++==-    :*+++=    ++===-  .+#*+*::..:+===    :=+++=:   *=+++',
+    '    :+==--    :***+-    #+*=-   .-=--=.:...#+*+    .***+:    ++==-',
+    '    .+**+-    :+==+.    #*=+=   .++=#*.....*-=+:  ..**+=:    +**+=',
+    '    :+=++-    :***=-    +====-  .+*+%*....:+=+=+   -*++==    +**==',
+    '    .++=+--    ++==-    ***++:*:.+**#*-:.:=#*+==    +**=-    #*+++',
+    '    -===+=-    #*==-     +=---*##*---+=--+*+*==     ##+==  ..=====',
+    '     -+=*=     *+==+=     -==***##*++#=---=++       +=+-=   .+***+',
+    '     -+=+=     #=+=+-    ...   ..#**-*=-:---::     +*+=+=  ..+#*#+-',
+    '    :+*+++      ++=--- *+=-:-  ..++++**=-:::-=+*  #**++-.. ..=++-=-',
+    '                 ---:=  ##******+*======:-=+*#*   *==-:.....:*+=+*+',
+    '         =-:    ...        +***+##*+--++::-=      ..:::::--+##*+==',
+    '       :---=    --..           +##++==+=---:    ..::::-++*###+++=',
+    '      ..-==+    **++*          ..#*+**++:...::-+--++*#####*+++*',
+    '     -::::-=+    *++**##*####-:.-++=====:.:-+*++####**# +==+:###',
+    '     .....:-==     :-=+++++*****=*=+*+++----=+++++++        ##%#',
+    '      .....:::-=-             ++*++====+=::-               *##%#',
+    '       :.....:--==             ++----+==-:::            =*#####',
+    '        ..:..::::--=++++=::-----+----==++::.:::::::-::--=*#**',
+    '           ...:::======-.::::::-=---:-===-:::-::::-:..:==+*',
+    '                   =-:---===++==+--==----::..::-.:::',
+    '                               :=--=-------:-',
+    '                              ..--:::::--+*+=',
+    '                              --=--------=+#%',
+    '                               :-::::::::-',
+    '                             ==-=:::::::-= -*',
+    '                             +===::::::::-=-==',
+    '                               :-::::-:::-++',
+    '                              ===:-::-::--*=+',
+    '                             ====:-::-::--+==+',
+    '                             ====---------===-',
+    '                        =====-----=------------=====',
+    '                      =+==---------------=------==-===+',
+    '                     =======+=============++++++++++++++',
+    '                     **********+************************'
+  ];
+  function makeMenorah() {
+    var t = 0, blk = null, blkW = 0, blkH = 0, key = -1, rain = makeRainLayer();
+    var FILL = 620, CO = 1100, HOLD = 2400, DIS = 1300, END = FILL + CO + HOLD + DIS, GOLDDIM = 'rgba(240,180,41,0.5)';
+    function build(R) {
+      var nrows = MENORAH_ART.length, ncols = 0, i; for (i = 0; i < nrows; i++) ncols = Math.max(ncols, MENORAH_ART[i].length);
+      var fs = Math.max(5, Math.min((R.w * 0.88) / (ncols * 0.6), (R.h * 0.82) / nrows)), cw = fs * 0.6;
+      blkW = ncols * cw; blkH = nrows * fs;
+      blk = document.createElement('canvas'); blk.width = Math.ceil(blkW * dpr); blk.height = Math.ceil(blkH * dpr);
+      var cc = blk.getContext('2d'); cc.setTransform(dpr, 0, 0, dpr, 0, 0); cc.font = fs + 'px ' + MONO.replace(/"/g, ''); cc.textBaseline = 'top'; cc.textAlign = 'start';
+      for (var r = 0; r < nrows; r++) { var line = MENORAH_ART[r]; for (var c = 0; c < line.length; c++) { var ch = line.charAt(c); if (ch === ' ') continue; cc.fillStyle = (ch === '#' || ch === '%') ? '#ffffff' : ((ch === '*' || ch === '+') ? AMBER : GOLDDIM); cc.fillText(ch, c * cw, r * fs); } }
+      key = (R.w << 1) ^ R.h;
+    }
+    function frame(dt, R) {
+      t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
+      if (!blk || key !== ((R.w << 1) ^ R.h)) build(R);
+      var m = coalesceMix(t, FILL, CO, HOLD, DIS);
+      rain.draw(R, m.rainI);
+      if (m.a > 0.01) { var dx = R.x + (R.w - blkW) / 2, dy = R.y + (R.h - blkH) / 2; ctx.globalAlpha = m.a; ctx.drawImage(blk, 0, 0, blk.width, blk.height, dx, dy, blkW, blkH); ctx.globalAlpha = 1; }
+      if (m.a > 0.85) label(R, 'menorah · temple');
+      return t >= END;
+    }
+    return { frame: frame, title: 'viz' };
+  }
   // a tribute to Voyager — the dish, the booms, the golden record, turning in 3D
   function makeVoyager() {
     var t = 0, DUR = 9000, RAMP = '.,-~:;=!*#$@', pts = [];
@@ -1082,9 +1148,9 @@
   // ───────────────────────── window: subject — ASCII portrait (retired; ?win=subject) ─────────────────────────
   // a few portrait renderings to compare — cycle with ?face=N, or it rotates each appearance
   var FACE_VARIANTS = [
-    { id: 'v1·soft', ramp: " .,:;-~=+*coaeUXEZ%#8B@", lo: 0.16, span: 0.74, gamma: 0.70, hi: 0.70, mid: 0.36, blank: 0.12 },
-    { id: 'v2·hard', ramp: " .:-=+ox*#%@MW", lo: 0.10, span: 0.82, gamma: 0.85, hi: 0.60, mid: 0.30, blank: 0.10 },
-    { id: 'v3·block', ramp: " .·:-+*coe%#", lo: 0.13, span: 0.78, gamma: 0.72, hi: 0.64, mid: 0.34, blank: 0.10 }
+    { id: 'v1·clean', ramp: " .:-=+*#@", lo: 0.18, span: 0.72, gamma: 0.85, hi: 0.60, mid: 0.34, blank: 0.17 },
+    { id: 'v2·ink', ramp: " .:=#@", lo: 0.17, span: 0.74, gamma: 0.95, hi: 0.55, mid: 0.32, blank: 0.18 },
+    { id: 'v3·line', ramp: " .:-+o*#@", lo: 0.16, span: 0.74, gamma: 0.80, hi: 0.60, mid: 0.34, blank: 0.15 }
   ];
   var faceVar = 0;
   var portrait = (function () {
@@ -1097,7 +1163,7 @@
       var FILL = 700, CO = 850, HOLD = 350, DIS = 1050, END = FILL + CO + HOLD + DIS;
       var rain = makeRainLayer();
       function build(R) {
-        var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 58, 7, 13), acw = fs * 0.6;
+        var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 46, 8, 17), acw = fs * 0.6;
         var gw = Math.max(40, Math.floor(side / acw)), gh = Math.max(40, Math.floor(side / fs));
         var off = document.createElement('canvas'); off.width = gw; off.height = gh; var o = off.getContext('2d');
         // crop a centred square tight on the head, so the face fills the frame instead of floating small and low
@@ -1167,7 +1233,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeMobius, makeSpring, makeKnot, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeAudioScope, makeAstro, makeCrypto, makeVoyager]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeMobius, makeSpring, makeKnot, makeMolecule, makePyr3D, makeCube, makeTetraSphere, makeAudioScope, makeAstro, makeCrypto, makeVoyager, makeMenorah]);
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }

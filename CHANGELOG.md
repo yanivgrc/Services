@@ -2,6 +2,15 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.25 — 2026-06-12
+
+### Added
+- The Knesset Menorah — rendered in gold from hand-supplied ASCII art, coalescing out of the matrix.
+
+### Changed
+- Recreated the ASCII portrait — posterized and higher-contrast, so the face reads cleanly instead of as noise.
+- The butterfly curve is denser, so its wings fill in.
+
 ## v1.24 — 2026-06-12
 
 ### Added
