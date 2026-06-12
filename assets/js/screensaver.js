@@ -1390,7 +1390,7 @@
     if (reduceMotion) { staticFrame(); return; }
     last = 0; winN = 0; winIdx = 0; windowsLog = []; cmdOrder = null; shapeOrder = null; msgOrder = null; ilOrder = null;
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    cur = null; incoming = nextWindow(); trans = 'fade'; transT = 0; holdDur = 5000; rainState.fill({ x: 0, y: 0, w: W, h: H }); ghost.reset(); // the first entrance holds 5s of matrix
+    cur = null; incoming = nextWindow(); trans = 'hold'; transT = 0; holdDur = 7600; rainState.fill({ x: 0, y: 0, w: W, h: H }); ghost.reset(); // first entrance: the matrix pours in from the top straight into one long hold — no separate fade phase, so there's no matrix-to-matrix seam
     raf = requestAnimationFrame(frame);
   }
   function deactivate() { if (!active) return; active = false; root.classList.remove('on'); if (raf) cancelAnimationFrame(raf), raf = 0; lastActivity = performance.now(); }

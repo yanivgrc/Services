@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.38 — 2026-06-12
+
+### Changed
+- The containment mark now sits to the right of the GRC·LABS wordmark and is scaled to match the wordmark's size.
+
+### Fixed
+- The first entrance no longer has a matrix-to-matrix seam — the rain now pours in from the top straight into one longer hold, instead of a separate cascade phase handing off to the hold.
+
 ## v1.37 — 2026-06-12
 
 ### Changed
