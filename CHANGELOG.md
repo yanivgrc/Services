@@ -2,6 +2,13 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.29 — 2026-06-12
+
+### Changed
+- Hebrew in the screensaver now uses Frank Ruhl Libre — a traditional, scriptural Hebrew face — in the rain and on the "צור קשר" calls-to-action.
+- The matrix is now a single green (dropped the amber Hebrew highlight), and its alphabet now includes the same ASCII the 3D/shape scenes shade with, so the rain and the shapes read as one.
+- Between-scene transitions now sweep the full screen — the rain fills top to bottom before draining out, instead of cutting off mid-wipe.
+
 ## v1.28 — 2026-06-12
 
 ### Changed

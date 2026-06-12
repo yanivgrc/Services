@@ -91,5 +91,11 @@ Worked task by task; updated after each. **Do not break approved/working functio
 - [x] **Removed TRANSMIT** — deleted `makeWords` and dropped `'msg'` from the window rotation + dispatch.
 - [x] **Menorah centering bug fixed** — `build()` cached `ox/oy` from the first R it saw, which was the rise-in transition (R.y = C.h·0.5 ≈ 389); the cache key `(R.w<<1)^R.h` ignored R.y so it never recomputed. Now only the layout (fs/cells/blkW/blkH) is cached; `ox/oy` are recomputed each frame from the live R. Verified centred via bounding-box probe + screenshot.
 
+## Round 7 (this session, verified)
+- [x] **Scriptural Hebrew font** — loaded Frank Ruhl Libre (Google Fonts); `STAMF` for the "צור קשר" CTAs + the planted ghost line, and the rain routes Hebrew through it (`MONO_RAIN = IBM Plex Mono → Frank Ruhl Libre → monospace`). Closest web font to Torah-scroll ktav; true STAM/sofer script needs a licensed hosted font (noted for the user). Verified.
+- [x] **Removed amber from the matrix** — Hebrew (and everything) now a single green in both rain renderers + the transition wipe. Verified.
+- [x] **Unified alphabet** — added the shape RAMP chars (`.,-~:;=!*#$@`, `RAMP_CH`) to `RAIN_BASE` so the matrix and the 3D/shape scenes share one vocabulary. Verified.
+- [x] **Full-screen transitions** — the wipe was cutting off mid-screen because FILL ended on a fixed 620ms and re-seeded at fill→drain. Now: fill runs until `mtx.reachedBottom()` (every column has swept the full height) with a 1700ms cap, NO mid-reset (the full curtain carries straight into the drain), drain 1500ms / rise 900ms. Verified across fill/drain/reveal frames — rain covers top-to-bottom, new window revealed centred.
+
 ## Not done / for next time
 _(filled at the end)_

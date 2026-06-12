@@ -39,6 +39,8 @@
   var GREENS = ['#4FA028', '#63B22E', '#6FC036', '#5AA82A', '#3C7E20'];
   var MONO = '"IBM Plex Mono", ui-monospace, monospace';
   var HEBF = '"IBM Plex Sans Hebrew", "IBM Plex Sans", sans-serif';
+  var STAMF = '"Frank Ruhl Libre", "IBM Plex Sans Hebrew", serif';      // a traditional, scriptural Hebrew face (closest web font to Torah-scroll ktav)
+  var MONO_RAIN = '"IBM Plex Mono", "Frank Ruhl Libre", monospace';     // Latin/kana stay monospace; Hebrew falls through to the scriptural face
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var CTA = 'ספר לנו על האתגרים שלך — צור קשר';
@@ -60,13 +62,13 @@
   var GLY_GREEK = 'πΣΔΛΦΩΘΞΨμβαλσ';
   var GLY_SYM = '#%&<>*+=/¥§∞';
   var HEB_RAIN = 'אבגדהוזחטיכךלמםנןסעפףצץקרשת';                              // Hebrew letters stream in the rain too
-  var RAIN_BASE = KANA + KANJI + HEB_RAIN + '0123456789' + GLY_GREEK.replace('π', '') + GLY_SYM; // no π anywhere in the rain
+  var RAMP_CH = '.,-~:;=!*#$@';                                              // the same ASCII the 3D/shape scenes shade with — shared so the matrix and the shapes read as one alphabet
+  var RAIN_BASE = KANA + KANJI + HEB_RAIN + '0123456789' + GLY_GREEK.replace('π', '') + GLY_SYM + RAMP_CH; // no π anywhere in the rain
   function streamCh(i, row) { var h = ((i * 374761393) ^ (row * 668265263)) >>> 0; return RAIN_BASE.charAt(h % RAIN_BASE.length); }
-  function isHebCh(ch) { return HEB_RAIN.indexOf(ch) >= 0; }
   // a dense, full matrix — every column is a falling stream with a bright head and a fading trail; never thinned to a few drops
   function drawMatrix(R, rfs, rcols, rdrops, rspd, intensity) {
     clipRect(R);
-    ctx.font = rfs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+    ctx.font = rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
     var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55));
     for (var i = 0; i < rcols; i++) {
       var headI = Math.floor(rdrops[i]), x = R.x + i * rfs;
@@ -74,7 +76,7 @@
         var row = headI - tr, yy = R.y + row * rfs;
         if (yy <= R.y - rfs || yy >= R.y + R.h) continue;
         if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,' + intensity.toFixed(3) + ')'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
-        else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.82 + 0.10); ctx.fillStyle = isHebCh(ch) ? 'rgba(240,180,41,' + a.toFixed(3) + ')' : 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
+        else { var ch = streamCh(i, row), a = intensity * ((1 - tr / TRAIL) * 0.82 + 0.10); ctx.fillStyle = 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
       }
       rdrops[i] += rspd[i];
       if ((Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.55 + Math.random() * 0.8; }
@@ -635,7 +637,7 @@
         var base = (el === 'O' || el === 'Cl') ? BRIGHT : (el === 'C' ? GREEN : ((el === 'Na' || el === 'N') ? AMBER : INK));
         ctx.fillStyle = p2.depth > 0.42 ? base : MIDG; ctx.font = '700 ' + Math.round(fs) + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr'; ctx.fillText(el, p2.x, p2.y);
       }
-      var cfs = clamp(Math.round(R.w / 30), 14, 26); ctx.font = '700 ' + cfs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText(CTA, cx, R.y + R.h * 0.12);
+      var cfs = clamp(Math.round(R.w / 30), 14, 26); ctx.font = '700 ' + cfs + 'px ' + STAMF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText(CTA, cx, R.y + R.h * 0.12);
       ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       label(R, 'molecule · ' + m.name);
       return t >= DUR;
@@ -804,7 +806,7 @@
         var amp = sig * env, h = Math.round(Math.abs(amp) * half), dir = amp >= 0 ? -1 : 1;
         for (var k = 0; k <= h; k++) { var rr = mid + dir * k, edge = k >= h - 1; put(c, rr, edge ? '#' : '|', edge ? '#ffffff' : (k < h * 0.5 ? GREEN : MIDG)); }
       }
-      var afs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + afs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.12);
+      var afs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + afs + 'px ' + STAMF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.12);
       ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       label(R, 'audio · scope');
       return t >= DUR;
@@ -964,7 +966,7 @@
       var dcx = x0 + cols * cw / 2, dcy = y0 + rows * fs * 0.42, maxR = Math.min(R.w, R.h) * 0.46; // light transmission signals from the dish
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (var w = 0; w < 4; w++) { var wp = (t / 2600 + w / 4) % 1, rr = wp * maxR; if (rr < 10) continue; ctx.fillStyle = wp < 0.45 ? GREEN : FAINT; var np = Math.max(14, Math.floor(rr * 0.32)); for (var k = 0; k < np; k++) { var ang = k / np * 6.2832; ctx.fillText('.', dcx + Math.cos(ang) * rr, dcy + Math.sin(ang) * rr * 0.55); } }
-      var vfs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + vfs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.10);
+      var vfs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + vfs + 'px ' + STAMF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.10);
       ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       label(R, 'voyager · 1977');
       return t >= DUR;
@@ -1255,7 +1257,7 @@
       var keep = Math.floor(rev * msg.length), out = '';
       for (var i = 0; i < msg.length; i++) { var c = msg.charAt(i); out += (c === ' ' || i < keep) ? c : dig.charAt((Math.random() * dig.length) | 0); }
       ctx.save(); ctx.globalAlpha = Math.min(appear, fade);
-      ctx.font = '700 ' + fs + 'px ' + HEBF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '700 ' + fs + 'px ' + STAMF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.shadowColor = GREEN; ctx.shadowBlur = 14; ctx.fillStyle = rev >= 1 ? BRIGHT : GREEN; ctx.fillText(out, gx, gy); ctx.shadowBlur = 0;
       if (rev >= 1 && (Math.floor(t / 420) % 2 === 0)) { var w = ctx.measureText(out).width; ctx.fillStyle = BRIGHT; ctx.fillRect(gx - w / 2 - fs * 0.6, gy - fs * 0.45, fs * 0.5, fs * 0.9); }
       ctx.restore(); ctx.direction = 'ltr'; ctx.textAlign = 'start'; ctx.textBaseline = 'top';
@@ -1267,41 +1269,43 @@
   // ─────────── matrix wipe — the transition between windows ───────────
   // Falls to fill, then drains down and out the bottom, revealing the next window.
   var mtx = (function () {
-    // a dense, full matrix — katakana, kanji, Hebrew, Greek and symbols; each column a falling stream with a bright head and a fading trail
-    var fs = 16, cols = 0, drops = [], speeds = [], TRAIL = 16;
-    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; var rows = C.h / fs; TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * rows); speeds[i] = 0.6 + Math.random() * 0.85; } }
+    // a dense, full matrix — katakana, kanji, Hebrew, Greek, symbols and the shape ASCII; each column a falling stream with a bright head and a fading trail
+    var fs = 16, cols = 0, drops = [], speeds = [], bottomed = [], TRAIL = 16;
+    function reset(C, fromTop) { fs = Math.max(12, Math.min(20, Math.round(W / 70))); cols = Math.ceil(C.w / fs); drops = []; speeds = []; bottomed = []; var rows = C.h / fs; TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < cols; i++) { drops[i] = fromTop ? -Math.random() * 6 : Math.floor(Math.random() * rows); speeds[i] = 0.6 + Math.random() * 0.85; bottomed[i] = false; } }
     function draw(C, respawn) {
       clipRect(C);
       if (respawn) { ctx.fillStyle = 'rgba(8,11,20,0.16)'; ctx.fillRect(C.x, C.y, C.w, C.h); } // fill phase: progressively veil the outgoing window
-      ctx.font = fs + 'px ' + MONO; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      ctx.font = fs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
       for (var i = 0; i < cols; i++) {
         var headI = Math.floor(drops[i]), x = C.x + i * fs;
         for (var tr = 0; tr < TRAIL; tr++) {
           var row = headI - tr, yy = C.y + row * fs;
           if (yy <= C.y - fs || yy >= C.y + C.h) continue;
           if (tr === 0) { ctx.fillStyle = 'rgba(155,232,91,1)'; ctx.fillText(RAIN_BASE.charAt((Math.random() * RAIN_BASE.length) | 0), x, yy); }
-          else { var ch = streamCh(i, row), a = (1 - tr / TRAIL) * 0.82 + 0.10; ctx.fillStyle = isHebCh(ch) ? 'rgba(240,180,41,' + a.toFixed(3) + ')' : 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
+          else { var ch = streamCh(i, row), a = (1 - tr / TRAIL) * 0.82 + 0.10; ctx.fillStyle = 'rgba(99,178,46,' + a.toFixed(3) + ')'; ctx.fillText(ch, x, yy); }
         }
         drops[i] += speeds[i];
+        if (drops[i] * fs > C.h) bottomed[i] = true;                  // this column has swept the full height at least once
         if (respawn && (Math.floor(drops[i]) - TRAIL) * fs > C.h) { drops[i] = -(Math.random() * 6); speeds[i] = 0.6 + Math.random() * 0.85; }
       }
       ctx.restore();
     }
+    function reachedBottom() { if (!cols) return false; for (var i = 0; i < cols; i++) if (!bottomed[i]) return false; return true; } // the curtain has covered the whole screen
     function cleared(C) { for (var i = 0; i < cols; i++) if ((Math.floor(drops[i]) - TRAIL) * fs <= C.h) return false; return true; }
-    return { reset: reset, draw: draw, cleared: cleared };
+    return { reset: reset, draw: draw, reachedBottom: reachedBottom, cleared: cleared };
   })();
 
   // ─────────────────────────── loop ───────────────────────────
-  var FILL_MS = 620, DRAIN_MS = 1050, RISE_MS = 620;
+  var FILL_MAX = 1700, DRAIN_MS = 1500, RISE_MS = 900;
   var cur = null, incoming = null, trans = '', transT = 0, raf = 0, last = 0;
   function content() { return { x: 0, y: 0, w: W, h: H - statusH() }; }
   function frame(now) {
     if (!last) last = now; var dt = Math.min(80, now - last) * QAMUL; last = now;
     var C = content();
-    if (trans === 'fill') {                       // rain accumulates over the frozen outgoing window
+    if (trans === 'fill') {                       // rain falls from the top until it has covered the whole screen
       mtx.draw(C, true); transT += dt;
-      if (transT >= FILL_MS) { trans = 'drain'; transT = 0; mtx.reset(C, true); }
-    } else if (trans === 'drain') {               // incoming window rises up from the bottom as the rain drains out
+      if (mtx.reachedBottom() || transT >= FILL_MAX) { trans = 'drain'; transT = 0; } // no reset — the full curtain carries straight into the drain
+    } else if (trans === 'drain') {               // incoming window rises up from the bottom as the full curtain drains out
       ctx.fillStyle = BG; ctx.fillRect(C.x, C.y, C.w, C.h);
       var rise = (1 - ease(clamp(transT / RISE_MS, 0, 1))) * C.h * 0.5;
       clipRect(C); (incoming || cur).frame(dt, { x: C.x, y: C.y + rise, w: C.w, h: C.h }); ctx.restore();
