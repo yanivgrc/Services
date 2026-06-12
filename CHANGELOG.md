@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.43 — 2026-06-12
+
+### Added
+- A Terms & Conditions page for the challenge (`/terms`) — plain-language rules, bilingual, linked from the Challenge section and the footer. A working draft, pending final review.
+
+### Changed
+- The Challenge now invites you to "hit it and save your seat with us," carries its ownership line (© GRC·LABS — our challenge), and points to the terms.
+
 ## v1.42 — 2026-06-12
 
 ### Changed
