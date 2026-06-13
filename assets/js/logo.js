@@ -39,7 +39,7 @@
     'vec3 hh=normalize(lk+vd);float spec=pow(max(dot(n,hh),0.0),46.0);float fres=pow(1.0-max(dot(n,vd),0.0),3.0);' +
     'bool inner=abs(length(p)-u_rs)<0.02;' +
     'if(inner){col=CAVITY*0.5+GREEN*(dk*0.45+df*0.18)+GREEN*fres*0.18+GREEN*0.05;}' +
-    'else{col=EPOXY*0.42+GREEN*(0.24+dk*0.90+df*0.28)+SPECC*spec*0.5+GREEN*fres*0.46+GREEN*edgeGlow(p)*0.34;}}' +
+    'else{col=EPOXY*0.20+GREEN*(0.46+dk*0.94+df*0.30)+SPECC*spec*0.42+GREEN*fres*0.46+GREEN*edgeGlow(p)*0.40;}}' +
     'if(u_svis>0.001){float b=dot(ro,rd);float c2=dot(ro,ro)-u_rs*u_rs;float disc=b*b-c2;' +
     'if(disc>0.0){float tn=-b-sqrt(disc);if(tn>0.0&&(!hit||tn<tt)){vec3 sp=ro+rd*tn;vec3 sn=normalize(sp);' +
     'float fr=pow(1.0-max(dot(sn,-rd),0.0),3.0);float a=clamp(u_svis*(0.12+0.88*fr),0.0,1.0);vec3 shell=GREEN*(0.35+0.75*fr);col=mix(col,shell,a);}}}' +
@@ -73,7 +73,7 @@
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(U.u_res, cvs.width, cvs.height);
     gl.uniform1f(U.u_rin, 1.7 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.06); gl.uniform1f(U.u_svis, 0.18);
-    gl.uniform1f(U.u_yaw, t * 0.30); gl.uniform1f(U.u_pitch, Math.sin(t * 0.18) * 0.32);
+    gl.uniform1f(U.u_yaw, t * 0.62); gl.uniform1f(U.u_pitch, 0.42 + Math.sin(t * 0.45) * 0.05); // a real spin: a steady tilt with the wordmark axis, turning continuously rather than gently oscillating
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop() { raf = requestAnimationFrame(loop); if (!vis) return; t += 0.016; render(); }

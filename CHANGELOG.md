@@ -2,6 +2,16 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.44 — 2026-06-13
+
+### Changed
+- The containment mark now reads in full GRC·LABS green and spins — a faster, continuous turn on a steady tilt — in the hero and as the BREACH mark in the screensaver, instead of a gentle rotation.
+- The screensaver matrix is slower and calmer throughout — gentler streams and softer transition pacing — and its letters always stay normal weight, never bold.
+- Straight out of the first slow matrix, the screensaver now opens on the GRC·LABS logo rendered in ASCII.
+- Once the "brain" window splits, it now always splits all the way into three panes — focus, net and a live 3D render — never just a single side pane.
+- The Voyager scene now carries live telemetry — speed and distance from Earth — with the distance ticking up as it travels.
+- Tidied the Hebrew (kept ready behind the hidden language toggle) — the Labs note no longer lists the retired projects, and the footer now carries a company-only Hebrew copyright line.
+
 ## v1.43 — 2026-06-12
 
 ### Added

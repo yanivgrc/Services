@@ -74,13 +74,13 @@
       if (rkey === Math.round(R.w) && rcols) return;                 // grid depends only on width, so the content area and the full screen share ONE matrix
       rfs = clamp(Math.round(R.w / 84), 10, 17); rcols = Math.ceil(R.w / rfs); rdrops = []; rspd = []; bottomed = [];  // denser columns
       var rows = R.h / rfs;
-      for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.6 + Math.random() * 0.85; bottomed[i] = false; }
+      for (var i = 0; i < rcols; i++) { rdrops[i] = Math.floor(Math.random() * rows); rspd[i] = 0.42 + Math.random() * 0.6; bottomed[i] = false; }  // slow, calm streams
       rkey = Math.round(R.w);
     }
     function fill(R) { ensure(R); var rows = R.h / rfs; for (var i = 0; i < rcols; i++) { rdrops[i] = -Math.floor(Math.random() * rows * 0.95); bottomed[i] = false; } } // seed the heads ABOVE the top so the curtain falls IN from the top and fills down the screen, not all at once
     function draw(R, intensity, respawn, speed) {
       ensure(R); clipRect(R); var sp = speed || 1;
-      ctx.font = rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      ctx.font = '400 ' + rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';  // always normal weight — never bold matrix letters
       var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55));
       for (var i = 0; i < rcols; i++) {
         var headI = Math.floor(rdrops[i]), x = R.x + i * rfs;
@@ -92,7 +92,7 @@
         }
         rdrops[i] += rspd[i] * sp;
         if (rdrops[i] * rfs > R.h) bottomed[i] = true;
-        if (respawn && (Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.6 + Math.random() * 0.85; }
+        if (respawn && (Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.42 + Math.random() * 0.6; }
       }
       ctx.restore();
     }
@@ -473,7 +473,7 @@
   // where the lateral side itself splits into a reasoning log and a live 3D render.
   function makeBrain(cmd) {
     var get = makeGet(cmd), think = null, ascii = null, split = 0, SPLIT_MS = 720, splitting = false, narrow = false, t = 0, narrowPhase = 0, narrowT = 0, fade = 0;
-    var rr = Math.random(), mode = rr < 0.30 ? 'solo' : (rr < 0.62 ? 'duo' : 'trio'); // sometimes one pane, sometimes two or three
+    var rr = Math.random(), mode = rr < 0.30 ? 'solo' : 'trio'; // either one focus pane, or — once it splits — it splits all the way: 2:net AND 3:render, never just a single side pane
     function frame(dt, R) {
       t += dt; narrow = R.w < 760;
       ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
@@ -961,6 +961,9 @@
   // a tribute to Voyager — the dish, the booms, the golden record, turning in 3D
   function makeVoyager() {
     var t = 0, DUR = 9000, RAMP = '.,-~:;=!*#$@', pts = [];
+    // live telemetry — Voyager 1, the farthest human-made object: ~17 km/s, ~168 AU from Earth (approx., mid-2026), still climbing
+    var V_SPEED = 17.0, V_DIST0 = 2.512e10, AU_KM = 1.495979e8, C_KMS = 299792.458;
+    function grp(n) { return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
     function add(x, y, z, l) { pts.push([x, y, z, l]); }
     for (var ring = 0.10; ring <= 1.0; ring += 0.07) { var nseg = Math.max(10, Math.round(ring * 42)); for (var s = 0; s < nseg; s++) { var a = s / nseg * 6.2832; add(ring * Math.cos(a), ring * Math.sin(a), -0.5 * ring * ring, ring > 0.93 ? 11 : 6); } }
     for (var f = 0; f < 16; f++) add(0, 0, -0.5 + f * 0.04, 8);
@@ -986,6 +989,14 @@
       for (var w = 0; w < 4; w++) { var wp = (t / 2600 + w / 4) % 1, rr = wp * maxR; if (rr < 10) continue; ctx.fillStyle = wp < 0.45 ? GREEN : FAINT; var np = Math.max(14, Math.floor(rr * 0.32)); for (var k = 0; k < np; k++) { var ang = k / np * 6.2832; ctx.fillText('.', dcx + Math.cos(ang) * rr, dcy + Math.sin(ang) * rr * 0.55); } }
       var vfs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + vfs + 'px ' + STAMF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.10);
       ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      // live telemetry readout — speed and distance from Earth, the distance ticking up as it travels
+      var distKm = V_DIST0 + V_SPEED * (t / 1000), au = distKm / AU_KM, ltHr = (distKm / C_KMS) / 3600;
+      var tfs = clamp(Math.round(R.w / 64), 11, 16), tx = R.x + Math.round(R.w * 0.05), ty = R.y + Math.round(R.h * 0.13), tlh = Math.round(tfs * 1.55);
+      ctx.font = tfs + 'px ' + MONO; ctx.textBaseline = 'top';
+      ctx.fillStyle = DIM; ctx.fillText('TELEMETRY // VOYAGER 1', tx, ty);
+      ctx.fillStyle = GREEN; ctx.fillText('SPEED     ' + V_SPEED.toFixed(1) + ' km/s', tx, ty + tlh);
+      ctx.fillText('DISTANCE  ' + grp(distKm) + ' km', tx, ty + tlh * 2);
+      ctx.fillStyle = MIDG; ctx.fillText('          ' + au.toFixed(1) + ' AU  ·  ' + ltHr.toFixed(1) + ' lt-hr from Earth', tx, ty + tlh * 3);
       label(R, 'voyager · 1977');
       return t >= DUR;
     }
@@ -1067,7 +1078,7 @@
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      yaw += 0.006 * ROT * (dt / 16.67); var pitch = Math.sin(t * 0.0002025) * 0.35;   // locked spin: yaw += 0.006·0.75/frame, pitch = sin(t·0.27·0.75)·0.35
+      yaw += 0.012 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.0004) * 0.06;   // a real spin: faster continuous yaw on a steady tilt, instead of a gentle pitch oscillation
       var cyr = Math.cos(yaw), syr = Math.sin(yaw), cpr = Math.cos(pitch), spr = Math.sin(pitch);
       var r00 = cyr, r02 = -syr, r10 = -spr * syr, r11 = cpr, r12 = -spr * cyr, r20 = cpr * syr, r21 = spr, r22 = cpr * cyr;
       var rox = -9 * syr, roy = -9 * spr * cyr, roz = 9 * cpr * cyr;
@@ -1293,6 +1304,7 @@
   function pickType() {
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
+    if (n === 0) return 'brand';   // straight out of the first slow matrix: the GRC·LABS logo, rendered in ASCII
     if (n % 3 === 0) return 'brain';
     if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'breach']); ilI = 0; } // viz scenes, matrix rain, and the BREACH containment mark (replaces the portrait-ASCII slot)
     return ilOrder[ilI++];
@@ -1350,12 +1362,12 @@
     var C = content(), FS = { x: 0, y: 0, w: W, h: H };
     if (trans === 'fade') {                       // the matrix cascades IN from the top, filling down the screen, while the outgoing scene fades to black beneath it
       ctx.fillStyle = 'rgba(8,11,20,0.13)'; ctx.fillRect(0, 0, W, H);            // steadily veil the outgoing scene (and the tmux bar) to black
-      rainState.draw(FS, 1, true, 1.0 + 0.7 * ease(clamp(transT / 700, 0, 1))); // the fall accelerates as it pours in
+      rainState.draw(FS, 1, true, 0.75 + 0.5 * ease(clamp(transT / 800, 0, 1))); // the fall eases in — slow and calm, never rushed
       transT += dt;
       if ((rainState.reachedBottom() && transT > 550) || transT >= FADE_MAX) { trans = 'hold'; transT = 0; }
     } else if (trans === 'hold') {                // the full-screen matrix moment — the fall settles to a calm
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-      rainState.draw(FS, 1, true, 0.85 + 0.75 * Math.max(0, 1 - transT / 1100)); transT += dt;
+      rainState.draw(FS, 1, true, 0.6 + 0.5 * Math.max(0, 1 - transT / 1200)); transT += dt;
       if (transT >= holdDur) { trans = 'drain'; transT = 0; }
     } else if (trans === 'drain') {               // the matrix recedes as one downward curtain, revealing the next scene (and the bar) top-to-bottom
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
@@ -1363,7 +1375,7 @@
       drawStatus(now);
       var revP = ease(clamp(transT / DRAIN_MS, 0, 1)), revY = revP * (H + 30);     // the curtain's top edge sweeps down and off
       ctx.save(); ctx.beginPath(); ctx.rect(0, revY, W, H - revY + 1); ctx.clip();  // matrix only below the edge; the scene is revealed above
-      rainState.draw(FS, 1, true, 1.6); ctx.restore();                             // streams keep falling within the receding curtain
+      rainState.draw(FS, 1, true, 1.15); ctx.restore();                            // streams keep falling within the receding curtain — gentle, not a rush
       if (revY > 2 && revY < H) { var gg = ctx.createLinearGradient(0, revY - 26, 0, revY + 8); gg.addColorStop(0, 'rgba(99,178,46,0)'); gg.addColorStop(1, 'rgba(155,232,91,0.55)'); ctx.fillStyle = gg; ctx.fillRect(0, revY - 26, W, 34); } // glowing leading edge
       transT += dt;
       if (revP >= 1) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
