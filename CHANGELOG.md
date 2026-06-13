@@ -2,6 +2,16 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.46 — 2026-06-13
+
+### Changed
+- The containment mark now spins slowly — a gentle, graceful turn on its fixed tilt — in the hero and the screensaver.
+- The screensaver opens on the full GRC·LABS logo lockup — the rotating mark in deep ASCII with the wordmark beneath it — instead of the flat ASCII wordmark.
+- The screensaver's Hebrew contact line is now just "צור קשר".
+
+### Removed
+- The plain sphere (a fully-round ball) and the menorah are gone from the screensaver rotation — the matrix takes their slots.
+
 ## v1.45 — 2026-06-13
 
 ### Changed

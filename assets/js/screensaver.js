@@ -43,7 +43,7 @@
   var MONO_RAIN = '"IBM Plex Mono", "Frank Ruhl Libre", monospace';     // Latin/kana stay monospace; Hebrew falls through to the scriptural face
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  var CTA = 'ספר לנו על האתגרים שלך — צור קשר';
+  var CTA = 'צור קשר';
   var PROMPT = 'grc-labs:~$ ';
   var BAR_LEN = 26;
   var MSGS = [
@@ -479,7 +479,7 @@
       ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       if (mode === 'solo') { var sd = get.frame(dt, R); paneChrome(R, '1:focus', true); return sd; }
       if (!narrow) {
-        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeNetPane(); if (mode === 'trio' && !ascii) ascii = [makeDonut, makeSphere, makeKnot, makePyr3D, makeCube][(Math.random() * 5) | 0](); }
+        if (!splitting && get.atBody()) { splitting = true; if (!think) think = makeNetPane(); if (mode === 'trio' && !ascii) ascii = [makeDonut, makeKnot, makePyr3D, makeCube][(Math.random() * 4) | 0](); } // no plain sphere here either
         if (splitting && split < 1) split = Math.min(1, split + dt / SPLIT_MS);
         var e = ease(split), gap = split > 0 ? 6 : 0;
         var leftW = R.w * (1 - (mode === 'trio' ? 0.50 : 0.46) * e) - (split > 0 ? gap / 2 : 0);
@@ -1066,8 +1066,8 @@
   // BREACH — the GRC·LABS containment mark, FULL-SCREEN, in uniform phosphor-green ASCII: a rounded epoxy
   // tetrahedron with a spherical cavity carved out of it (max(tetra, −sphere)), raymarched on the CPU and
   // sampled to a monospace grid where char density = luminance. Parameters are LOCKED to the brand prototype.
-  function makeLogo() {
-    var t = 0, DUR = 9500, yaw = 0;
+  function makeLogo(intro) {   // intro=true → the opening lockup: the rotating mark over the GRC·LABS wordmark
+    var t = 0, DUR = intro ? 10500 : 9500, yaw = 0;
     var SPH = 0.95, ROUND = 0.021, VIS = 0.10, ROT = 0.75, RIN = 1.94 / 3, DEN = 186; // locked: tetra R=1.94, cavity 0.95, edge 0.021, ghost 0.10, spin 0.75, 186 cols
     var RAMP = " .'`^,:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
     var N0x = 0.57735, N0y = 0.57735, N0z = 0.57735, N1x = 0.57735, N1y = -0.57735, N1z = -0.57735,
@@ -1078,7 +1078,7 @@
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      yaw += 0.012 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.0004) * 0.06;   // a real spin: faster continuous yaw on a steady tilt, instead of a gentle pitch oscillation
+      yaw += 0.006 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.0004) * 0.06;   // a slow, steady spin on a fixed tilt — continuous turn at a gentle pace
       var cyr = Math.cos(yaw), syr = Math.sin(yaw), cpr = Math.cos(pitch), spr = Math.sin(pitch);
       var r00 = cyr, r02 = -syr, r10 = -spr * syr, r11 = cpr, r12 = -spr * cyr, r20 = cpr * syr, r21 = spr, r22 = cpr * cyr;
       var rox = -9 * syr, roy = -9 * spr * cyr, roz = 9 * cpr * cyr;
@@ -1107,6 +1107,10 @@
           if (lum <= 0.04) continue; if (lum > 1) lum = 1;
           ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length))), x0 + c * acw, y0 + r * fs);
         }
+      }
+      if (intro) {   // the GRC·LABS wordmark sits beneath the turning mark — a full logo lockup as the session opens
+        var wfs = clamp(Math.round(R.w / 22), 24, 52); ctx.font = '700 ' + wfs + 'px "Space Grotesk", "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
+        ctx.fillStyle = BRIGHT; ctx.fillText('GRC·LABS', R.x + R.w / 2, R.y + R.h * 0.84);
       }
       var cfs = clamp(Math.round(R.w / 82), 11, 15); ctx.font = '600 ' + cfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = DIM;
       ctx.fillText('© ' + (new Date()).getFullYear() + ' GRC·LABS · ALL RIGHTS RESERVED', R.x + R.w / 2, R.y + R.h - cfs * 1.7);  // copyright
@@ -1293,7 +1297,7 @@
   // ─────────────────────────── scheduler ───────────────────────────
   var cmdOrder, cmdI = 0, shapeOrder, shapeI = 0, winN = 0, winIdx = 0;
   function nextCmd() { if (!cmdOrder || cmdI >= cmdOrder.length) { cmdOrder = shuffle(COMMANDS.map(function (_, i) { return i; })); cmdI = 0; } return COMMANDS[cmdOrder[cmdI++]]; }
-  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSphere, makeSpring, makeKnot, makeCochlea, makeMolecule, makePyr3D, makeCube, makeAudioScope, makeAstro, makeCrypto, makeVoyager, makeMenorah]);
+  var VIZ_BUILDERS = POINT_SHAPES.map(function (sh) { return function () { return makePointGeo(sh); }; }).concat([makeDonut, makeSpring, makeKnot, makeCochlea, makeMolecule, makePyr3D, makeCube, makeAudioScope, makeAstro, makeCrypto, makeVoyager]); // dropped the plain sphere (a fully-round ball) and the menorah — the matrix takes their slots
   function nextViz() {
     if (FORCE_SHAPE >= 0) return VIZ_BUILDERS[FORCE_SHAPE % VIZ_BUILDERS.length]();
     if (!shapeOrder || shapeI >= shapeOrder.length) { shapeOrder = shuffle(VIZ_BUILDERS.map(function (_, i) { return i; })); shapeI = 0; }
@@ -1304,7 +1308,7 @@
   function pickType() {
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
-    if (n === 0) return 'brand';   // straight out of the first slow matrix: the GRC·LABS logo, rendered in ASCII
+    if (n === 0) return 'intro';   // straight out of the first slow matrix: the rotating GRC·LABS logo lockup in deep ASCII
     if (n % 3 === 0) return 'brain';
     if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'breach']); ilI = 0; } // viz scenes, matrix rain, and the BREACH containment mark (replaces the portrait-ASCII slot)
     return ilOrder[ilI++];
@@ -1315,6 +1319,7 @@
     if (type === 'rain') return makeRain();
     if (type === 'brand') return makeBrand();
     if (type === 'breach') return makeLogo();
+    if (type === 'intro') return makeLogo(true);
     if (type === 'subject') return portrait.scene();   // retired from the rotation; reachable via ?win=subject
     return nextViz();
   }
