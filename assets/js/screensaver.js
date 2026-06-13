@@ -23,7 +23,7 @@
 (function () {
   'use strict';
 
-  var CONFIG = { enabled: true, idleMs: 9000 };
+  var CONFIG = { enabled: true, idleMs: 30000 };
   var params = new URLSearchParams(location.search);
   if (params.get('saver') === 'off') CONFIG.enabled = false;
   if (params.get('saver') === 'fast') CONFIG.idleMs = 2500;

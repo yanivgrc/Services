@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.45 — 2026-06-13
+
+### Changed
+- The screensaver now waits 30 seconds of idle before it fires (was 9) — time to read the page first.
+- The hero containment mark now matches the screensaver's BREACH proportions exactly — a larger tetrahedron around the same cavity, so the carved-out ball reads a little smaller and more contained.
+
 ## v1.44 — 2026-06-13
 
 ### Changed

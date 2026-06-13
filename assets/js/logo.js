@@ -72,7 +72,7 @@
   function render() {
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(U.u_res, cvs.width, cvs.height);
-    gl.uniform1f(U.u_rin, 1.7 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.06); gl.uniform1f(U.u_svis, 0.18);
+    gl.uniform1f(U.u_rin, 1.94 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.021); gl.uniform1f(U.u_svis, 0.10); // matched to the screensaver BREACH mark: bigger tetra around the same 0.95 cavity, so the "ball" reads a touch smaller and contained
     gl.uniform1f(U.u_yaw, t * 0.62); gl.uniform1f(U.u_pitch, 0.42 + Math.sin(t * 0.45) * 0.05); // a real spin: a steady tilt with the wordmark axis, turning continuously rather than gently oscillating
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
