@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.47 — 2026-06-14
+
+### Changed
+- The containment mark now spins at full speed in the screensaver — a real, continuous turn — and holds on screen longer so the shape reads.
+- The hero mark keeps its slow spin but now also tilts gently up and down as it turns, so it tumbles softly instead of rotating flat.
+- The screensaver's audio scene is now a full ASCII analyzer — an oscilloscope, a peak-hold spectrum with dB and frequency scales, and L/R VU meters — instead of a single waveform.
+- Refreshed Voyager 1's live telemetry — ~16.9 km/s (~60,700 km/h), ~25.4 billion km / ~170 AU from Earth, and a ~23.5-hour one-way signal time.
+
 ## v1.46 — 2026-06-13
 
 ### Changed

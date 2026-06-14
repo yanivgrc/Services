@@ -805,28 +805,87 @@
     }
     return { frame: frame, title: 'viz' };
   }
-  // an audio waveform on a scope — just the signal, filled from the centre line
+  // a full ASCII audio analyzer — transport header, an oscilloscope, a peak-hold spectrum (dB + Hz scales)
+  // and L/R VU meters, dressed like a real player so it reads as deep audio rather than a lone sine wave.
   function makeAudioScope() {
-    var t = 0, DUR = 8000;
+    var t = 0, DUR = 9500, TRACK = 194000;                 // 03:14 transport loop
+    var BLK = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];    // sub-cell column fill, 1/8 .. 8/8
+    var peaks = null;                                       // peak-hold per spectrum bin (in rows)
+    function spec(f, tt) {                                  // pseudo-spectrum level 0..1 at band f (0..1, low→high)
+      var tilt = Math.pow(1 - f, 0.55);                     // spectral tilt — more energy in the low end, like music
+      var lfo = 0.5 + 0.5 * Math.sin(tt * 0.0023 + f * 3.0);
+      var detail = Math.abs(Math.sin(f * 12 + tt * 0.006) * 0.55 + Math.sin(f * 27 - tt * 0.011) * 0.30 + Math.sin(f * 61 + tt * 0.019) * 0.18);
+      var kick = Math.pow(0.5 + 0.5 * Math.sin(tt * 0.0046), 3) * (1 - f);   // a bass kick that pumps the low bins
+      return clamp(tilt * (0.22 + 0.78 * detail) * (0.55 + 0.5 * lfo) + 0.5 * kick, 0, 1);
+    }
+    function tc(ms) { var s = Math.floor(ms / 1000), m = Math.floor(s / 60); s = s % 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.round(Math.min(R.w, R.h) / 52), 8, 14), cw = fs * 0.6;
-      var cols = Math.max(50, Math.floor(R.w / cw)), rows = Math.max(20, Math.floor(R.h / fs));
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 46), 9, 15), cw = fs * 0.6;
+      var cols = Math.max(50, Math.floor((R.w * 0.94) / cw)), rows = Math.max(28, Math.floor((R.h * 0.9) / fs));
       var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       function put(c, r, ch, col) { if (c < 0 || c >= cols || r < 0 || r >= rows) return; ctx.fillStyle = col; ctx.fillText(ch, x0 + c * cw, y0 + r * fs); }
-      var mid = Math.round(rows / 2), half = rows * 0.44;
-      for (var cc = 0; cc < cols; cc++) put(cc, mid, '·', FAINT);
+      function txt(c, r, s, col) { for (var i = 0; i < s.length; i++) put(c + i, r, s.charAt(i), col); }
+
+      // section layout (in rows): header · oscilloscope · spectrum · freq axis · VU meters
+      var wfTop = 3, wfRows = Math.max(5, Math.round(rows * 0.22)), wfBot = wfTop + wfRows - 1, wfMid = wfTop + (wfRows >> 1);
+      var vuRow1 = rows - 2, vuRow2 = rows - 1, axisRow = rows - 4;
+      var spBot = axisRow - 2, spTop = wfBot + 2, spRows = Math.max(6, spBot - spTop + 1);
+
+      // ── header / transport ──
+      txt(0, 0, '♪ TRANSMISSION.WAV', BRIGHT);
+      var meta = '44.1kHz · 16-bit · stereo'; txt(cols - meta.length, 0, meta, DIM);
+      var pp = (t % TRACK) / TRACK, tlabel = '▶ ' + tc(t % TRACK) + ' '; txt(0, 1, tlabel, GREEN);
+      var barStart = tlabel.length, barEnd = cols - 7, barW0 = Math.max(8, barEnd - barStart), fillN = Math.round(pp * barW0);
+      for (var hb = 0; hb < barW0; hb++) put(barStart + hb, 1, hb === fillN ? '◉' : (hb < fillN ? '━' : '┄'), hb < fillN ? GREEN : FAINT);
+      txt(cols - 5, 1, '03:14', DIM);
+
+      // ── 1) oscilloscope (the waveform, with a sweeping playhead) ──
+      for (var cc = 0; cc < cols; cc++) put(cc, wfMid, '·', FAINT);
+      var ph = Math.floor((t * 0.06) % cols);
       for (var c = 0; c < cols; c++) {
         var u = c / cols;
-        var env = 0.40 + 0.45 * Math.abs(Math.sin(u * Math.PI * 2 - t * 0.0009)) * (0.6 + 0.4 * Math.sin(t * 0.0013 + u * 7));
+        var env = 0.42 + 0.40 * Math.abs(Math.sin(u * Math.PI * 2 - t * 0.0009)) * (0.6 + 0.4 * Math.sin(t * 0.0013 + u * 7));
         var sig = Math.sin(u * Math.PI * 38 - t * 0.020) * 0.6 + Math.sin(u * Math.PI * 17 - t * 0.013) * 0.30 + Math.sin(u * Math.PI * 71 - t * 0.030) * 0.18;
-        var amp = sig * env, h = Math.round(Math.abs(amp) * half), dir = amp >= 0 ? -1 : 1;
-        for (var k = 0; k <= h; k++) { var rr = mid + dir * k, edge = k >= h - 1; put(c, rr, edge ? '#' : '|', edge ? '#ffffff' : (k < h * 0.5 ? GREEN : MIDG)); }
+        var amp = sig * env, hh = Math.round(Math.abs(amp) * (wfRows / 2)), dir = amp >= 0 ? -1 : 1;
+        for (var k = 0; k <= hh; k++) { var rr = wfMid + dir * k, edge = k >= hh; put(c, rr, edge ? (amp >= 0 ? '▀' : '▄') : '│', edge ? BRIGHT : (k < hh * 0.5 ? GREEN : MIDG)); }
+        if (c === ph) for (var pr = wfTop; pr <= wfBot; pr++) if (pr !== wfMid) put(c, pr, '┊', AMBER);
       }
-      var afs = clamp(Math.round(R.w / 32), 13, 24); ctx.font = '700 ' + afs + 'px ' + STAMF; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = BRIGHT; ctx.fillText('צור קשר', R.x + R.w / 2, R.y + R.h * 0.12);
-      ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      label(R, 'audio · scope');
+
+      // ── 2) spectrum analyzer (vertical bars + peak-hold caps, dB scale at left) ──
+      var LG = 4, avail = cols - LG, NB = clamp(Math.floor(avail / 3), 14, 44), barW = Math.max(2, Math.floor(avail / NB)), span = barW * NB, sx = LG + Math.floor((avail - span) / 2);
+      if (!peaks || peaks.length !== NB) { peaks = []; for (var pz = 0; pz < NB; pz++) peaks[pz] = 0; }
+      var DBL = [['0', 0], ['-12', 0.32], ['-24', 0.6], ['-48', 1]];
+      for (var dl = 0; dl < DBL.length; dl++) { var drow = spTop + Math.round(DBL[dl][1] * (spRows - 1)); txt(0, drow, DBL[dl][0], DIM); }
+      for (var b = 0; b < NB; b++) {
+        var f = b / (NB - 1), L = spec(f, t), hpx = L * spRows;
+        if (hpx > peaks[b]) peaks[b] = hpx; else peaks[b] = Math.max(0, peaks[b] - dt * 0.005);   // peaks fall back slowly
+        var full = Math.floor(hpx), frac = hpx - full;
+        for (var bw = 0; bw < barW - 1; bw++) {
+          var col = sx + b * barW + bw;
+          for (var fr2 = 0; fr2 < full; fr2++) { var r2 = spBot - fr2, cl = fr2 > spRows * 0.72 ? AMBER : (fr2 > spRows * 0.42 ? BRIGHT : (fr2 > spRows * 0.16 ? GREEN : MIDG)); put(col, r2, '█', cl); }
+          if (frac > 0.12 && full < spRows) put(col, spBot - full, BLK[clamp(Math.floor(frac * 8), 0, 7)], full > spRows * 0.42 ? BRIGHT : GREEN);
+          if (peaks[b] > 0.8) put(col, spBot - Math.min(spRows - 1, Math.round(peaks[b])), '▔', '#ffffff');
+        }
+      }
+
+      // ── frequency axis ──
+      var HZ = ['20', '63', '125', '500', '1k', '4k', '8k', '16k'];
+      for (var hz = 0; hz < HZ.length; hz++) { var hcx = sx + Math.round(hz / (HZ.length - 1) * (span - 3)); txt(hcx, axisRow, HZ[hz], DIM); }
+
+      // ── 3) L/R VU meters ──
+      var vuLen = clamp(cols - 14, 16, 60);
+      function vu(r, lab, v) {
+        txt(0, r, lab, BRIGHT); var n = Math.round(v * vuLen);
+        for (var i = 0; i < vuLen; i++) { var on = i < n, cl2 = i > vuLen * 0.85 ? AMBER : (i > vuLen * 0.6 ? BRIGHT : GREEN); put(2 + i, r, on ? '█' : '─', on ? cl2 : FAINT); }
+        var db = v >= 0.985 ? ' 0.0' : '-' + ((1 - v) * 48).toFixed(1); txt(2 + vuLen + 1, r, db + ' dB', DIM);
+      }
+      var lv = clamp(0.55 + 0.32 * Math.abs(Math.sin(t * 0.0031)) + 0.10 * Math.sin(t * 0.013), 0, 1);
+      var rv = clamp(0.55 + 0.32 * Math.abs(Math.sin(t * 0.0031 + 0.7)) + 0.10 * Math.sin(t * 0.017 + 1), 0, 1);
+      vu(vuRow1, 'L', lv); vu(vuRow2, 'R', rv);
+
+      label(R, 'audio · analyzer');
       return t >= DUR;
     }
     return { frame: frame, title: 'viz' };
@@ -961,8 +1020,9 @@
   // a tribute to Voyager — the dish, the booms, the golden record, turning in 3D
   function makeVoyager() {
     var t = 0, DUR = 9000, RAMP = '.,-~:;=!*#$@', pts = [];
-    // live telemetry — Voyager 1, the farthest human-made object: ~17 km/s, ~168 AU from Earth (approx., mid-2026), still climbing
-    var V_SPEED = 17.0, V_DIST0 = 2.512e10, AU_KM = 1.495979e8, C_KMS = 299792.458;
+    // live telemetry — Voyager 1, the farthest human-made object: ~16.9 km/s (~60,700 km/h), ~170 AU / ~25.4 billion km from Earth, ~23.5 lt-hr one-way (approx., mid-2026), still climbing
+    var V_SPEED = 16.86, V_DIST0 = 2.54e10, AU_KM = 1.495979e8, C_KMS = 299792.458;
+    var V_KMH = Math.round(V_SPEED * 3600 / 100) * 100, V_MPH = Math.round(V_SPEED * 3600 * 0.621371 / 100) * 100;  // ~60,700 km/h · ~37,700 mph
     function grp(n) { return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
     function add(x, y, z, l) { pts.push([x, y, z, l]); }
     for (var ring = 0.10; ring <= 1.0; ring += 0.07) { var nseg = Math.max(10, Math.round(ring * 42)); for (var s = 0; s < nseg; s++) { var a = s / nseg * 6.2832; add(ring * Math.cos(a), ring * Math.sin(a), -0.5 * ring * ring, ring > 0.93 ? 11 : 6); } }
@@ -995,8 +1055,9 @@
       ctx.font = tfs + 'px ' + MONO; ctx.textBaseline = 'top';
       ctx.fillStyle = DIM; ctx.fillText('TELEMETRY // VOYAGER 1', tx, ty);
       ctx.fillStyle = GREEN; ctx.fillText('SPEED     ' + V_SPEED.toFixed(1) + ' km/s', tx, ty + tlh);
-      ctx.fillText('DISTANCE  ' + grp(distKm) + ' km', tx, ty + tlh * 2);
-      ctx.fillStyle = MIDG; ctx.fillText('          ' + au.toFixed(1) + ' AU  ·  ' + ltHr.toFixed(1) + ' lt-hr from Earth', tx, ty + tlh * 3);
+      ctx.fillStyle = MIDG; ctx.fillText('          ' + grp(V_KMH) + ' km/h  ·  ' + grp(V_MPH) + ' mph', tx, ty + tlh * 2);
+      ctx.fillStyle = GREEN; ctx.fillText('DISTANCE  ' + grp(distKm) + ' km', tx, ty + tlh * 3);
+      ctx.fillStyle = MIDG; ctx.fillText('          ' + au.toFixed(1) + ' AU  ·  ' + ltHr.toFixed(1) + ' lt-hr from Earth', tx, ty + tlh * 4);
       label(R, 'voyager · 1977');
       return t >= DUR;
     }
@@ -1067,7 +1128,7 @@
   // tetrahedron with a spherical cavity carved out of it (max(tetra, −sphere)), raymarched on the CPU and
   // sampled to a monospace grid where char density = luminance. Parameters are LOCKED to the brand prototype.
   function makeLogo(intro) {   // intro=true → the opening lockup: the rotating mark over the GRC·LABS wordmark
-    var t = 0, DUR = intro ? 10500 : 9500, yaw = 0;
+    var t = 0, DUR = intro ? 16000 : 15000, yaw = 0;   // hold the mark on screen longer — it's the signature shape, give it time to read
     var SPH = 0.95, ROUND = 0.021, VIS = 0.10, ROT = 0.75, RIN = 1.94 / 3, DEN = 186; // locked: tetra R=1.94, cavity 0.95, edge 0.021, ghost 0.10, spin 0.75, 186 cols
     var RAMP = " .'`^,:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
     var N0x = 0.57735, N0y = 0.57735, N0z = 0.57735, N1x = 0.57735, N1y = -0.57735, N1z = -0.57735,
@@ -1078,7 +1139,7 @@
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      yaw += 0.006 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.0004) * 0.06;   // a slow, steady spin on a fixed tilt — continuous turn at a gentle pace
+      yaw += 0.012 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.0004) * 0.06;   // normal-speed spin on a fixed tilt — a real continuous turn (the hero mark stays slow; the saver turns at full pace)
       var cyr = Math.cos(yaw), syr = Math.sin(yaw), cpr = Math.cos(pitch), spr = Math.sin(pitch);
       var r00 = cyr, r02 = -syr, r10 = -spr * syr, r11 = cpr, r12 = -spr * cyr, r20 = cpr * syr, r21 = spr, r22 = cpr * cyr;
       var rox = -9 * syr, roy = -9 * spr * cyr, roz = 9 * cpr * cyr;
