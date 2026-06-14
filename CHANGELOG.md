@@ -2,6 +2,15 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.48 — 2026-06-14
+
+### Changed
+- The hero mark's up/down tilt is now clearly visible — a deeper nod as it spins, so it reads as a real tumble rather than a flat turn.
+- The screensaver's audio scene is now a speech-shaped transmission waveform that decodes the slogan, "Tailored Information Security," word by word as the playhead sweeps across it — modeled on a real voice signal, like the Voyager record, rather than an analyzer.
+
+### Removed
+- Dropped the phyllotaxis (golden-angle spiral) pattern from the screensaver's shape rotation.
+
 ## v1.47 — 2026-06-14
 
 ### Changed

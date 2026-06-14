@@ -73,7 +73,7 @@
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(U.u_res, cvs.width, cvs.height);
     gl.uniform1f(U.u_rin, 1.94 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.021); gl.uniform1f(U.u_svis, 0.10); // matched to the screensaver BREACH mark: bigger tetra around the same 0.95 cavity, so the "ball" reads a touch smaller and contained
-    gl.uniform1f(U.u_yaw, t * 0.24); gl.uniform1f(U.u_pitch, 0.42 + Math.sin(t * 0.34) * 0.16); // slow left spin (yaw) plus a gentle up/down bob (pitch) on top, so it tumbles softly rather than turning flat
+    gl.uniform1f(U.u_yaw, t * 0.24); gl.uniform1f(U.u_pitch, 0.42 + Math.sin(t * 0.6) * 0.28); // slow left spin (yaw) plus a clear up/down nod (pitch) on top, so it visibly tumbles rather than turning flat
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop() { raf = requestAnimationFrame(loop); if (!vis) return; t += 0.016; render(); }
