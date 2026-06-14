@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.49 — 2026-06-14
+
+### Changed
+- The screensaver's containment mark now tilts up and down as it spins — the same gentle tumble as the hero mark, no longer a flat turn.
+- The screensaver's audio scene is now an RTL-SDR style radio scope — a live FFT spectrum over a scrolling deep-ASCII waterfall, with carriers descending through the noise floor as the receiver demodulates the slogan.
+- Smoothed the matrix transition to one calm, steady fall throughout — no surge or bump as it fills and settles.
+- Thinned the glowing green line that sweeps each scene into view.
+
 ## v1.48 — 2026-06-14
 
 ### Changed

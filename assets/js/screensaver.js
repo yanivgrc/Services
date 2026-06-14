@@ -804,75 +804,84 @@
     }
     return { frame: frame, title: 'viz' };
   }
-  // the brand slogan as a transmitted audio signal — a real, speech-shaped waveform (word bursts with
-  // silences between, like a voice on the Voyager golden record) that decodes to the slogan, word by word
-  // as the playhead sweeps across it. A dense, mirrored oscilloscope fill — not a lone sine.
+  // an RTL-SDR style radio scope in deep ASCII — a live FFT spectrum above a scrolling waterfall, where
+  // carriers descend as bright traces through a speckled noise floor (just like SDR#/rtl_sdr), demodulating
+  // to the brand slogan along the bottom. Dense shade-ramp ASCII throughout.
   function makeAudioScope() {
-    var t = 0, LOOP = 8200, DUR = 11500;
+    var t = 0, DUR = 11500, gen = 0, ROWMS = 52;
+    var RAMP = ' .·:-=+*o#%@';                                       // deep shade ramp, low → high power
     var PHRASE = 'TAILORED INFORMATION SECURITY';
-    var WORDS = [   // s/e are clip positions (0..1); syl are syllable centres inside each word (0..1)
-      { w: 'TAILORED',    s: 0.05, e: 0.27, syl: [0.0, 0.5, 0.85] },
-      { w: 'INFORMATION', s: 0.34, e: 0.64, syl: [0.0, 0.27, 0.55, 0.82] },
-      { w: 'SECURITY',    s: 0.71, e: 0.96, syl: [0.0, 0.3, 0.58, 0.85] }
+    var carriers = [
+      { fc: 0.15, w: 0.010, a: 0.80, rate: 0.0021, drift: 0 },
+      { fc: 0.39, w: 0.026, a: 1.00, rate: 0.0013, drift: 0.045 },  // a wide FM carrier that wobbles across the band
+      { fc: 0.52, w: 0.006, a: 0.66, rate: 0.0034, drift: 0 },
+      { fc: 0.70, w: 0.016, a: 0.88, rate: 0.0017, drift: 0 },
+      { fc: 0.86, w: 0.009, a: 0.58, rate: 0.0027, drift: 0 }
     ];
-    var SCR = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#%*+=';
-    function env(u) {                                          // amplitude envelope — syllable humps inside each word, silence between
-      var a = 0;
-      for (var wi = 0; wi < WORDS.length; wi++) {
-        var Wd = WORDS[wi]; if (u < Wd.s || u > Wd.e) continue;
-        var wu = (u - Wd.s) / (Wd.e - Wd.s);
-        for (var si = 0; si < Wd.syl.length; si++) { var d = wu - Wd.syl[si], wg = 0.72 + 0.28 * Math.sin(si * 1.7 + wi); a += wg * Math.exp(-(d * d) / 0.0098); }
+    function power(f, tt) {                                          // signal power 0..1 at frequency f (0..1)
+      var p = 0.05 + 0.07 * Math.abs(Math.sin(f * 137.1 + tt * 0.02)) + 0.05 * Math.abs(Math.sin(f * 61.7 - tt * 0.011));  // textured noise floor
+      for (var i = 0; i < carriers.length; i++) {
+        var c = carriers[i], fc = c.fc + (c.drift ? c.drift * Math.sin(tt * 0.0006 + i) : 0);
+        var d = (f - fc) / c.w, amp = c.a * (0.55 + 0.45 * Math.sin(tt * c.rate + i * 1.7));
+        p += amp * Math.exp(-d * d);
+        if (c.w > 0.02) { var ds = (Math.abs(f - fc) - c.w * 2.4) / c.w; p += amp * 0.4 * Math.exp(-ds * ds); }   // FM sidebands
       }
-      a *= 1.12; return a > 1 ? 1 : a;
+      return p > 1 ? 1 : p;
     }
+    var wf = [];                                                    // waterfall history — each entry a row of per-bin powers
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      var fs = clamp(Math.round(Math.min(R.w, R.h) / 44), 9, 16), cw = fs * 0.6;
-      var cols = Math.max(60, Math.floor((R.w * 0.94) / cw)), rows = Math.max(24, Math.floor((R.h * 0.86) / fs));
+      var fs = clamp(Math.round(Math.min(R.w, R.h) / 52), 8, 13), cw = fs * 0.58;
+      var cols = Math.min(176, Math.max(80, Math.floor((R.w * 0.96) / cw))), rows = Math.max(28, Math.floor((R.h * 0.9) / fs));
       var x0 = R.x + Math.round((R.w - cols * cw) / 2), y0 = R.y + Math.round((R.h - rows * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       function put(c, r, ch, col) { if (c < 0 || c >= cols || r < 0 || r >= rows) return; ctx.fillStyle = col; ctx.fillText(ch, x0 + c * cw, y0 + r * fs); }
       function txt(c, r, s, col) { for (var i = 0; i < s.length; i++) put(c + i, r, s.charAt(i), col); }
 
-      var ph = (t % LOOP) / LOOP, pcol = Math.floor(ph * cols);
-      var wfTop = 4, wfBot = rows - 5, wfMid = (wfTop + wfBot) >> 1, half = (wfBot - wfTop) >> 1;
+      var specTop = 2, specRows = Math.max(6, Math.round(rows * 0.24)), specBot = specTop + specRows - 1;
+      var axisRow = specBot + 1, wfTop = axisRow + 1, wfBot = rows - 2, wfRows = wfBot - wfTop + 1;
 
-      // header / transport
-      txt(0, 0, '♪ VOYAGER 1 · TRANSMISSION', BRIGHT);
-      var meta = '44.1kHz · 16-bit · decoding'; txt(cols - meta.length, 0, meta, DIM);
-      var tlabel = '▶ 00:0' + Math.floor((t % LOOP) / 1000) + ' / 00:08  ';
-      txt(0, 1, tlabel, GREEN);
-      var bs = tlabel.length, bw = Math.max(8, cols - bs - 2), fn = Math.round(ph * bw);
-      for (var hb = 0; hb < bw; hb++) put(bs + hb, 1, hb === fn ? '◉' : (hb < fn ? '━' : '┄'), hb < fn ? GREEN : FAINT);
+      // header
+      txt(0, 0, '◢ RTL-SDR · 100.10 MHz · WFM', BRIGHT);
+      var snr = 24 + Math.floor(Math.abs(Math.sin(t * 0.0017)) * 11);
+      var meta = '2.4 MS/s · gain 40.2 dB · ' + snr + ' dB SNR'; txt(cols - meta.length, 0, meta, DIM);
 
-      // centre baseline
-      for (var cc = 0; cc < cols; cc++) put(cc, wfMid, '·', FAINT);
+      // advance the waterfall on a fixed time cadence (frame-rate independent)
+      gen += dt; var guard = 0;
+      while (gen >= ROWMS && guard++ < wfRows + 2) { gen -= ROWMS; var nrow = new Array(cols); for (var gc = 0; gc < cols; gc++) nrow[gc] = power(gc / cols, t - gen); wf.unshift(nrow); if (wf.length > wfRows) wf.pop(); }
 
-      // the speech-shaped waveform — mirrored solid fill, jagged like a real recording; brighter where already played
+      // live FFT spectrum — current power per bin, a filled trace with peak-marked top
       for (var c = 0; c < cols; c++) {
-        var u = c / cols, e = env(u);
-        var g1 = Math.sin(c * 0.8 + t * 0.003), g2 = Math.sin(c * 2.9 - t * 0.0065), g3 = Math.sin(c * 7.1 + t * 0.012);
-        var grain = 0.4 + 0.6 * Math.abs(g1 * 0.5 + g2 * 0.3 + g3 * 0.2);
-        var h = Math.round(e * half * grain), played = c <= pcol;
-        for (var k = 0; k <= h; k++) {
-          var edge = k >= h, col = played ? (edge ? BRIGHT : GREEN) : (edge ? MIDG : 'rgba(99,178,46,0.34)');
-          put(c, wfMid - k, edge ? '▀' : '█', col); put(c, wfMid + k, edge ? '▄' : '█', col);
-        }
+        var p = power(c / cols, t), h = Math.round(p * (specRows - 1));
+        for (var k = 0; k <= h; k++) { var rr = specBot - k, edge = k >= h; var col = edge ? (p > 0.62 ? AMBER : BRIGHT) : (k > specRows * 0.6 ? GREEN : MIDG); put(c, rr, edge ? '▀' : '│', col); }
       }
-      for (var pr = wfTop; pr <= wfBot; pr++) put(pcol, pr, '┃', AMBER);   // playhead
+      txt(0, specTop, '-20', FAINT); txt(0, (specTop + specBot) >> 1, '-60', FAINT); txt(0, specBot, '-90', FAINT);   // dBm scale
 
-      // decoded transcript — each word sits under its own burst and locks to white once the playhead clears it
-      var tr = rows - 3;
-      for (var wi2 = 0; wi2 < WORDS.length; wi2++) {
-        var Wd2 = WORDS[wi2], uc = (Wd2.s + Wd2.e) / 2, wc = Math.round(uc * cols), ws = clamp(wc - (Wd2.w.length >> 1), 0, cols - Wd2.w.length);
-        var decoded = ph >= Wd2.e, decoding = ph >= Wd2.s && ph < Wd2.e;
-        for (var ci = 0; ci < Wd2.w.length; ci++) {
-          var ch2 = decoded ? Wd2.w.charAt(ci) : SCR.charAt((Math.random() * SCR.length) | 0);
-          put(ws + ci, tr, ch2, decoded ? '#ffffff' : (decoding ? BRIGHT : DIM));
+      // frequency axis (MHz)
+      var MHZ = ['99.9', '100.0', '100.1', '100.2', '100.3'];
+      for (var mh = 0; mh < MHZ.length; mh++) { var mx = clamp(Math.round(mh / (MHZ.length - 1) * (cols - 1)) - 2, 0, cols - 5); txt(mx, axisRow, MHZ[mh], FAINT); }
+
+      // waterfall — deep ASCII spectrogram, newest row on top; carriers trail downward as bright streaks
+      for (var ri = 0; ri < wf.length; ri++) {
+        var wr = wf[ri]; if (!wr) continue; var yy = wfTop + ri, fade = 1 - ri / (wfRows * 1.5);
+        for (var ci = 0; ci < cols; ci++) {
+          var pw = wr[ci]; if (pw == null) continue; pw *= fade; if (pw <= 0.07) continue;
+          var ch = RAMP.charAt(clamp(Math.floor(pw * RAMP.length), 0, RAMP.length - 1));
+          var col2 = pw > 0.74 ? '#ffffff' : (pw > 0.56 ? AMBER : (pw > 0.34 ? BRIGHT : (pw > 0.18 ? GREEN : MIDG)));
+          put(ci, yy, ch, col2);
         }
       }
 
-      label(R, 'audio · transmission');
+      // demodulated output — the slogan locks in left-to-right as the receiver decodes the transmission
+      var dp = (t % 9000) / 9000, drow = rows - 1, lab = 'DEMOD ▶ ';
+      txt(0, drow, lab, GREEN);
+      for (var pi = 0; pi < PHRASE.length; pi++) {
+        var ch3 = PHRASE.charAt(pi); if (ch3 === ' ') continue;
+        var locked = (pi / PHRASE.length) < dp;
+        put(lab.length + pi, drow, locked ? ch3 : RAMP.charAt((Math.random() * 5 + 3) | 0), locked ? '#ffffff' : DIM);
+      }
+
+      label(R, 'sdr · waterfall');
       return t >= DUR;
     }
     return { frame: frame, title: 'viz' };
@@ -1126,7 +1135,7 @@
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      yaw += 0.012 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.0004) * 0.06;   // normal-speed spin on a fixed tilt — a real continuous turn (the hero mark stays slow; the saver turns at full pace)
+      yaw += 0.012 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.00055) * 0.26;   // normal-speed yaw spin plus a clear up/down nod (pitch), so the mark visibly tumbles like the hero logo
       var cyr = Math.cos(yaw), syr = Math.sin(yaw), cpr = Math.cos(pitch), spr = Math.sin(pitch);
       var r00 = cyr, r02 = -syr, r10 = -spr * syr, r11 = cpr, r12 = -spr * cyr, r20 = cpr * syr, r21 = spr, r22 = cpr * cyr;
       var rox = -9 * syr, roy = -9 * spr * cyr, roz = 9 * cpr * cyr;
@@ -1414,13 +1423,13 @@
     if (!last) last = now; var dt = Math.min(80, now - last) * QAMUL; last = now;
     var C = content(), FS = { x: 0, y: 0, w: W, h: H };
     if (trans === 'fade') {                       // the matrix cascades IN from the top, filling down the screen, while the outgoing scene fades to black beneath it
-      ctx.fillStyle = 'rgba(8,11,20,0.13)'; ctx.fillRect(0, 0, W, H);            // steadily veil the outgoing scene (and the tmux bar) to black
-      rainState.draw(FS, 1, true, 0.75 + 0.5 * ease(clamp(transT / 800, 0, 1))); // the fall eases in — slow and calm, never rushed
+      ctx.fillStyle = 'rgba(8,11,20,0.18)'; ctx.fillRect(0, 0, W, H);            // veil the outgoing scene to black, clearing rain trails cleanly so the fall has no dense surge
+      rainState.draw(FS, 1, true, 0.6);                                          // one calm, steady fall speed — no easing surge, so there's no bump
       transT += dt;
       if ((rainState.reachedBottom() && transT > 550) || transT >= FADE_MAX) { trans = 'hold'; transT = 0; }
-    } else if (trans === 'hold') {                // the full-screen matrix moment — the fall settles to a calm
+    } else if (trans === 'hold') {                // the full-screen matrix moment — the fall stays calm
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-      rainState.draw(FS, 1, true, 0.6 + 0.5 * Math.max(0, 1 - transT / 1200)); transT += dt;
+      rainState.draw(FS, 1, true, 0.6); transT += dt;                            // same calm speed as the fade — continuous, no jump into the hold
       if (transT >= holdDur) { trans = 'drain'; transT = 0; }
     } else if (trans === 'drain') {               // the matrix recedes as one downward curtain, revealing the next scene (and the bar) top-to-bottom
       ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
@@ -1428,8 +1437,8 @@
       drawStatus(now);
       var revP = ease(clamp(transT / DRAIN_MS, 0, 1)), revY = revP * (H + 30);     // the curtain's top edge sweeps down and off
       ctx.save(); ctx.beginPath(); ctx.rect(0, revY, W, H - revY + 1); ctx.clip();  // matrix only below the edge; the scene is revealed above
-      rainState.draw(FS, 1, true, 1.15); ctx.restore();                            // streams keep falling within the receding curtain — gentle, not a rush
-      if (revY > 2 && revY < H) { var gg = ctx.createLinearGradient(0, revY - 26, 0, revY + 8); gg.addColorStop(0, 'rgba(99,178,46,0)'); gg.addColorStop(1, 'rgba(155,232,91,0.55)'); ctx.fillStyle = gg; ctx.fillRect(0, revY - 26, W, 34); } // glowing leading edge
+      rainState.draw(FS, 1, true, 0.85); ctx.restore();                            // streams keep falling within the receding curtain — calm, matching the rest of the matrix
+      if (revY > 2 && revY < H) { var gg = ctx.createLinearGradient(0, revY - 10, 0, revY + 2); gg.addColorStop(0, 'rgba(99,178,46,0)'); gg.addColorStop(1, 'rgba(155,232,91,0.5)'); ctx.fillStyle = gg; ctx.fillRect(0, revY - 10, W, 12); } // glowing leading edge — thinner
       transT += dt;
       if (revP >= 1) { if (incoming) { cur = incoming; incoming = null; } trans = ''; }
     } else {
