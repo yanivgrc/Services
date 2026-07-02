@@ -2,6 +2,21 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.53 — 2026-07-02
+
+### Changed
+- The red letters in the screensaver now flow with the rain instead of sitting still — plain red, no glow, streaming down a column like every other character, one at a time and in order.
+- A red letter can now also drift through the shape scenes, not just the rain — same hidden sequence, more places to catch it.
+
+## v1.52 — 2026-07-02
+
+### Changed
+- The hero mark is now lit from three sides — amber toward the eyebrow, green toward the LABS wordmark, white filling the rest — so each face catches its own colour as it turns.
+- Both marks turn more slowly now — hero and screensaver alike. We're not rushing anywhere.
+
+### Removed
+- Dropped the "save your seat" line from the challenge — the section speaks for itself.
+
 ## v1.51 — 2026-07-02
 
 ### Added

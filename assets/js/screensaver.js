@@ -94,30 +94,41 @@
         if (rdrops[i] * rfs > R.h) bottomed[i] = true;
         if (respawn && (Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.42 + Math.random() * 0.6; }
       }
-      drawRed(R, intensity);                                                             // the red-sequence key rides the same clip and grid as the rain
+      drawRedInStream(R, intensity, sp);                                                 // the red-sequence key rides a real column and falls with the stream
       ctx.restore();
     }
     function reachedBottom() { if (!rcols) return false; for (var i = 0; i < rcols; i++) if (!bottomed[i]) return false; return true; }
     function cleared(R) { var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < rcols; i++) if ((Math.floor(rdrops[i]) - TRAIL) * rfs <= R.h) return false; return true; }
-    // ── the RED SEQUENCE — מ,ע,ש,ה,ב,ר,א,ש,י,ת planted one letter at a time, in order, inside the rain.
-    // It is the key to the site's challenge cipher (each letter's gematria value, mod 26, is a Vigenère shift).
-    // Grid-aligned like every other glyph; red is the ONLY departure from the palette, so it reads as a signal.
-    // Shown only while the rain is prominent (full-matrix holds / the rain scene) — found, not shown.
-    var RED_SEQ = 'מעשהבראשית', redI = 0, red = null, redCd = 9000, redLast = 0;
-    function drawRed(R, intensity) {
+    // ── the RED SEQUENCE — מ,ע,ש,ה,ב,ר,א,ש,י,ת, one letter at a time, IN ORDER, flowing with the rain.
+    // The key to the site's challenge cipher (each letter's gematria value, mod 26, is a Vigenère shift).
+    // A red letter attaches to a real falling column and streams down at that column's speed like any other head —
+    // no halo, no blink, plain red. When it exits the bottom, the NEXT letter in order joins a different column.
+    // Never two at once; always in sequence. Found in the flow, not shown.
+    var RED_SEQ = 'מעשהבראשית', redI = 0, redCol = -1, redRow = 0, redShown = false, redCd = 5000, redLast = 0;
+    function drawRedInStream(R, intensity, sp) {
       var now = performance.now(), dt = redLast ? Math.min(120, now - redLast) : 16; redLast = now;
       if (intensity < 0.5) { return; }                                                   // faded rain layers never carry the key
-      if (!red) { redCd -= dt; if (redCd <= 0) { red = { fx: 0.12 + Math.random() * 0.76, fy: 0.18 + Math.random() * 0.6, t: 0, ch: RED_SEQ.charAt(redI) }; redI = (redI + 1) % RED_SEQ.length; redCd = 8000 + Math.random() * 7000; } return; }
-      red.t += dt;
-      var LIFE = 2600, ap = clamp(red.t / 260, 0, 1), fd = red.t > LIFE - 520 ? clamp((LIFE - red.t) / 520, 0, 1) : 1;
-      var x = R.x + Math.floor(red.fx * rcols) * rfs, y = R.y + Math.floor(red.fy * (R.h / rfs)) * rfs;
-      ctx.save(); ctx.font = '400 ' + rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-      ctx.globalAlpha = Math.min(ap, fd) * intensity;
-      ctx.shadowColor = '#ff4d4d'; ctx.shadowBlur = 10; ctx.fillStyle = '#ff5252';
-      ctx.fillText(red.ch, x, y); ctx.shadowBlur = 0; ctx.restore();
-      if (red.t >= LIFE) { red = null; }
+      if (redCol < 0) {                                                                   // between letters — wait, then attach the next one HIGH on a column so it has room to be seen falling
+        redCd -= dt; if (redCd <= 0) { redCol = (Math.random() * rcols) | 0; redRow = -(2 + Math.random() * 4); redShown = false; redCd = 4000 + Math.random() * 5000; }
+        return;
+      }
+      redRow += rspd[redCol] * sp;                                                        // fall at the carrier column's own speed — in step with the stream
+      var x = R.x + redCol * rfs, y = R.y + Math.floor(redRow) * rfs;
+      if (y > R.y - rfs && y < R.y + R.h) {                                               // on-screen: plain red, same weight/font, no shadow
+        redShown = true;
+        ctx.save(); ctx.font = '400 ' + rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+        ctx.fillStyle = 'rgba(210,40,40,' + (intensity * 0.9).toFixed(3) + ')';
+        ctx.fillText(RED_SEQ.charAt(redI), x, y); ctx.restore();
+      }
+      if (Math.floor(redRow) * rfs > R.h) {                                              // fell off the bottom
+        if (redShown) redI = (redI + 1) % RED_SEQ.length;                                // only advance if it was actually seen — keeps the sequence complete and in order
+        redCol = -1;
+      }
     }
-    return { draw: draw, ensure: ensure, fill: fill, reachedBottom: reachedBottom, cleared: cleared };
+    // also lets scenes plant the next red letter into their own ASCII field — keeps ONE global order across rain + shapes
+    function redGlyph() { return RED_SEQ.charAt(redI); }
+    function redAdvance() { redI = (redI + 1) % RED_SEQ.length; }
+    return { draw: draw, ensure: ensure, fill: fill, reachedBottom: reachedBottom, cleared: cleared, redGlyph: redGlyph, redAdvance: redAdvance };
   })();
   // eased crossfade for things that coalesce out of the matrix and dissolve back — smooth in and out
   function coalesceMix(t, FILL, CO, HOLD, DIS) {
@@ -546,18 +557,30 @@
   ];
   function makePointGeo(shape) {
     var t = 0, REVEAL = 3600, DUR = 6400, RAMP = ' .:-=+*#%@';
+    var redOn = false, redCd = 2200 + Math.random() * 2600, redCol = 0, redRow = 0, redRows = 0, redPlaced = false;   // one red letter per scene appearance, drifting down (v1.53)
+    function redInShape(R, x0, y0, gw, gh, cw, fs) {
+      if (!redPlaced) { redCd -= (t > 0 ? 16 : 0); if (redCd <= 0 && t > REVEAL * 0.5) { redOn = true; redPlaced = true; redCol = 2 + ((Math.random() * (gw - 4)) | 0); redRow = 0; redRows = gh; } }
+      if (!redOn) return;
+      redRow += 0.09;                                                                    // slow drift down through the field
+      var rr = Math.floor(redRow);
+      if (rr >= redRows) { redOn = false; if (rainState.redAdvance) rainState.redAdvance(); return; }   // exited the field → advance the shared order
+      ctx.save(); ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
+      ctx.fillStyle = 'rgba(210,40,40,0.92)';
+      ctx.fillText(rainState.redGlyph ? rainState.redGlyph() : 'מ', x0 + redCol * cw, y0 + rr * fs); ctx.restore();
+    }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       var side = Math.max(R.w, R.h) * 0.62, fs = clamp(side / 46, 9, 16), cw = fs * 0.6;
       var gw = Math.max(8, Math.floor(R.w / cw)), gh = Math.max(8, Math.floor(R.h / fs));
       var grid = new Array(gw * gh); for (var z = 0; z < grid.length; z++) grid[z] = 0;
       var cx = (gw - 1) / 2, cy = (gh - 1) / 2, ax = side / cw, ay = side / fs;
-      var rg = t * 0.0004, rgc = Math.cos(rg), rgs = Math.sin(rg); // slow rotation so the shape keeps turning and never feels stuck
+      var rg = t * 0.00028, rgc = Math.cos(rg), rgs = Math.sin(rg); // slow rotation so the shape keeps turning and never feels stuck — eased down a touch (v1.52), we're not rushing
       shape.plot(function (nx, ny) { var rx = nx * rgc - ny * rgs, ry = nx * rgs + ny * rgc, c = Math.round(cx + rx * ax * 0.5), r = Math.round(cy - ry * ay * 0.5); if (c >= 0 && c < gw && r >= 0 && r < gh) grid[r * gw + c]++; }, Math.min(t / REVEAL, 1));
       var x0 = R.x + Math.round((R.w - gw * cw) / 2), y0 = R.y + Math.round((R.h - gh * fs) / 2);
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       ctx.fillStyle = FAINT; for (var rd = 0; rd < gh; rd++) for (var cd = 0; cd < gw; cd++) if (!grid[rd * gw + cd]) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs); // empty cells get a faint dot — gives the field form
       for (var r2 = 0; r2 < gh; r2++) for (var c2 = 0; c2 < gw; c2++) { var v = grid[r2 * gw + c2]; if (!v) continue; var pc = v >= 4 ? BRIGHT : (v >= 2 ? GREEN : MIDG); if (Math.sin((r2 * 3.3 + c2 * 1.7) + t * 0.006) > 0.82) pc = BRIGHT; ctx.fillStyle = pc; ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, v)), x0 + c2 * cw, y0 + r2 * fs); } // lit cells twinkle so the shape never freezes after reveal
+      redInShape(R, x0, y0, gw, gh, cw, fs);   // a single red letter drifts down through the shape's field — same global order as the rain (v1.53)
       label(R, shape.name);
       return t >= DUR;
     }
@@ -1154,7 +1177,7 @@
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      yaw += 0.012 * ROT * (dt / 16.67); pitch += 0.02 * ROT * (dt / 16.67);   // continuous UPWARD tumble — pitch now spins instead of nodding, matching the hero mark (v1.51)
+      yaw += 0.008 * ROT * (dt / 16.67); pitch += 0.0133 * ROT * (dt / 16.67);   // slower continuous UPWARD tumble (v1.52) — unhurried, matching the calmer hero mark
       var cyr = Math.cos(yaw), syr = Math.sin(yaw), cpr = Math.cos(pitch), spr = Math.sin(pitch);
       var r00 = cyr, r02 = -syr, r10 = -spr * syr, r11 = cpr, r12 = -spr * cyr, r20 = cpr * syr, r21 = spr, r22 = cpr * cyr;
       var rox = -9 * syr, roy = -9 * spr * cyr, roz = 9 * cpr * cyr;
