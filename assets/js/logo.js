@@ -73,7 +73,7 @@
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(U.u_res, cvs.width, cvs.height);
     gl.uniform1f(U.u_rin, 1.94 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.021); gl.uniform1f(U.u_svis, 0.10); // matched to the screensaver BREACH mark: bigger tetra around the same 0.95 cavity, so the "ball" reads a touch smaller and contained
-    gl.uniform1f(U.u_yaw, t * 0.24); gl.uniform1f(U.u_pitch, 0.42 + Math.sin(t * 0.6) * 0.28); // slow left spin (yaw) plus a clear up/down nod (pitch) on top, so it visibly tumbles rather than turning flat
+    gl.uniform1f(U.u_yaw, t * 0.18); gl.uniform1f(U.u_pitch, t * 0.45); // continuous UPWARD tumble (pitch spin dominates) over a slower left yaw — the mark rolls up-and-over rather than turning flat; negate u_pitch's factor to reverse the roll
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop() { raf = requestAnimationFrame(loop); if (!vis) return; t += 0.016; render(); }

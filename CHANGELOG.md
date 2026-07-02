@@ -2,6 +2,18 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.50 — 2026-07-02
+
+### Added
+- A status note on the challenge: the first puzzle is delayed — still cooking. Several tracks are in the build, and a registration gate stands between you and it.
+- Something new hides in the rain. It's red. That's all you get.
+
+### Changed
+- The hero mark now rolls continuously upward as it spins — a full tumble, not a nod.
+- The challenge cipher was replaced. The old one expired; the new one runs deeper.
+- Screensaver pacing: each scene holds a touch longer, the matrix curtains breathe more, and the saver now arrives after 24 seconds of idle (was 30).
+- The planted Hebrew lines surface a little more often.
+
 ## v1.49 — 2026-06-14
 
 ### Changed

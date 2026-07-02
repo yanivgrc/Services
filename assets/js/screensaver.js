@@ -23,7 +23,7 @@
 (function () {
   'use strict';
 
-  var CONFIG = { enabled: true, idleMs: 30000 };
+  var CONFIG = { enabled: true, idleMs: 24000 };
   var params = new URLSearchParams(location.search);
   if (params.get('saver') === 'off') CONFIG.enabled = false;
   if (params.get('saver') === 'fast') CONFIG.idleMs = 2500;
@@ -94,10 +94,29 @@
         if (rdrops[i] * rfs > R.h) bottomed[i] = true;
         if (respawn && (Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.42 + Math.random() * 0.6; }
       }
+      drawRed(R, intensity);                                                             // the red-sequence key rides the same clip and grid as the rain
       ctx.restore();
     }
     function reachedBottom() { if (!rcols) return false; for (var i = 0; i < rcols; i++) if (!bottomed[i]) return false; return true; }
     function cleared(R) { var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < rcols; i++) if ((Math.floor(rdrops[i]) - TRAIL) * rfs <= R.h) return false; return true; }
+    // ── the RED SEQUENCE — מ,ע,ש,ה,ב,ר,א,ש,י,ת planted one letter at a time, in order, inside the rain.
+    // It is the key to the site's challenge cipher (each letter's gematria value, mod 26, is a Vigenère shift).
+    // Grid-aligned like every other glyph; red is the ONLY departure from the palette, so it reads as a signal.
+    // Shown only while the rain is prominent (full-matrix holds / the rain scene) — found, not shown.
+    var RED_SEQ = 'מעשהבראשית', redI = 0, red = null, redCd = 9000, redLast = 0;
+    function drawRed(R, intensity) {
+      var now = performance.now(), dt = redLast ? Math.min(120, now - redLast) : 16; redLast = now;
+      if (intensity < 0.5) { return; }                                                   // faded rain layers never carry the key
+      if (!red) { redCd -= dt; if (redCd <= 0) { red = { fx: 0.12 + Math.random() * 0.76, fy: 0.18 + Math.random() * 0.6, t: 0, ch: RED_SEQ.charAt(redI) }; redI = (redI + 1) % RED_SEQ.length; redCd = 8000 + Math.random() * 7000; } return; }
+      red.t += dt;
+      var LIFE = 2600, ap = clamp(red.t / 260, 0, 1), fd = red.t > LIFE - 520 ? clamp((LIFE - red.t) / 520, 0, 1) : 1;
+      var x = R.x + Math.floor(red.fx * rcols) * rfs, y = R.y + Math.floor(red.fy * (R.h / rfs)) * rfs;
+      ctx.save(); ctx.font = '400 ' + rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
+      ctx.globalAlpha = Math.min(ap, fd) * intensity;
+      ctx.shadowColor = '#ff4d4d'; ctx.shadowBlur = 10; ctx.fillStyle = '#ff5252';
+      ctx.fillText(red.ch, x, y); ctx.shadowBlur = 0; ctx.restore();
+      if (red.t >= LIFE) { red = null; }
+    }
     return { draw: draw, ensure: ensure, fill: fill, reachedBottom: reachedBottom, cleared: cleared };
   })();
   // eased crossfade for things that coalesce out of the matrix and dissolve back — smooth in and out
@@ -747,7 +766,7 @@
   // the seven-branched Temple Menorah — unlit, in gold ASCII, coalescing out of the matrix and back
   function makeMenorah() {
     var t = 0, blk = null, blkW = 0, blkH = 0, key = -1, rain = makeRainLayer();
-    var FILL = 800, CO = 1050, HOLD = 1700, DIS = 1250, END = FILL + CO + HOLD + DIS;
+    var FILL = 800, CO = 1050, HOLD = 2300, DIS = 1250, END = FILL + CO + HOLD + DIS;
     function build(R) {
       var fs = clamp(Math.round(Math.min(R.w, R.h) / 42), 8, 15), cw = fs * 0.6;
       var gw = Math.max(36, Math.floor((R.w * 0.7) / cw)), gh = Math.max(24, Math.floor((R.h * 0.8) / fs));
@@ -964,7 +983,7 @@
     // the menorah is not drawn as an image — it is GROWN out of the rain: each cell scrambles
     // through matrix glyphs, condenses as the forming wave reaches it, then locks into its glyph.
     var t = 0, cells = null, fs = 0, cw = 0, blkW = 0, blkH = 0, key = -1, rain = makeRainLayer();
-    var FILL = 700, CO = 1700, HOLD = 2200, DIS = 1700, END = FILL + CO + HOLD + DIS;
+    var FILL = 700, CO = 1700, HOLD = 2800, DIS = 1700, END = FILL + CO + HOLD + DIS;
     var SCR = KANA + KANJI + '0123456789';
     function build(R) {
       var nrows = MENORAH_ART.length, ncols = 0, i; for (i = 0; i < nrows; i++) ncols = Math.max(ncols, MENORAH_ART[i].length);
@@ -1230,7 +1249,7 @@
   // ───────────────────────── window: brand — GRC·LABS out of the matrix ─────────────────────────
   function makeBrand() {
     var t = 0, blk = null, blkW = 0, blkH = 0, key = -1, rain = makeRainLayer();
-    var FILL = 800, CO = 950, HOLD = 1000, DIS = 1150, END = FILL + CO + HOLD + DIS;
+    var FILL = 800, CO = 950, HOLD = 1600, DIS = 1150, END = FILL + CO + HOLD + DIS;
     function build(R) {
       var fs = clamp(Math.round(Math.min(R.w, R.h) / 26), 10, 22), cw = fs * 0.6;
       var gw = Math.max(24, Math.floor((R.w * 0.9) / cw)), gh = Math.max(7, Math.floor((R.h * 0.42) / fs));
@@ -1276,7 +1295,7 @@
       var t = 0, blk = null, blkW = 0, blkH = 0, key = -1;
       var V = FACE_VARIANTS[FORCE_FACE >= 0 ? (FORCE_FACE % FACE_VARIANTS.length) : (faceVar++ % FACE_VARIANTS.length)], RAMP = V.ramp;
       // the face shows only for a moment — it coalesces out of the matrix and quickly dissolves back
-      var FILL = 700, CO = 950, HOLD = 1700, DIS = 1200, END = FILL + CO + HOLD + DIS;
+      var FILL = 700, CO = 950, HOLD = 2200, DIS = 1200, END = FILL + CO + HOLD + DIS;
       var rain = makeRainLayer();
       function build(R) {
         var side = Math.min(R.w * 0.80, R.h * 0.84), fs = clamp(side / 74, 6, 12), acw = fs * 0.6;  // higher-resolution portrait grid
@@ -1395,7 +1414,7 @@
     function spawn(C) { msg = GHOSTS[(Math.random() * GHOSTS.length) | 0]; dig = constPick().d; gx = C.x + C.w * (0.2 + Math.random() * 0.6); gy = C.y + C.h * (0.22 + Math.random() * 0.56); t = 0; active = true; }
     function update(dt, C, title) {
       if (title !== 'rain' && title !== 'viz') { active = false; return; }
-      if (!active) { cooldown -= dt; if (cooldown <= 0) { if (Math.random() < 0.6) spawn(C); cooldown = 16000 + Math.random() * 12000; } return; }
+      if (!active) { cooldown -= dt; if (cooldown <= 0) { if (Math.random() < 0.6) spawn(C); cooldown = 12000 + Math.random() * 9000; } return; }
       t += dt;
       var fs = clamp(Math.round(C.w / 38), 18, 34);
       var appear = clamp(t / 340, 0, 1), rev = clamp((t - 340) / 720, 0, 1), fade = t > LIFE - 600 ? clamp((LIFE - t) / 600, 0, 1) : 1;
@@ -1406,7 +1425,7 @@
       ctx.shadowColor = GREEN; ctx.shadowBlur = 14; ctx.fillStyle = rev >= 1 ? BRIGHT : GREEN; ctx.fillText(out, gx, gy); ctx.shadowBlur = 0;
       if (rev >= 1 && (Math.floor(t / 420) % 2 === 0)) { var w = ctx.measureText(out).width; ctx.fillStyle = BRIGHT; ctx.fillRect(gx - w / 2 - fs * 0.6, gy - fs * 0.45, fs * 0.5, fs * 0.9); }
       ctx.restore(); ctx.direction = 'ltr'; ctx.textAlign = 'start'; ctx.textBaseline = 'top';
-      if (t >= LIFE) { active = false; cooldown = 16000 + Math.random() * 12000; }
+      if (t >= LIFE) { active = false; cooldown = 12000 + Math.random() * 9000; }
     }
     return { update: update, reset: function () { active = false; cooldown = 9000; } };
   })();
@@ -1446,7 +1465,7 @@
       var done = cur.frame(dt, C);
       ghost.update(dt, C, cur.title);
       drawStatus(now);
-      if (done) { incoming = nextWindow(); trans = 'fade'; transT = 0; holdDur = 2000 + Math.random() * 4000; rainState.fill(FS); } // 2–6s of matrix between scenes, starting from a full curtain
+      if (done) { incoming = nextWindow(); trans = 'fade'; transT = 0; holdDur = 2600 + Math.random() * 3800; rainState.fill(FS); } // 2–6s of matrix between scenes, starting from a full curtain
     }
     raf = requestAnimationFrame(frame);
   }
@@ -1459,7 +1478,7 @@
     if (reduceMotion) { staticFrame(); return; }
     last = 0; winN = 0; winIdx = 0; windowsLog = []; cmdOrder = null; shapeOrder = null; msgOrder = null; ilOrder = null;
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
-    cur = null; incoming = nextWindow(); trans = 'hold'; transT = 0; holdDur = 7600; rainState.fill({ x: 0, y: 0, w: W, h: H }); ghost.reset(); // first entrance: the matrix pours in from the top straight into one long hold — no separate fade phase, so there's no matrix-to-matrix seam
+    cur = null; incoming = nextWindow(); trans = 'hold'; transT = 0; holdDur = 6800; rainState.fill({ x: 0, y: 0, w: W, h: H }); ghost.reset(); // first entrance: the matrix pours in from the top straight into one long hold — no separate fade phase, so there's no matrix-to-matrix seam
     raf = requestAnimationFrame(frame);
   }
   function deactivate() { if (!active) return; active = false; root.classList.remove('on'); if (raf) cancelAnimationFrame(raf), raf = 0; lastActivity = performance.now(); }
