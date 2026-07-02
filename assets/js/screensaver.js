@@ -1143,7 +1143,7 @@
   // tetrahedron with a spherical cavity carved out of it (max(tetra, −sphere)), raymarched on the CPU and
   // sampled to a monospace grid where char density = luminance. Parameters are LOCKED to the brand prototype.
   function makeLogo(intro) {   // intro=true → the opening lockup: the rotating mark over the GRC·LABS wordmark
-    var t = 0, DUR = intro ? 16000 : 15000, yaw = 0;   // hold the mark on screen longer — it's the signature shape, give it time to read
+    var t = 0, DUR = intro ? 16000 : 15000, yaw = 0, pitch = 0.42;   // hold the mark on screen longer — it's the signature shape, give it time to read; pitch accumulates for a continuous upward tumble (v1.51)
     var SPH = 0.95, ROUND = 0.021, VIS = 0.10, ROT = 0.75, RIN = 1.94 / 3, DEN = 186; // locked: tetra R=1.94, cavity 0.95, edge 0.021, ghost 0.10, spin 0.75, 186 cols
     var RAMP = " .'`^,:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
     var N0x = 0.57735, N0y = 0.57735, N0z = 0.57735, N1x = 0.57735, N1y = -0.57735, N1z = -0.57735,
@@ -1154,7 +1154,7 @@
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
-      yaw += 0.012 * ROT * (dt / 16.67); var pitch = 0.42 + Math.sin(t * 0.00055) * 0.26;   // normal-speed yaw spin plus a clear up/down nod (pitch), so the mark visibly tumbles like the hero logo
+      yaw += 0.012 * ROT * (dt / 16.67); pitch += 0.02 * ROT * (dt / 16.67);   // continuous UPWARD tumble — pitch now spins instead of nodding, matching the hero mark (v1.51)
       var cyr = Math.cos(yaw), syr = Math.sin(yaw), cpr = Math.cos(pitch), spr = Math.sin(pitch);
       var r00 = cyr, r02 = -syr, r10 = -spr * syr, r11 = cpr, r12 = -spr * cyr, r20 = cpr * syr, r21 = spr, r22 = cpr * cyr;
       var rox = -9 * syr, roy = -9 * spr * cyr, roz = 9 * cpr * cyr;
@@ -1385,8 +1385,8 @@
     if (FORCE_WIN) return FORCE_WIN;
     var n = winN++;
     if (n === 0) return 'intro';   // straight out of the first slow matrix: the rotating GRC·LABS logo lockup in deep ASCII
-    if (n % 3 === 0) return 'brain';
-    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'rain', 'breach']); ilI = 0; } // viz scenes, matrix rain, and the BREACH containment mark (replaces the portrait-ASCII slot)
+    if (n % 4 === 0) return 'brain';   // brain thinned from every 3rd to every 4th — frees slots for the shape scenes (v1.51)
+    if (!ilOrder || ilI >= ilOrder.length) { ilOrder = shuffle(['viz', 'viz', 'viz', 'rain', 'breach']); ilI = 0; } // more viz weight so all ~22 shape scenes actually surface — viz, matrix rain, and the BREACH containment mark (v1.51)
     return ilOrder[ilI++];
   }
   function buildWindow(type) {

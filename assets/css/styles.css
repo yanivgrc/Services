@@ -235,6 +235,9 @@
   .contact .handle:hover{background:var(--amber); color:var(--bg)}
 
   footer{border-top:1px solid var(--line); padding:30px 0 50px}
+  footer .ver-tag{font-family:var(--mono); direction:ltr; unicode-bidi:isolate; letter-spacing:.06em; color:var(--green); border-bottom:1px solid color-mix(in srgb,var(--green) 40%,transparent)}
+  footer .ver-tag .ver-date{color:var(--ink-dim)}
+  html[data-lang="he"] footer .ver-tag{font-family:var(--mono)}
   footer .row{display:flex; justify-content:space-between; align-items:center; gap:18px; flex-wrap:wrap; font-family:var(--mono); font-size:12px; color:var(--ink-faint)}
   html[data-lang="he"] footer .frow{font-family:var(--he); font-size:13px}
   footer .row a:hover{color:var(--amber)}

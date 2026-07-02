@@ -9,8 +9,8 @@
 
   var FRAG =
     '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
-    'uniform vec2 u_res; uniform float u_rin,u_rs,u_round,u_svis,u_yaw,u_pitch;' +
-    'const vec3 GREEN=vec3(0.388,0.698,0.176);' +
+    'uniform vec2 u_res; uniform float u_rin,u_rs,u_round,u_svis,u_yaw,u_pitch; uniform vec3 u_tint;' +
+
     'const vec3 EPOXY=vec3(0.050,0.078,0.120);' +
     'const vec3 CAVITY=vec3(0.085,0.125,0.060);' +
     'const vec3 SPECC=vec3(0.74,0.92,0.60);' +
@@ -26,6 +26,7 @@
     'vec3 calcN(vec3 p){vec2 e=vec2(0.0009,0.0);return normalize(vec3(map(p+e.xyy)-map(p-e.xyy),map(p+e.yxy)-map(p-e.yxy),map(p+e.yyx)-map(p-e.yyx)));}' +
     'float edgeGlow(vec3 p){float a=dot(p,N0),b=dot(p,N1),c=dot(p,N2),d=dot(p,N3);float m=max(max(a,b),max(c,d));float w=0.05+u_round*0.6;float cnt=step(m-w,a)+step(m-w,b)+step(m-w,c)+step(m-w,d);return clamp(cnt-1.0,0.0,2.0);}' +
     'void main(){' +
+    'vec3 GREEN=u_tint;' +   // mark colour driven from JS — declared in main() so it stays valid GLSL ES 1.0 on every compiler (v1.51)
     'vec2 uv=(gl_FragCoord.xy-0.5*u_res)/u_res.y;' +
     'mat3 R=rotX(u_pitch)*rotY(u_yaw);' +
     'vec3 ro=R*vec3(0.,0.,9.0);' +
@@ -61,7 +62,17 @@
   var ploc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(ploc); gl.vertexAttribPointer(ploc, 2, gl.FLOAT, false, 0, 0);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  var U = {}; ['u_res', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_yaw', 'u_pitch'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  var U = {}; ['u_res', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_yaw', 'u_pitch', 'u_tint'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  // gentle, slow colour breathe for the mark: white → phosphor-green → deep lab green → back.
+  // Brand tokens: phosphor #63B22E (0.388,0.698,0.176), and the deep "near-black pine" #0E3B12 (0.055,0.231,0.071).
+  var TINT_STOPS = [[1.0, 1.0, 1.0], [0.388, 0.698, 0.176], [0.055, 0.231, 0.071]];
+  function tintAt(phase) {                              // phase 0..1 loops white→phosphor→deep→phosphor→white (ping-pong so it eases at both ends)
+    var p = phase < 0.5 ? phase * 2 : (1 - phase) * 2;  // 0→1→0 triangle, then smoothed
+    p = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    var seg = p * (TINT_STOPS.length - 1), i = Math.min(Math.floor(seg), TINT_STOPS.length - 2), f = seg - i;
+    var a = TINT_STOPS[i], b = TINT_STOPS[i + 1];
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+  }
   var PR = Math.min(window.devicePixelRatio || 1, 2);
   function resize() { var r = cvs.getBoundingClientRect(); var w = Math.max(1, Math.round(r.width * PR)), h = Math.max(1, Math.round(r.height * PR)); if (w !== cvs.width || h !== cvs.height) { cvs.width = w; cvs.height = h; } gl.viewport(0, 0, cvs.width, cvs.height); }
   window.addEventListener('resize', resize); resize();
@@ -74,12 +85,13 @@
     gl.uniform2f(U.u_res, cvs.width, cvs.height);
     gl.uniform1f(U.u_rin, 1.94 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.021); gl.uniform1f(U.u_svis, 0.10); // matched to the screensaver BREACH mark: bigger tetra around the same 0.95 cavity, so the "ball" reads a touch smaller and contained
     gl.uniform1f(U.u_yaw, t * 0.18); gl.uniform1f(U.u_pitch, t * 0.45); // continuous UPWARD tumble (pitch spin dominates) over a slower left yaw — the mark rolls up-and-over rather than turning flat; negate u_pitch's factor to reverse the roll
+    if (!reduce) { var tint = tintAt((t * 0.0625) % 1.0); gl.uniform3f(U.u_tint, tint[0], tint[1], tint[2]); } // ~16s full breathe cycle (t grows ~1/s at 60fps) — slow and gentle; static phosphor under reduced motion (v1.51)
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop() { raf = requestAnimationFrame(loop); if (!vis) return; t += 0.016; render(); }
   // fade the mark in only AFTER the heading's decrypt scramble settles — while the wordmark width is shifting
   // frame-to-frame the mark would otherwise slide/jitter beside it. (Shown at once under reduced motion.)
-  if (reduce) { render(); cvs.style.opacity = '1'; }
+  if (reduce) { gl.useProgram(prog); gl.uniform3f(U.u_tint, 0.388, 0.698, 0.176); render(); cvs.style.opacity = '1'; } // no colour breathe under reduced motion — rest on phosphor-green
   else { loop(); setTimeout(function () { cvs.style.opacity = '1'; }, 1300); }
   // pause the loop when the logo scrolls out of view
   if ('IntersectionObserver' in window) { new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }, { threshold: 0.01 }).observe(cvs); }

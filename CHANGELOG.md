@@ -2,6 +2,16 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.51 — 2026-07-02
+
+### Added
+- The version number and date now sit in the footer, linked to the version history.
+- The hero mark now breathes through colour — a slow, gentle fade between white, phosphor-green and a deep lab green.
+
+### Changed
+- The screensaver's containment mark now tumbles upward as it spins, matching the hero mark — no longer a flat nod.
+- Rebalanced the screensaver rotation so every visualization gets screen time — the shape scenes surface far more often, the "brain" window a little less.
+
 ## v1.50 — 2026-07-02
 
 ### Added
