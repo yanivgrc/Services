@@ -101,32 +101,26 @@
     function cleared(R) { var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < rcols; i++) if ((Math.floor(rdrops[i]) - TRAIL) * rfs <= R.h) return false; return true; }
     // ── the RED SEQUENCE — מ,ע,ש,ה,ב,ר,א,ש,י,ת, one letter at a time, IN ORDER, hidden in the rain.
     // The key to the site's challenge cipher (each letter's gematria value, mod 26, is a Vigenère shift).
-    // A red letter is planted in a FIXED cell — it does not move. It lights up when the column's head passes over it,
-    // then fades and clears exactly like every other character in the trail. Plain red, no glow, no blink.
-    // When it has fully faded out, the NEXT letter in order is planted in a different cell. Never two at once; always in order.
-    var RED_SEQ = 'מעשהבראשית', redI = 0, redCol = -1, redRowCell = 0, redShown = false, redCd = 4000, redLast = 0;
+    // A red letter is planted in a FIXED cell and lives on a simple time-based fade — appear, hold, vanish — in place.
+    // It is NOT tied to the falling head, so it never appears to drift: it just blinks on where it sits, then clears.
+    // Plain red, no glow. When it has faded out, the NEXT letter in order is planted in a different cell. Always in order.
+    var RED_SEQ = 'מעשהבראשית', redI = 0, redCol = -1, redRowCell = 0, redLife = 0, redCd = 4000, redLast = 0;
     function drawRedInStream(R, intensity, sp, rows, TRAIL) {
       var now = performance.now(), dt = redLast ? Math.min(120, now - redLast) : 16; redLast = now;
       if (intensity < 0.5) { return; }                                                   // faded rain layers never carry the key
-      if (redCol < 0) {                                                                   // between letters — wait, then plant the next one in a fixed cell below the current head, so the head will sweep over it
+      if (redCol < 0) {                                                                   // between letters — wait, then plant the next one in a random on-screen cell
         redCd -= dt;
-        if (redCd <= 0) { var c = (Math.random() * rcols) | 0; var head = Math.floor(rdrops[c]); redRowCell = head + 2 + ((Math.random() * 5) | 0); redCol = c; redShown = false; redCd = 3500 + Math.random() * 4000; }   // plant just BELOW the head so the head sweeps onto it within a second or two
+        if (redCd <= 0) { redCol = (Math.random() * rcols) | 0; redRowCell = 2 + ((Math.random() * (rows - 4)) | 0); redLife = 0; redCd = 3500 + Math.random() * 4000; }
         return;
       }
-      var headI = Math.floor(rdrops[redCol]), trr = headI - redRowCell;                  // distance of the planted cell from this column's head — same measure the trail uses
+      redLife += dt;
+      var LIFE = 1700, ap = clamp(redLife / 200, 0, 1), fd = redLife > LIFE - 550 ? clamp((LIFE - redLife) / 550, 0, 1) : 1;  // fade in fast, hold, fade out — purely time-based, no movement
+      if (redLife >= LIFE) { redI = (redI + 1) % RED_SEQ.length; redCol = -1; return; }   // fully gone → advance to the next letter, plant elsewhere
       var yy = R.y + redRowCell * rfs;
-      if (trr >= 0 && trr < TRAIL && yy > R.y - rfs && yy < R.y + R.h) {                  // within the lit trail and on-screen → draw it, faded by distance exactly like a normal glyph
-        redShown = true;
-        var a = intensity * ((1 - trr / TRAIL) * 0.72 + 0.10);                            // red fades with distance from the head, like the green trail (a touch brighter so it's findable)
+      if (yy > R.y - rfs && yy < R.y + R.h) {
         ctx.save(); ctx.font = '400 ' + rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-        ctx.fillStyle = 'rgba(210,40,40,' + a.toFixed(3) + ')';
+        ctx.fillStyle = 'rgba(210,40,40,' + (Math.min(ap, fd) * intensity * 0.95).toFixed(3) + ')';
         ctx.fillText(RED_SEQ.charAt(redI), R.x + redCol * rfs, yy); ctx.restore();
-      }
-      if (redShown && trr >= TRAIL) {                                                     // head has fully swept past and the cell has faded out → advance to the next letter
-        redI = (redI + 1) % RED_SEQ.length; redCol = -1;
-      } else if (headI < redRowCell - TRAIL - 2) {                                        // the carrier column respawned (head jumped back to the top) before finishing
-        if (redShown) redI = (redI + 1) % RED_SEQ.length;                                 //   if it was already seen, count it and move on; otherwise re-plant same letter (keep order)
-        redCol = -1;
       }
     }
     // also lets scenes plant the next red letter into their own ASCII field — keeps ONE global order across rain + shapes

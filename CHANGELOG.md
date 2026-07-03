@@ -2,6 +2,15 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.55 — 2026-07-03
+
+### Added
+- Hand-drawn pencil sketches of the containment mark now float behind the page — the real 3D mark, rendered and traced into pencil from several angles, each showing the carved inner cavity and where the sphere cuts through the faces. The drawing becomes the model. Desktop only; mirrors in Hebrew.
+
+### Changed
+- The hero mark is now lit from the upper left, in the direction of the eyebrow — as if the tagline itself casts the light.
+- The red cipher letters now hold completely still where they appear and fade out in place, in the rain and in the shape scenes alike — no drifting.
+
 ## v1.54 — 2026-07-02
 
 ### Changed

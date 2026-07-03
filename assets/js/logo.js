@@ -35,7 +35,7 @@
     'for(int i=0;i<110;i++){vec3 p=ro+rd*tt;d=map(p);if(d<0.001){hit=true;break;}tt+=d*0.85;if(tt>22.0)break;}' +
     'vec3 col=vec3(0.0);' +
     'if(hit){vec3 p=ro+rd*tt;vec3 n=calcN(p);vec3 vd=-rd;' +
-    'vec3 lk=normalize(R*vec3(3.5,5.0,6.0)-p);vec3 lf=normalize(R*vec3(-4.0,-1.5,-3.0)-p);' +   // two soft key/fill lights, single green family — colour comes from u_tint
+    'vec3 lk=normalize(vec3(-4.5,5.5,4.0));vec3 lf=normalize(R*vec3(2.0,-1.5,-3.0)-p);' +   // key light anchored to the PAGE, from upper-LEFT — the eyebrow's direction lights the mark like a sun; fill still follows the body (v1.55)
     'float dk=max(dot(n,lk),0.0);float df=max(dot(n,lf),0.0);' +
     'vec3 hh=normalize(lk+vd);float spec=pow(max(dot(n,hh),0.0),46.0);float fres=pow(1.0-max(dot(n,vd),0.0),3.0);' +
     'bool inner=abs(length(p)-u_rs)<0.02;' +
