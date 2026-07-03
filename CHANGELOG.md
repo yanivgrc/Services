@@ -2,6 +2,11 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.57 — 2026-07-03
+
+### Changed
+- The letters at the mark's corners now sit inside the form, resting on its faces rather than floating past the tips, and all four read at the same clean brightness.
+
 ## v1.56 — 2026-07-03
 
 ### Added

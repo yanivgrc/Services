@@ -1227,17 +1227,18 @@
       rollVertexLetters(t);
       var vfs = Math.max(13, Math.round(fs * 1.7));
       ctx.font = '700 ' + vfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
+      var VIN = 0.58;   // pull letters INWARD from the sharp corners so they sit ON the faces, inside the body — not floating past the tips
       for (var vk = 0; vk < 4; vk++) {
         var vv = VERT[vk];
-        var pcx = r00 * vv[0] + r10 * vv[1] + r20 * vv[2];   // R^T · vertex → camera space
-        var pcy =               r11 * vv[1] + r21 * vv[2];
-        var pcz = r02 * vv[0] + r12 * vv[1] + r22 * vv[2];
+        var vix = vv[0] * VIN, viy = vv[1] * VIN, viz = vv[2] * VIN;
+        var pcx = r00 * vix + r10 * viy + r20 * viz;   // R^T · (vertex pulled inward) → camera space
+        var pcy =             r11 * viy + r21 * viz;
+        var pcz = r02 * vix + r12 * viy + r22 * viz;
         var den = pcz - 9; if (den > -0.001) continue;
         var vux = -1.7 * pcx / den, vuy = -1.7 * pcy / den;
         var vc = (vux / aspect + 0.5) * cols - 0.5, vr = (0.5 - vuy) * rows - 0.5;
         var vsx = x0 + vc * acw, vsy = y0 + vr * fs;
-        var near = (2 - pcz) / 4; near = near < 0 ? 0 : (near > 1 ? 1 : near);
-        ctx.fillStyle = 'rgba(238,242,250,' + (0.72 + 0.28 * near).toFixed(3) + ')';       // near-white — distinct from green form + red key
+        ctx.fillStyle = 'rgba(238,242,250,0.95)';       // uniform bright white — same weight for all four, no depth fade
         ctx.fillText(vLetters[vk], vsx, vsy);
       }
       ctx.textAlign = 'start'; ctx.textBaseline = 'top';
