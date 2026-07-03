@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.54 — 2026-07-02
+
+### Changed
+- The hero mark's colour breathe is back to a gentle white-to-green fade — dropped the amber and the third-colour lighting.
+- The red letters now hold still in a fixed cell and fade out where they sit, exactly like every other character — no more drifting.
+
 ## v1.53 — 2026-07-02
 
 ### Changed

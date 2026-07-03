@@ -94,34 +94,38 @@
         if (rdrops[i] * rfs > R.h) bottomed[i] = true;
         if (respawn && (Math.floor(rdrops[i]) - TRAIL) * rfs > R.h) { rdrops[i] = -(Math.random() * 6); rspd[i] = 0.42 + Math.random() * 0.6; }
       }
-      drawRedInStream(R, intensity, sp);                                                 // the red-sequence key rides a real column and falls with the stream
+      drawRedInStream(R, intensity, sp, rows, TRAIL);                                     // the red key sits in a FIXED cell and fades with the passing head, like any glyph
       ctx.restore();
     }
     function reachedBottom() { if (!rcols) return false; for (var i = 0; i < rcols; i++) if (!bottomed[i]) return false; return true; }
     function cleared(R) { var rows = Math.ceil(R.h / rfs), TRAIL = Math.max(12, Math.round(rows * 0.55)); for (var i = 0; i < rcols; i++) if ((Math.floor(rdrops[i]) - TRAIL) * rfs <= R.h) return false; return true; }
-    // ── the RED SEQUENCE — מ,ע,ש,ה,ב,ר,א,ש,י,ת, one letter at a time, IN ORDER, flowing with the rain.
+    // ── the RED SEQUENCE — מ,ע,ש,ה,ב,ר,א,ש,י,ת, one letter at a time, IN ORDER, hidden in the rain.
     // The key to the site's challenge cipher (each letter's gematria value, mod 26, is a Vigenère shift).
-    // A red letter attaches to a real falling column and streams down at that column's speed like any other head —
-    // no halo, no blink, plain red. When it exits the bottom, the NEXT letter in order joins a different column.
-    // Never two at once; always in sequence. Found in the flow, not shown.
-    var RED_SEQ = 'מעשהבראשית', redI = 0, redCol = -1, redRow = 0, redShown = false, redCd = 5000, redLast = 0;
-    function drawRedInStream(R, intensity, sp) {
+    // A red letter is planted in a FIXED cell — it does not move. It lights up when the column's head passes over it,
+    // then fades and clears exactly like every other character in the trail. Plain red, no glow, no blink.
+    // When it has fully faded out, the NEXT letter in order is planted in a different cell. Never two at once; always in order.
+    var RED_SEQ = 'מעשהבראשית', redI = 0, redCol = -1, redRowCell = 0, redShown = false, redCd = 4000, redLast = 0;
+    function drawRedInStream(R, intensity, sp, rows, TRAIL) {
       var now = performance.now(), dt = redLast ? Math.min(120, now - redLast) : 16; redLast = now;
       if (intensity < 0.5) { return; }                                                   // faded rain layers never carry the key
-      if (redCol < 0) {                                                                   // between letters — wait, then attach the next one HIGH on a column so it has room to be seen falling
-        redCd -= dt; if (redCd <= 0) { redCol = (Math.random() * rcols) | 0; redRow = -(2 + Math.random() * 4); redShown = false; redCd = 4000 + Math.random() * 5000; }
+      if (redCol < 0) {                                                                   // between letters — wait, then plant the next one in a fixed cell below the current head, so the head will sweep over it
+        redCd -= dt;
+        if (redCd <= 0) { var c = (Math.random() * rcols) | 0; var head = Math.floor(rdrops[c]); redRowCell = head + 2 + ((Math.random() * 5) | 0); redCol = c; redShown = false; redCd = 3500 + Math.random() * 4000; }   // plant just BELOW the head so the head sweeps onto it within a second or two
         return;
       }
-      redRow += rspd[redCol] * sp;                                                        // fall at the carrier column's own speed — in step with the stream
-      var x = R.x + redCol * rfs, y = R.y + Math.floor(redRow) * rfs;
-      if (y > R.y - rfs && y < R.y + R.h) {                                               // on-screen: plain red, same weight/font, no shadow
+      var headI = Math.floor(rdrops[redCol]), trr = headI - redRowCell;                  // distance of the planted cell from this column's head — same measure the trail uses
+      var yy = R.y + redRowCell * rfs;
+      if (trr >= 0 && trr < TRAIL && yy > R.y - rfs && yy < R.y + R.h) {                  // within the lit trail and on-screen → draw it, faded by distance exactly like a normal glyph
         redShown = true;
+        var a = intensity * ((1 - trr / TRAIL) * 0.72 + 0.10);                            // red fades with distance from the head, like the green trail (a touch brighter so it's findable)
         ctx.save(); ctx.font = '400 ' + rfs + 'px ' + MONO_RAIN; ctx.textAlign = 'start'; ctx.textBaseline = 'top'; ctx.direction = 'ltr';
-        ctx.fillStyle = 'rgba(210,40,40,' + (intensity * 0.9).toFixed(3) + ')';
-        ctx.fillText(RED_SEQ.charAt(redI), x, y); ctx.restore();
+        ctx.fillStyle = 'rgba(210,40,40,' + a.toFixed(3) + ')';
+        ctx.fillText(RED_SEQ.charAt(redI), R.x + redCol * rfs, yy); ctx.restore();
       }
-      if (Math.floor(redRow) * rfs > R.h) {                                              // fell off the bottom
-        if (redShown) redI = (redI + 1) % RED_SEQ.length;                                // only advance if it was actually seen — keeps the sequence complete and in order
+      if (redShown && trr >= TRAIL) {                                                     // head has fully swept past and the cell has faded out → advance to the next letter
+        redI = (redI + 1) % RED_SEQ.length; redCol = -1;
+      } else if (headI < redRowCell - TRAIL - 2) {                                        // the carrier column respawned (head jumped back to the top) before finishing
+        if (redShown) redI = (redI + 1) % RED_SEQ.length;                                 //   if it was already seen, count it and move on; otherwise re-plant same letter (keep order)
         redCol = -1;
       }
     }
@@ -557,16 +561,16 @@
   ];
   function makePointGeo(shape) {
     var t = 0, REVEAL = 3600, DUR = 6400, RAMP = ' .:-=+*#%@';
-    var redOn = false, redCd = 2200 + Math.random() * 2600, redCol = 0, redRow = 0, redRows = 0, redPlaced = false;   // one red letter per scene appearance, drifting down (v1.53)
+    var redOn = false, redCd = 2200 + Math.random() * 2600, redCol = 0, redRow = 0, redLife = 0, redPlaced = false;   // one red letter per scene appearance — appears in a fixed cell, holds, then fades out (v1.54)
     function redInShape(R, x0, y0, gw, gh, cw, fs) {
-      if (!redPlaced) { redCd -= (t > 0 ? 16 : 0); if (redCd <= 0 && t > REVEAL * 0.5) { redOn = true; redPlaced = true; redCol = 2 + ((Math.random() * (gw - 4)) | 0); redRow = 0; redRows = gh; } }
+      if (!redPlaced) { redCd -= (t > 0 ? 16 : 0); if (redCd <= 0 && t > REVEAL * 0.5) { redOn = true; redPlaced = true; redCol = 2 + ((Math.random() * (gw - 4)) | 0); redRow = 2 + ((Math.random() * (gh - 4)) | 0); redLife = 0; } }
       if (!redOn) return;
-      redRow += 0.09;                                                                    // slow drift down through the field
-      var rr = Math.floor(redRow);
-      if (rr >= redRows) { redOn = false; if (rainState.redAdvance) rainState.redAdvance(); return; }   // exited the field → advance the shared order
+      redLife += 16;
+      var LIFE = 2400, ap = clamp(redLife / 300, 0, 1), fd = redLife > LIFE - 700 ? clamp((LIFE - redLife) / 700, 0, 1) : 1;   // fade in, hold, fade out — in place, no movement
+      if (redLife >= LIFE) { redOn = false; if (rainState.redAdvance) rainState.redAdvance(); return; }   // fully faded → advance the shared order
       ctx.save(); ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
-      ctx.fillStyle = 'rgba(210,40,40,0.92)';
-      ctx.fillText(rainState.redGlyph ? rainState.redGlyph() : 'מ', x0 + redCol * cw, y0 + rr * fs); ctx.restore();
+      ctx.fillStyle = 'rgba(210,40,40,' + (Math.min(ap, fd) * 0.92).toFixed(3) + ')';
+      ctx.fillText(rainState.redGlyph ? rainState.redGlyph() : 'מ', x0 + redCol * cw, y0 + redRow * fs); ctx.restore();
     }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
