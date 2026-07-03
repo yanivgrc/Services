@@ -2,6 +2,11 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.58 — 2026-07-03
+
+### Changed
+- The letters at the mark's corners now take the mark's own green, in a lighter hand — and they've stopped drifting through noise. Every set that surfaces now is a real one.
+
 ## v1.57 — 2026-07-03
 
 ### Changed

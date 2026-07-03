@@ -1173,19 +1173,14 @@
     // ── vertex-letter cipher (v1.56): each of the 4 tetra vertices shows a WHITE letter — mostly random,
     //    occasionally LOCKING (clearly, ~2.4s) to one of three hidden 4-letter combinations. Parallel to the red rain key.
     var VERT = [[-1.1201, -1.1201, -1.1201], [-1.1201, 1.1201, 1.1201], [1.1201, -1.1201, 1.1201], [1.1201, 1.1201, -1.1201]];
-    var VCOMBOS = ['אאבמ', 'שלמה', 'מהבנ'], VPOOL = 'אבגדהוזחטיכלמנסעפצקרשת';
+    var VCOMBOS = ['אאבמ', 'שלמה', 'מהבנ'];
     var vLetters = ['א', 'ב', 'ג', 'ד'], vLockUntil = 0, vNextRoll = 0, vLocked = false;
     function rollVertexLetters(now) {
       if (vLocked && now >= vLockUntil) { vLocked = false; vNextRoll = now; }             // lock expired → resume rolling
-      if (!vLocked && now >= vNextRoll) {
-        if (Math.random() < 0.16) {                                                       // occasionally lock to a real combo, clearly, for ~2.4s
-          var combo = VCOMBOS[(Math.random() * VCOMBOS.length) | 0];
-          for (var q = 0; q < 4; q++) vLetters[q] = combo.charAt(q);
-          vLocked = true; vLockUntil = now + 2400; vNextRoll = now + 2600;
-        } else {                                                                          // otherwise slow random glyphs (readable, not noise)
-          for (var q2 = 0; q2 < 4; q2++) vLetters[q2] = VPOOL.charAt((Math.random() * VPOOL.length) | 0);
-          vNextRoll = now + 520 + Math.random() * 480;
-        }
+      if (now >= vNextRoll) {                                                             // cycle ONLY through the real combos — never random letters
+        var combo = VCOMBOS[(Math.random() * VCOMBOS.length) | 0];
+        for (var q = 0; q < 4; q++) vLetters[q] = combo.charAt(q);
+        vNextRoll = now + 3000;
       }
     }
     function smax(a, b, k) { var h = 0.5 + 0.5 * (a - b) / k; h = h < 0 ? 0 : (h > 1 ? 1 : h); return b + (a - b) * h + k * h * (1 - h); }
@@ -1226,7 +1221,7 @@
       // draw the four white vertex letters, projected onto the rotating tetra's corners
       rollVertexLetters(t);
       var vfs = Math.max(13, Math.round(fs * 1.7));
-      ctx.font = '700 ' + vfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
+      ctx.font = vfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
       var VIN = 0.58;   // pull letters INWARD from the sharp corners so they sit ON the faces, inside the body — not floating past the tips
       for (var vk = 0; vk < 4; vk++) {
         var vv = VERT[vk];
@@ -1238,7 +1233,7 @@
         var vux = -1.7 * pcx / den, vuy = -1.7 * pcy / den;
         var vc = (vux / aspect + 0.5) * cols - 0.5, vr = (0.5 - vuy) * rows - 0.5;
         var vsx = x0 + vc * acw, vsy = y0 + vr * fs;
-        ctx.fillStyle = 'rgba(238,242,250,0.95)';       // uniform bright white — same weight for all four, no depth fade
+        ctx.fillStyle = GREEN;
         ctx.fillText(vLetters[vk], vsx, vsy);
       }
       ctx.textAlign = 'start'; ctx.textBaseline = 'top';

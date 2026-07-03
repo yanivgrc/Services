@@ -149,6 +149,8 @@
     "cl.internal":{en:"Internal",he:"פנימי"},
     "cl.fixed":{en:"Fixed",he:"תוקן"},
     "cl.removed":{en:"Removed",he:"הוסר"},
+        "cl.v158.c1":{en:"The letters at the mark's corners now take the mark's own green, in a lighter hand — and they've stopped drifting through noise. Every set that surfaces now is a real one.",
+      he:"האותיות בפינות הסמל נצבעות עכשיו בירוק של הסמל עצמו, בקו דק יותר — והן חדלו לנדוד ברעש. כל צירוף שמופיע עכשיו הוא צירוף אמיתי."},
         "cl.v157.c1":{en:"The letters at the mark's corners now sit inside the form, resting on its faces rather than floating past the tips, and all four read at the same clean brightness.",
       he:"האותיות בפינות הסמל יושבות עכשיו בתוך הצורה, על הפאות שלה במקום לצוף מעבר לחודים, וכל הארבע נקראות באותה בהירות נקייה."},
 "cl.v156.a1":{en:"The four corners of the containment mark now carry letters in the breach scene — mostly drifting, but every so often they settle, all four at once, into something that isn't random. Worth watching for.",
