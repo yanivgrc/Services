@@ -1170,6 +1170,24 @@
     var N0x = 0.57735, N0y = 0.57735, N0z = 0.57735, N1x = 0.57735, N1y = -0.57735, N1z = -0.57735,
         N2x = -0.57735, N2y = 0.57735, N2z = -0.57735, N3x = -0.57735, N3y = -0.57735, N3z = 0.57735;
     var Lx = 0.5, Ly = 0.72, Lz = 0.48, Lm = Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz); Lx /= Lm; Ly /= Lm; Lz /= Lm;
+    // ── vertex-letter cipher (v1.56): each of the 4 tetra vertices shows a WHITE letter — mostly random,
+    //    occasionally LOCKING (clearly, ~2.4s) to one of three hidden 4-letter combinations. Parallel to the red rain key.
+    var VERT = [[-1.1201, -1.1201, -1.1201], [-1.1201, 1.1201, 1.1201], [1.1201, -1.1201, 1.1201], [1.1201, 1.1201, -1.1201]];
+    var VCOMBOS = ['אאבמ', 'שלמה', 'מהבנ'], VPOOL = 'אבגדהוזחטיכלמנסעפצקרשת';
+    var vLetters = ['א', 'ב', 'ג', 'ד'], vLockUntil = 0, vNextRoll = 0, vLocked = false;
+    function rollVertexLetters(now) {
+      if (vLocked && now >= vLockUntil) { vLocked = false; vNextRoll = now; }             // lock expired → resume rolling
+      if (!vLocked && now >= vNextRoll) {
+        if (Math.random() < 0.16) {                                                       // occasionally lock to a real combo, clearly, for ~2.4s
+          var combo = VCOMBOS[(Math.random() * VCOMBOS.length) | 0];
+          for (var q = 0; q < 4; q++) vLetters[q] = combo.charAt(q);
+          vLocked = true; vLockUntil = now + 2400; vNextRoll = now + 2600;
+        } else {                                                                          // otherwise slow random glyphs (readable, not noise)
+          for (var q2 = 0; q2 < 4; q2++) vLetters[q2] = VPOOL.charAt((Math.random() * VPOOL.length) | 0);
+          vNextRoll = now + 520 + Math.random() * 480;
+        }
+      }
+    }
     function smax(a, b, k) { var h = 0.5 + 0.5 * (a - b) / k; h = h < 0 ? 0 : (h > 1 ? 1 : h); return b + (a - b) * h + k * h * (1 - h); }
     function mapB(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var tet = smax(smax(a, b, ROUND), smax(c, d, ROUND), ROUND) - RIN; var sph = Math.sqrt(x * x + y * y + z * z) - SPH; return tet > -sph ? tet : -sph; }
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
@@ -1205,6 +1223,24 @@
           ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length))), x0 + c * acw, y0 + r * fs);
         }
       }
+      // draw the four white vertex letters, projected onto the rotating tetra's corners
+      rollVertexLetters(t);
+      var vfs = Math.max(13, Math.round(fs * 1.7));
+      ctx.font = '700 ' + vfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
+      for (var vk = 0; vk < 4; vk++) {
+        var vv = VERT[vk];
+        var pcx = r00 * vv[0] + r10 * vv[1] + r20 * vv[2];   // R^T · vertex → camera space
+        var pcy =               r11 * vv[1] + r21 * vv[2];
+        var pcz = r02 * vv[0] + r12 * vv[1] + r22 * vv[2];
+        var den = pcz - 9; if (den > -0.001) continue;
+        var vux = -1.7 * pcx / den, vuy = -1.7 * pcy / den;
+        var vc = (vux / aspect + 0.5) * cols - 0.5, vr = (0.5 - vuy) * rows - 0.5;
+        var vsx = x0 + vc * acw, vsy = y0 + vr * fs;
+        var near = (2 - pcz) / 4; near = near < 0 ? 0 : (near > 1 ? 1 : near);
+        ctx.fillStyle = 'rgba(238,242,250,' + (0.72 + 0.28 * near).toFixed(3) + ')';       // near-white — distinct from green form + red key
+        ctx.fillText(vLetters[vk], vsx, vsy);
+      }
+      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
       if (intro) {   // the GRC·LABS wordmark sits beneath the turning mark — a full logo lockup as the session opens
         var wfs = clamp(Math.round(R.w / 22), 24, 52); ctx.font = '700 ' + wfs + 'px "Space Grotesk", "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
         ctx.fillStyle = BRIGHT; ctx.fillText('GRC·LABS', R.x + R.w / 2, R.y + R.h * 0.84);

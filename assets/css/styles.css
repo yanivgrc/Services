@@ -267,7 +267,7 @@
   /* ── pencil-sketch background layer (v1.55) — "drawing → model" ── */
   /* Hand-drawn pencil sketches of the real containment mark, rendered from the SDF and traced. */
   /* Giant & cropped, floating behind the content. Desktop-only; mirror in RTL. */
-  .sketch{position:absolute; z-index:0; pointer-events:none; opacity:.72;
+  .sketch{position:absolute; z-index:0; pointer-events:none; opacity:.55;
     top:50%; transform:translateY(-50%); display:none;
     background-repeat:no-repeat; background-position:center; background-size:contain}
   .sk-right{inset-inline-end:-3%}
@@ -278,7 +278,7 @@
   .sk-sm{width:min(240px,24vw); height:240px}
   .hero .sketch{top:46%}
   /* the challenge sketch stays faint — the cipher is the focus there */
-  #challenge .sketch{opacity:.5}
+  #challenge .sketch{opacity:.4}
   /* each section's sketch image */
   .sk-hero{background-image:url("../img/sketches/hero.png")}
   .sk-cap{background-image:url("../img/sketches/capabilities.png")}

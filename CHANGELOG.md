@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.56 — 2026-07-03
+
+### Added
+- The four corners of the containment mark now carry letters in the breach scene — mostly drifting, but every so often they settle, all four at once, into something that isn't random. Worth watching for.
+
+### Changed
+- The pencil sketches behind the page are lighter now — a finer line, softer on the paper, with every face of the mark outlined, not just its silhouette.
+
 ## v1.55 — 2026-07-03
 
 ### Added
