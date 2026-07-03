@@ -1170,8 +1170,8 @@
     var N0x = 0.57735, N0y = 0.57735, N0z = 0.57735, N1x = 0.57735, N1y = -0.57735, N1z = -0.57735,
         N2x = -0.57735, N2y = 0.57735, N2z = -0.57735, N3x = -0.57735, N3y = -0.57735, N3z = 0.57735;
     var Lx = 0.5, Ly = 0.72, Lz = 0.48, Lm = Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz); Lx /= Lm; Ly /= Lm; Lz /= Lm;
-    // ── vertex-letter cipher (v1.56): each of the 4 tetra vertices shows a WHITE letter — mostly random,
-    //    occasionally LOCKING (clearly, ~2.4s) to one of three hidden 4-letter combinations. Parallel to the red rain key.
+    // ── vertex-letter cipher (v1.58): each of the 4 tetra vertices shows a GREEN letter — the four cycle
+    //    together, ~3s apart, ONLY through three hidden 4-letter combinations (never random). Parallel to the red rain key.
     var VERT = [[-1.1201, -1.1201, -1.1201], [-1.1201, 1.1201, 1.1201], [1.1201, -1.1201, 1.1201], [1.1201, 1.1201, -1.1201]];
     var VCOMBOS = ['אאבמ', 'שלמה', 'מהבנ'];
     var vLetters = ['א', 'ב', 'ג', 'ד'], vLockUntil = 0, vNextRoll = 0, vLocked = false;
@@ -1218,7 +1218,7 @@
           ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length))), x0 + c * acw, y0 + r * fs);
         }
       }
-      // draw the four white vertex letters, projected onto the rotating tetra's corners
+      // draw the four green vertex letters, projected onto the rotating tetra's corners
       rollVertexLetters(t);
       var vfs = Math.max(13, Math.round(fs * 1.7));
       ctx.font = vfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
