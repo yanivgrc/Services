@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.59 — 2026-07-12
+
+### Added
+- There is now a way to reach us that isn't LinkedIn. The contact section carries a second action beside the LinkedIn handle — "send us a message" — opening the secure contact form at live.grc-labs.com/contact. Until now the only route to a human ran through a LinkedIn account, which is a poor thing to require of someone who simply wants to write to us. The top navigation already points at this section, so the new route inherits an entry point from the masthead for free. No email address appears anywhere on the site — the form emails us; the address stays a server-side secret.
+
+### Fixed
+- The version chip in the footer had gone stale: it read v1.57 while the site was on v1.58.
+
 ## v1.58 — 2026-07-03
 
 ### Changed
