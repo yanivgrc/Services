@@ -555,17 +555,6 @@
   ];
   function makePointGeo(shape) {
     var t = 0, REVEAL = 3600, DUR = 6400, RAMP = ' .:-=+*#%@';
-    var redOn = false, redCd = 2200 + Math.random() * 2600, redCol = 0, redRow = 0, redLife = 0, redPlaced = false;   // one red letter per scene appearance — appears in a fixed cell, holds, then fades out (v1.54)
-    function redInShape(R, x0, y0, gw, gh, cw, fs) {
-      if (!redPlaced) { redCd -= (t > 0 ? 16 : 0); if (redCd <= 0 && t > REVEAL * 0.5) { redOn = true; redPlaced = true; redCol = 2 + ((Math.random() * (gw - 4)) | 0); redRow = 2 + ((Math.random() * (gh - 4)) | 0); redLife = 0; } }
-      if (!redOn) return;
-      redLife += 16;
-      var LIFE = 2400, ap = clamp(redLife / 300, 0, 1), fd = redLife > LIFE - 700 ? clamp((LIFE - redLife) / 700, 0, 1) : 1;   // fade in, hold, fade out — in place, no movement
-      if (redLife >= LIFE) { redOn = false; if (rainState.redAdvance) rainState.redAdvance(); return; }   // fully faded → advance the shared order
-      ctx.save(); ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
-      ctx.fillStyle = 'rgba(210,40,40,' + (Math.min(ap, fd) * 0.92).toFixed(3) + ')';
-      ctx.fillText(rainState.redGlyph ? rainState.redGlyph() : 'מ', x0 + redCol * cw, y0 + redRow * fs); ctx.restore();
-    }
     function frame(dt, R) {
       t += dt; ctx.fillStyle = BG; ctx.fillRect(R.x, R.y, R.w, R.h);
       var side = Math.max(R.w, R.h) * 0.62, fs = clamp(side / 46, 9, 16), cw = fs * 0.6;
@@ -578,7 +567,6 @@
       ctx.font = fs + 'px ' + MONO; ctx.textBaseline = 'top'; ctx.textAlign = 'start'; ctx.direction = 'ltr';
       ctx.fillStyle = FAINT; for (var rd = 0; rd < gh; rd++) for (var cd = 0; cd < gw; cd++) if (!grid[rd * gw + cd]) ctx.fillText('.', x0 + cd * cw, y0 + rd * fs); // empty cells get a faint dot — gives the field form
       for (var r2 = 0; r2 < gh; r2++) for (var c2 = 0; c2 < gw; c2++) { var v = grid[r2 * gw + c2]; if (!v) continue; var pc = v >= 4 ? BRIGHT : (v >= 2 ? GREEN : MIDG); if (Math.sin((r2 * 3.3 + c2 * 1.7) + t * 0.006) > 0.82) pc = BRIGHT; ctx.fillStyle = pc; ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, v)), x0 + c2 * cw, y0 + r2 * fs); } // lit cells twinkle so the shape never freezes after reveal
-      redInShape(R, x0, y0, gw, gh, cw, fs);   // a single red letter drifts down through the shape's field — same global order as the rain (v1.53)
       label(R, shape.name);
       return t >= DUR;
     }
@@ -1170,19 +1158,6 @@
     var N0x = 0.57735, N0y = 0.57735, N0z = 0.57735, N1x = 0.57735, N1y = -0.57735, N1z = -0.57735,
         N2x = -0.57735, N2y = 0.57735, N2z = -0.57735, N3x = -0.57735, N3y = -0.57735, N3z = 0.57735;
     var Lx = 0.5, Ly = 0.72, Lz = 0.48, Lm = Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz); Lx /= Lm; Ly /= Lm; Lz /= Lm;
-    // ── vertex-letter cipher (v1.58): each of the 4 tetra vertices shows a GREEN letter — the four cycle
-    //    together, ~3s apart, ONLY through three hidden 4-letter combinations (never random). Parallel to the red rain key.
-    var VERT = [[-1.1201, -1.1201, -1.1201], [-1.1201, 1.1201, 1.1201], [1.1201, -1.1201, 1.1201], [1.1201, 1.1201, -1.1201]];
-    var VCOMBOS = ['אאבמ', 'שלמה', 'מהבנ'];
-    var vLetters = ['א', 'ב', 'ג', 'ד'], vLockUntil = 0, vNextRoll = 0, vLocked = false;
-    function rollVertexLetters(now) {
-      if (vLocked && now >= vLockUntil) { vLocked = false; vNextRoll = now; }             // lock expired → resume rolling
-      if (now >= vNextRoll) {                                                             // cycle ONLY through the real combos — never random letters
-        var combo = VCOMBOS[(Math.random() * VCOMBOS.length) | 0];
-        for (var q = 0; q < 4; q++) vLetters[q] = combo.charAt(q);
-        vNextRoll = now + 3000;
-      }
-    }
     function smax(a, b, k) { var h = 0.5 + 0.5 * (a - b) / k; h = h < 0 ? 0 : (h > 1 ? 1 : h); return b + (a - b) * h + k * h * (1 - h); }
     function mapB(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var tet = smax(smax(a, b, ROUND), smax(c, d, ROUND), ROUND) - RIN; var sph = Math.sqrt(x * x + y * y + z * z) - SPH; return tet > -sph ? tet : -sph; }
     function edgeGlow(x, y, z) { var a = x * N0x + y * N0y + z * N0z, b = x * N1x + y * N1y + z * N1z, c = x * N2x + y * N2y + z * N2z, d = x * N3x + y * N3y + z * N3z; var m = Math.max(Math.max(a, b), Math.max(c, d)), w = 0.05 + ROUND * 0.6; var cnt = (a >= m - w ? 1 : 0) + (b >= m - w ? 1 : 0) + (c >= m - w ? 1 : 0) + (d >= m - w ? 1 : 0) - 1; return cnt < 0 ? 0 : (cnt > 2 ? 2 : cnt); }
@@ -1218,25 +1193,6 @@
           ctx.fillText(RAMP.charAt(Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length))), x0 + c * acw, y0 + r * fs);
         }
       }
-      // draw the four green vertex letters, projected onto the rotating tetra's corners
-      rollVertexLetters(t);
-      var vfs = Math.max(13, Math.round(fs * 1.7));
-      ctx.font = vfs + 'px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
-      var VIN = 0.58;   // pull letters INWARD from the sharp corners so they sit ON the faces, inside the body — not floating past the tips
-      for (var vk = 0; vk < 4; vk++) {
-        var vv = VERT[vk];
-        var vix = vv[0] * VIN, viy = vv[1] * VIN, viz = vv[2] * VIN;
-        var pcx = r00 * vix + r10 * viy + r20 * viz;   // R^T · (vertex pulled inward) → camera space
-        var pcy =             r11 * viy + r21 * viz;
-        var pcz = r02 * vix + r12 * viy + r22 * viz;
-        var den = pcz - 9; if (den > -0.001) continue;
-        var vux = -1.7 * pcx / den, vuy = -1.7 * pcy / den;
-        var vc = (vux / aspect + 0.5) * cols - 0.5, vr = (0.5 - vuy) * rows - 0.5;
-        var vsx = x0 + vc * acw, vsy = y0 + vr * fs;
-        ctx.fillStyle = GREEN;
-        ctx.fillText(vLetters[vk], vsx, vsy);
-      }
-      ctx.textAlign = 'start'; ctx.textBaseline = 'top';
       if (intro) {   // the GRC·LABS wordmark sits beneath the turning mark — a full logo lockup as the session opens
         var wfs = clamp(Math.round(R.w / 22), 24, 52); ctx.font = '700 ' + wfs + 'px "Space Grotesk", "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
         ctx.fillStyle = BRIGHT; ctx.fillText('GRC·LABS', R.x + R.w / 2, R.y + R.h * 0.84);
