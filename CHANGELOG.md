@@ -2,6 +2,12 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.60 — 2026-07-19
+
+### Changed
+- The home page is now a single centred, responsive card — the wordmark, the rotating containment mark, the tagline and a short pitch. The rest of the site is tucked out of sight.
+- The mark is larger and stands on its own now, in plain white instead of drifting between white and green.
+
 ## v1.59 — 2026-07-12
 
 ### Added

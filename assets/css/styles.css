@@ -294,3 +294,34 @@
   /* in RTL the whole page mirrors; flip each sketch so the drawing reads naturally */
   html[data-lang="he"] .sketch{transform:translateY(-50%) scaleX(-1)}
   html[data-lang="he"] .hero .sketch{transform:translateY(-54%) scaleX(-1)}
+
+  /* ── card-only view (v1.60) — hero-as-card: mark, wordmark, slogan, pitch + meta, centred & responsive.
+     Everything except the hero and footer is hidden (not removed). Remove `card-only` on <body> to restore. ── */
+  body.card-only{min-height:100vh; min-height:100dvh; display:flex; flex-direction:column}
+
+  body.card-only .topbar,
+  body.card-only #capabilities,
+  body.card-only #credentials,
+  body.card-only #labs,
+  body.card-only #challenge,
+  body.card-only #contact,
+  body.card-only .hero .tag .bar,
+  body.card-only .hero .sketch{display:none !important}
+
+  body.card-only .hero{flex:1 1 auto; display:grid; place-items:center; padding:clamp(28px,6vw,64px) 0}
+  body.card-only .hero-inner{display:flex; justify-content:center; width:100%}
+  body.card-only .hero-copy{max-width:640px; display:flex; flex-direction:column; align-items:center;
+    text-align:center; gap:clamp(16px,3vw,26px)}
+  body.card-only .hero .tag{margin:0; justify-content:center}
+  body.card-only .hero .eyebrow{font-size:clamp(11px,1.7vw,14px); letter-spacing:.26em}
+
+  body.card-only .hero h1{display:block; text-align:center; font-size:clamp(44px,11vw,108px)}
+  body.card-only .hero h1 .logo-mark{display:block; width:clamp(150px,36vw,300px); height:clamp(150px,36vw,300px);
+    margin:2px auto 0; filter:drop-shadow(0 0 16px rgba(255,255,255,.26))}
+
+  body.card-only .hero .sub{margin:0 auto; text-align:center; max-width:600px}
+  body.card-only .hero .meta{margin:0; justify-content:center}
+
+  body.card-only footer .row{justify-content:center; text-align:center; gap:8px 18px}
+  body.card-only footer .frow{flex:0 1 auto}
+  @media(max-width:640px){ body.card-only footer .row{flex-direction:column; gap:9px} }

@@ -70,8 +70,8 @@
 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var t = 0, vis = true, raf = 0;
-  // gentle, slow colour breathe: white → phosphor-green → white. No amber, no deep pine — just the two (v1.54).
-  var TINT_A = [1.0, 1.0, 1.0], TINT_B = [0.388, 0.698, 0.176];   // white ↔ phosphor #63B22E
+  // solid white mark (v1.60) - no colour breathe; the card holds the shape in plain white.
+  var TINT_A = [1.0, 1.0, 1.0], TINT_B = [1.0, 1.0, 1.0];   // white, held
   function tintAt(phase) {
     var p = phase < 0.5 ? phase * 2 : (1 - phase) * 2;            // triangle 0→1→0
     p = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;    // ease in/out
@@ -82,7 +82,7 @@
     gl.uniform2f(U.u_res, cvs.width, cvs.height);
     gl.uniform1f(U.u_rin, 1.94 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.021); gl.uniform1f(U.u_svis, 0.10); // matched to the screensaver BREACH mark: bigger tetra around the same 0.95 cavity, so the "ball" reads a touch smaller and contained
     gl.uniform1f(U.u_yaw, t * 0.12); gl.uniform1f(U.u_pitch, t * 0.30); // slower continuous UPWARD tumble (v1.52) — pitch spin still dominates the slower yaw so it rolls up-and-over, just more unhurried
-    if (!reduce) { var tc = tintAt((t * 0.0625) % 1.0); gl.uniform3f(U.u_tint, tc[0], tc[1], tc[2]); } else { gl.uniform3f(U.u_tint, 0.388, 0.698, 0.176); } // ~16s white↔green breathe; static phosphor under reduced motion (v1.54)
+    if (!reduce) { var tc = tintAt((t * 0.0625) % 1.0); gl.uniform3f(U.u_tint, tc[0], tc[1], tc[2]); } else { gl.uniform3f(U.u_tint, 1.0, 1.0, 1.0); } // solid white mark, held (v1.60)
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop() { raf = requestAnimationFrame(loop); if (!vis) return; t += 0.016; render(); }
