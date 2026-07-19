@@ -319,7 +319,7 @@
     margin:2px auto 0; filter:drop-shadow(0 0 16px rgba(255,255,255,.26))}
 
   body.card-only .hero .sub{margin:0 auto; text-align:center; max-width:600px}
-  body.card-only .hero .meta{margin:0; justify-content:center}
+  body.card-only .hero .meta{flex-direction:column; align-items:flex-start; width:fit-content; max-width:100%; margin:0 auto; gap:10px}
 
   body.card-only footer .row{justify-content:center; text-align:center; gap:8px 18px}
   body.card-only footer .frow{flex:0 1 auto}
