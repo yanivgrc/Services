@@ -8,6 +8,14 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.65 — 2026-10-05
+
+### Added
+- The idle screensaver now runs on the Credentials page too, with four new scenes across both pages: an x509 chain-of-trust build, a MITRE ATT&CK kill chain that contains each stage, an AI prompt-injection blocked by a TAISE-aligned guardrail, and a privacy-law (Amendment 13) compliance diff. On Credentials it opens with the chain and a credentials "brain" that verifies each certification.
+
+### Changed
+- Made the screensaver page-aware (it reads `<body data-saver>`) and switched its asset paths to absolute so it works from any page.
+
 ## v1.64 — 2026-10-05
 
 ### Changed
