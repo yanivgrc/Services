@@ -189,11 +189,15 @@
   @media(max-width:460px){ .creds.creds-inprog{grid-template-columns:1fr} }
   .cred .tag-inprog{font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); border:1px solid var(--amber-dim); padding:1px 6px; border-radius:2px; margin-inline-start:auto; flex:none; direction:ltr}
   html[data-lang="he"] .cred .tag-inprog{font-family:var(--he); letter-spacing:.02em}
-  /* active credentials — clean text cards; CISSP/CISM carry a small end-aligned Verify link */
+  /* active credentials — text cards; CISSP/CISM are whole-card verification links */
   .creds.creds-active{grid-auto-rows:1fr}                    /* all 6 cells equal height */
-  .cred-verify{margin-inline-start:auto; align-self:center; flex:none; white-space:nowrap; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:#63B22E}
-  html[data-lang="he"] .cred-verify{font-family:var(--he); letter-spacing:.02em}
-  .cred-verify:hover{text-decoration:underline}
+  .creds-updated{margin-top:8px; font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:.04em}
+  html[data-lang="he"] .creds-updated{font-family:var(--he); letter-spacing:0}
+  .cred-link{cursor:pointer; transition:box-shadow .2s, background .2s}
+  .cred-link:hover,.cred-link:focus-visible{box-shadow:inset 0 0 0 1px #63B22E; background:color-mix(in srgb,var(--panel) 90%, #63B22E)}
+  .cred-tag{margin-inline-start:auto; align-self:center; flex:none; white-space:nowrap; font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:#63B22E; border:1px solid #63B22E; border-radius:2px; padding:3px 7px; transition:background .2s, color .2s}
+  html[data-lang="he"] .cred-tag{font-family:var(--he); letter-spacing:.02em; text-transform:none}
+  .cred-link:hover .cred-tag,.cred-link:focus-visible .cred-tag{background:#63B22E; color:#080B14}
   .qr-cap{font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:.06em; margin-top:14px}
   html[data-lang="he"] .qr-cap{font-family:var(--he); font-size:12.5px; letter-spacing:0}
   .creds-back{display:inline-block; margin-top:36px; font-family:var(--mono); font-size:12px; color:var(--ink-dim); letter-spacing:.06em}

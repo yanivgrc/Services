@@ -8,6 +8,11 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.66 — 2026-10-05
+
+### Changed
+- On the Credentials page, the whole CISSP and CISM cards are now the verification link (not just a label), with a "Verified by Credly" tag that fills on hover, a clear hover/focus state and an aria-label. Added a "last updated" date under the page subtitle.
+
 ## v1.65 — 2026-10-05
 
 ### Added
