@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/assets/css/styles.css" />
+<link rel="stylesheet" href="/assets/css/styles.css?v=1.6.4" />
 </head>
 <body>
 
@@ -39,6 +39,23 @@
       <p class="sec-intro" data-i18n="cl.intro">What's changed on grc-labs.com — newest first.</p>
 
       <div class="cl-time">
+        <!-- v1.64 -->
+        <div class="cl-release">
+          <div class="cl-relhead"><span class="cl-ver" data-decrypt>v1.64</span><span class="cl-date">— 2026-10-05</span></div>
+          <div class="cl-group">
+            <div class="cl-cat" data-i18n="cl.changed">Changed</div>
+            <ul class="cl-list">
+              <li data-i18n="cl.v164.c1">Reworked the Credentials page into clean, uniform text cards that align to equal height; CISSP and CISM now carry a small "Verify ↗" link to their badge verification page. Removed the badge images — no third-party logos are used.</li>
+            </ul>
+          </div>
+          <div class="cl-group">
+            <div class="cl-cat" data-i18n="cl.fixed">Fixed</div>
+            <ul class="cl-list">
+              <li data-i18n="cl.v164.f1">Cache-busted every local stylesheet and script reference (?v=…, bumped per release) so a new page version can no longer load against stale CSS/JS.</li>
+            </ul>
+          </div>
+        </div>
+
         <!-- v1.63 -->
         <div class="cl-release">
           <div class="cl-relhead"><span class="cl-ver" data-decrypt>v1.63</span><span class="cl-date">— 2026-10-05</span></div>
@@ -1040,8 +1057,8 @@
     </div>
   </footer>
 
-<script src="/assets/js/i18n.js"></script>
-<script src="/assets/js/theme.js"></script>
-<script src="/assets/js/decrypt.js"></script>
+<script src="/assets/js/i18n.js?v=1.6.4"></script>
+<script src="/assets/js/theme.js?v=1.6.4"></script>
+<script src="/assets/js/decrypt.js?v=1.6.4"></script>
 </body>
 </html>

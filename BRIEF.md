@@ -207,3 +207,9 @@ Hebrew). Link it discreetly from the footer ("version history" / "עדכוני
 
 Seed it with: `v1.0` = public launch, and log the structural refactor as its own
 entry. Every future feature (favicon, screensaver, copy passes) gets an entry.
+
+**Cache-busting rule.** Every local CSS/JS reference across all pages (index,
+credentials, changelog, terms) carries a `?v=<version>` query, e.g.
+`assets/css/styles.css?v=1.6.4`. Bump it to the new version on every release so a
+freshly deployed page can never load against a stale cached stylesheet or script.
+This bump is part of the `grc-changelog` release workflow.

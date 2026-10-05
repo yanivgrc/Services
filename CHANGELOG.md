@@ -2,6 +2,20 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+> Release rule (cache-busting): on every release, bump the `?v=` query on every
+> local CSS/JS reference across all pages (index, credentials, changelog, terms)
+> to the new version — e.g. `assets/css/styles.css?v=1.6.4`. This prevents new
+> HTML from loading against stale cached CSS/JS. See BRIEF.md and the
+> grc-changelog skill.
+
+## v1.64 — 2026-10-05
+
+### Changed
+- Reworked the Credentials page into clean, uniform text cards that align to equal height; CISSP and CISM now carry a small "Verify ↗" link to their badge verification page. Removed the badge images — no third-party logos are used.
+
+### Fixed
+- Cache-busted every local stylesheet and script reference (`?v=…`, bumped per release) so a new page version can no longer load against stale CSS/JS.
+
 ## v1.63 — 2026-10-05
 
 ### Changed

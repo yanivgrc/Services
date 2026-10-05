@@ -98,9 +98,13 @@ All notable changes to grc-labs.com. Newest first.
 2. Add a dated entry to `CHANGELOG.md` under the right categories, newest first.
 3. Mirror the entry into the `/changelog` page's i18n content, EN + HE.
 4. Keep both in sync — the page should never disagree with the file.
-5. Verify the page in dark+light, EN+HE, desktop+mobile (per the project's
+5. Cache-busting: bump the `?v=<version>` query on EVERY local CSS/JS reference
+   across all pages (index, credentials, changelog, terms) to the new version,
+   e.g. `assets/css/styles.css?v=1.6.4`. This stops a new page version from
+   loading against stale cached CSS/JS. (See BRIEF.md §9.)
+6. Verify the page in dark+light, EN+HE, desktop+mobile (per the project's
    working agreement) before committing.
-6. Use a clear commit message, e.g. `changelog: v1.2 — add screensaver`.
+7. Use a clear commit message, e.g. `changelog: v1.2 — add screensaver`.
 
 ## When to consult the copy skills
 
