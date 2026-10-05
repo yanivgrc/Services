@@ -2,6 +2,14 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.63 — 2026-10-05
+
+### Changed
+- On the Credentials page, the CISSP and CISM cards now carry their official digital badges and link straight to each badge's verification page (badge art stored locally, never hotlinked). The Technion credential is now named "Information Security Managers Program (CISO10)".
+
+### Removed
+- Dropped the separate QR-code verification block on the Credentials page — the badge cards now cover verification.
+
 ## v1.62 — 2026-10-05
 
 ### Changed
