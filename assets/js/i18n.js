@@ -171,6 +171,8 @@
     "cl.fixed":{en:"Fixed",he:"תוקן"},
     "cl.removed":{en:"Removed",he:"הוסר"},
     "cl.privacy":{en:"Privacy",he:"פרטיות"},
+        "cl.v167.f1":{en:"On the Credentials page, moved the \"Verified by Credly\" tag onto its own line below the meta, so the CISSP and CISM titles use the full card width and wrap like the other cards.",
+          he:"בדף ההסמכות, תג \"מאומת ב-Credly\" הועבר לשורה נפרדת מתחת לשורת הפרטים, כך שכותרות CISSP ו-CISM משתמשות ברוחב הכרטיס המלא ונשברות כמו בשאר הכרטיסים."},
         "cl.v166.c1":{en:"On the Credentials page, the whole CISSP and CISM cards are now the verification link (not just a label), with a \"Verified by Credly\" tag that fills on hover, a clear hover/focus state and an aria-label. Added a \"last updated\" date under the page subtitle.",
           he:"בדף ההסמכות, כל כרטיסי CISSP ו-CISM הם עכשיו קישור האימות המלא (לא רק תווית), עם תג \"מאומת ב-Credly\" שמתמלא בריחוף, מצב ריחוף/פוקוס ברור ו-aria-label. נוספה שורת \"עודכן לאחרונה\" מתחת לכותרת המשנה."},
         "cl.v165.a1":{en:"The idle screensaver now runs on the Credentials page too, with four new scenes across both pages: an x509 chain-of-trust build, a MITRE ATT&CK kill chain that contains each stage, an AI prompt-injection blocked by a TAISE-aligned guardrail, and a privacy-law (Amendment 13) compliance diff. On Credentials it opens with the chain and a credentials \"brain\" that verifies each certification.",

@@ -8,6 +8,11 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.67 — 2026-10-06
+
+### Fixed
+- On the Credentials page, moved the "Verified by Credly" tag onto its own line below the meta, so the CISSP and CISM titles use the full card width and wrap like the other cards.
+
 ## v1.66 — 2026-10-05
 
 ### Changed
