@@ -9,11 +9,12 @@
 
   var FRAG =
     '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
-    'uniform vec2 u_res; uniform float u_rin,u_rs,u_round,u_svis,u_yaw,u_pitch; uniform vec3 u_tint;' +
+    'uniform vec2 u_res; uniform float u_rin,u_rs,u_round,u_svis,u_yaw,u_pitch,u_scan; uniform vec3 u_tint;' +
 
     'const vec3 EPOXY=vec3(0.050,0.078,0.120);' +
     'const vec3 CAVITY=vec3(0.085,0.125,0.060);' +
     'const vec3 SPECC=vec3(0.90,0.95,0.85);' +
+    'const vec3 GREEN_SCAN=vec3(0.388,0.698,0.176);' +   // #63B22E phosphor — the periodic scan line (u_scan)
     'const vec3 N0=vec3( 0.57735, 0.57735, 0.57735);' +
     'const vec3 N1=vec3( 0.57735,-0.57735,-0.57735);' +
     'const vec3 N2=vec3(-0.57735, 0.57735,-0.57735);' +
@@ -40,7 +41,8 @@
     'vec3 hh=normalize(lk+vd);float spec=pow(max(dot(n,hh),0.0),46.0);float fres=pow(1.0-max(dot(n,vd),0.0),3.0);' +
     'bool inner=abs(length(p)-u_rs)<0.02;' +
     'if(inner){col=CAVITY*0.5+GREEN*(dk*0.45+df*0.18)+GREEN*fres*0.18+GREEN*0.05;}' +
-    'else{col=EPOXY*0.20+GREEN*(0.46+dk*0.94+df*0.30)+SPECC*spec*0.42+GREEN*fres*0.46+GREEN*edgeGlow(p)*0.40;}}' +
+    'else{col=EPOXY*0.20+GREEN*(0.46+dk*0.94+df*0.30)+SPECC*spec*0.42+GREEN*fres*0.46+GREEN*edgeGlow(p)*0.40;}' +
+    'if(u_scan>=0.0){float scanY=mix(2.4,-2.4,u_scan);float sb=smoothstep(0.18,0.0,abs(p.y-scanY));col+=GREEN_SCAN*sb*0.85;}}' +   // additive phosphor band sweeping down the surface
     'if(u_svis>0.001){float b=dot(ro,rd);float c2=dot(ro,ro)-u_rs*u_rs;float disc=b*b-c2;' +
     'if(disc>0.0){float tn=-b-sqrt(disc);if(tn>0.0&&(!hit||tn<tt)){vec3 sp=ro+rd*tn;vec3 sn=normalize(sp);' +
     'float fr=pow(1.0-max(dot(sn,-rd),0.0),3.0);float a=clamp(u_svis*(0.12+0.88*fr),0.0,1.0);vec3 shell=GREEN*(0.35+0.75*fr);col=mix(col,shell,a);}}}' +
@@ -62,14 +64,29 @@
   var ploc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(ploc); gl.vertexAttribPointer(ploc, 2, gl.FLOAT, false, 0, 0);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  var U = {}; ['u_res', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_yaw', 'u_pitch', 'u_tint'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  var U = {}; ['u_res', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_yaw', 'u_pitch', 'u_scan', 'u_tint'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
   var PR = Math.min(window.devicePixelRatio || 1, 2);
   function resize() { var r = cvs.getBoundingClientRect(); var w = Math.max(1, Math.round(r.width * PR)), h = Math.max(1, Math.round(r.height * PR)); if (w !== cvs.width || h !== cvs.height) { cvs.width = w; cvs.height = h; } gl.viewport(0, 0, cvs.width, cvs.height); }
   window.addEventListener('resize', resize); resize();
   if (document.fonts && document.fonts.ready) { document.fonts.ready.then(resize); } // re-fit once the display font has loaded
 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var t = 0, vis = true, raf = 0;
+
+  // ── motion config — everything tunable lives in one place (v1.61) ──
+  var CFG = {
+    idleYaw: 0.11,        // slow continuous idle rotation (yaw), radians per ~second of t
+    idlePitch: 0.015,     // barely-there vertical drift so it never looks frozen
+    parallaxMaxDeg: 8,    // pointer-parallax tilt ceiling (deg), per the brief
+    parallaxEase: 0.06,   // how quickly the tilt eases toward the pointer target
+    scanPeriod: 12.0,     // seconds between phosphor-green scan passes
+    scanDuration: 0.9,    // seconds a single scan takes to cross the mark
+    assembleDur: 1.1      // assemble-on-load duration (s) — kept under 1.2s
+  };
+
+  var t = 0, vis = true, raf = 0, onScreen = true, tabVisible = !document.hidden;
+  var maxRad = CFG.parallaxMaxDeg * Math.PI / 180;
+  var tgtYaw = 0, tgtPitch = 0, curYaw = 0, curPitch = 0;
+
   // solid white mark (v1.60) - no colour breathe; the card holds the shape in plain white.
   var TINT_A = [1.0, 1.0, 1.0], TINT_B = [1.0, 1.0, 1.0];   // white, held
   function tintAt(phase) {
@@ -77,19 +94,58 @@
     p = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;    // ease in/out
     return [TINT_A[0] + (TINT_B[0] - TINT_A[0]) * p, TINT_A[1] + (TINT_B[1] - TINT_A[1]) * p, TINT_A[2] + (TINT_B[2] - TINT_A[2]) * p];
   }
+
+  // pointer parallax — the tilt follows the cursor, eased, capped at CFG.parallaxMaxDeg (skipped under reduced motion)
+  if (!reduce) {
+    window.addEventListener('pointermove', function (e) {
+      var r = cvs.getBoundingClientRect();
+      var nx = (e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2);
+      var ny = (e.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2);
+      tgtYaw = Math.max(-1, Math.min(1, nx)) * maxRad;
+      tgtPitch = Math.max(-1, Math.min(1, ny)) * maxRad;
+    }, { passive: true });
+  }
+
   function render() {
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(U.u_res, cvs.width, cvs.height);
-    gl.uniform1f(U.u_rin, 1.94 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.021); gl.uniform1f(U.u_svis, 0.10); // matched to the screensaver BREACH mark: bigger tetra around the same 0.95 cavity, so the "ball" reads a touch smaller and contained
-    gl.uniform1f(U.u_yaw, t * 0.12); gl.uniform1f(U.u_pitch, t * 0.30); // slower continuous UPWARD tumble (v1.52) — pitch spin still dominates the slower yaw so it rolls up-and-over, just more unhurried
+    gl.uniform1f(U.u_rin, 1.94 / 3.0); gl.uniform1f(U.u_rs, 0.95); gl.uniform1f(U.u_round, 0.021); gl.uniform1f(U.u_svis, 0.10); // LOCKED SDF params (circumradius 1.94, cavity 0.95, edge 0.021, ghost 0.10) — do not change
+    // slow idle rotation + eased pointer parallax (tilt capped at CFG.parallaxMaxDeg)
+    curYaw += (tgtYaw - curYaw) * CFG.parallaxEase;
+    curPitch += (tgtPitch - curPitch) * CFG.parallaxEase;
+    gl.uniform1f(U.u_yaw, t * CFG.idleYaw + curYaw);
+    gl.uniform1f(U.u_pitch, t * CFG.idlePitch + curPitch);
+    // periodic phosphor-green scan line: a ~CFG.scanDuration sweep once per CFG.scanPeriod; -1 = inactive
+    var scanVal = -1.0;
+    if (!reduce) { var ph = t % CFG.scanPeriod; if (ph < CFG.scanDuration) scanVal = ph / CFG.scanDuration; }
+    gl.uniform1f(U.u_scan, scanVal);
     if (!reduce) { var tc = tintAt((t * 0.0625) % 1.0); gl.uniform3f(U.u_tint, tc[0], tc[1], tc[2]); } else { gl.uniform3f(U.u_tint, 1.0, 1.0, 1.0); } // solid white mark, held (v1.60)
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop() { raf = requestAnimationFrame(loop); if (!vis) return; t += 0.016; render(); }
-  // fade the mark in only AFTER the heading's decrypt scramble settles — while the wordmark width is shifting
-  // frame-to-frame the mark would otherwise slide/jitter beside it. (Shown at once under reduced motion.)
-  if (reduce) { render(); cvs.style.opacity = '1'; } // static single frame under reduced motion
-  else { loop(); setTimeout(function () { cvs.style.opacity = '1'; }, 1300); }
-  // pause the loop when the logo scrolls out of view
-  if ('IntersectionObserver' in window) { new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }, { threshold: 0.01 }).observe(cvs); }
+
+  // assemble-on-load — scale/fade from the cavity outwards, under 1.2s (compositor-only transform+opacity for 60fps)
+  function assemble() {
+    if (reduce) { cvs.style.opacity = '1'; return; } // static under reduced motion
+    cvs.style.transformOrigin = '50% 50%';
+    cvs.style.transform = 'scale(0.72)';
+    cvs.style.opacity = '0';
+    cvs.style.willChange = 'transform,opacity';
+    setTimeout(function () {   // let layout/font settle a beat so the mark doesn't jump as the wordmark reflows
+      cvs.style.transition = 'transform ' + CFG.assembleDur + 's cubic-bezier(.16,1,.3,1), opacity ' + (CFG.assembleDur * 0.8) + 's ease-out';
+      cvs.style.transform = 'scale(1)';
+      cvs.style.opacity = '1';
+      setTimeout(function () { cvs.style.willChange = 'auto'; }, CFG.assembleDur * 1000 + 80);
+    }, 80);
+  }
+
+  if (reduce) { render(); cvs.style.opacity = '1'; }   // static single frame under reduced motion
+  else { loop(); assemble(); }
+
+  // pause rendering when the tab is hidden OR the mark scrolls off-screen
+  function syncVis() { vis = onScreen && tabVisible; }
+  document.addEventListener('visibilitychange', function () { tabVisible = !document.hidden; syncVis(); });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) { onScreen = es[0].isIntersecting; syncVis(); }, { threshold: 0.01 }).observe(cvs);
+  }
 })();

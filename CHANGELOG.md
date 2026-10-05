@@ -2,6 +2,19 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.61 — 2026-10-05
+
+### Added
+- A dedicated Credentials page — every certification in plain text (CISSP, CISM, ISO 27001 Lead Auditor, DPO, and more), with two QR codes for independent verification. Reachable from the footer.
+- The containment mark has motion again: a slow idle turn that leans toward your cursor, a phosphor-green scan line passing over it every few seconds, and a short assemble as the page loads. Still static for anyone who prefers reduced motion.
+- A quiet line of credentials now sits under the buttons on the home card.
+
+### Changed
+- Version history moved off the home page. The footer dropped its version chip and now links quietly to Credentials and Release notes.
+
+### Privacy
+- Removed the hotlinked certification badge images and their external links. Verification is by QR only — the verification addresses appear nowhere in the page's text or markup.
+
 ## v1.60 — 2026-07-19
 
 ### Changed

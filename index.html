@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- Permalink: an already-distributed QR points at /#credentials. Keep it working forever. -->
+<script>(function(){function go(){if(location.hash==='#credentials'){location.replace('/credentials/');}}go();addEventListener('hashchange',go);})();</script>
 <title>GRC-Labs — Tailored Information Security</title>
 <meta name="description" content="GRC-Labs — a private cybersecurity, GRC and privacy practice. CISO-grade security leadership, incident response, DPO services, secure architecture, IoT/OT, AI and applied research." />
 <link rel="icon" href="favicon.ico" sizes="any" />
@@ -24,7 +26,7 @@
       <div class="brand"><span class="dot" aria-hidden="true"></span>GRC<span class="bmid" style="color:var(--green)">&middot;</span>LABS</div>
       <nav>
         <a href="#capabilities" data-i18n="nav.cap">Capabilities</a>
-        <a href="#credentials" data-i18n="nav.cred">Credentials</a>
+        <a href="/credentials/" data-i18n="nav.cred">Credentials</a>
         <a href="#labs" data-i18n="nav.labs">The Labs</a>
         <a href="#challenge" data-i18n="nav.ch">Challenge</a>
         <a href="#contact" data-i18n="nav.contact">Contact</a>
@@ -57,6 +59,7 @@
             <a class="cta primary" href="https://live.grc-labs.com/contact"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.25 6.75A2.25 2.25 0 0 1 4.5 4.5h15a2.25 2.25 0 0 1 2.25 2.25v10.5A2.25 2.25 0 0 1 19.5 19.5h-15a2.25 2.25 0 0 1-2.25-2.25V6.75zm2.03-.3 7.72 5.15 7.72-5.15a.75.75 0 0 0-.22-.03H4.5a.75.75 0 0 0-.22.03zm15.47 1.86-7.33 4.89a.75.75 0 0 1-.84 0L4.25 8.31v8.94c0 .14.11.25.25.25h15c.14 0 .25-.11.25-.25V8.31z"/></svg><span data-i18n="contact.form">send us a message</span></a>
             <a class="cta secondary" href="https://www.linkedin.com/company/grc-labs.com" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg><span data-i18n="contact.btn">connect on LinkedIn</span></a>
           </div>
+          <div class="hero-trust" data-i18n="hero.trust">CISSP &middot; CISM &middot; ISO 27001 LA &middot; DPO</div>
         </div>
       </div>
     </section>
@@ -80,24 +83,6 @@
         <div class="cap"><span class="code">AI &middot; 08</span><h3 data-i18n="c8.h">AI, Securely</h3><p data-i18n="c8.p">Bringing AI into the organization without opening new attack surface — applied use, governance and the risks most teams discover too late.</p><div class="tags"><i>ai</i><i data-i18n="c8.t2">governance</i><i data-i18n="c8.t3">risk</i></div></div>
         <div class="cap"><span class="code">TLK &middot; 09</span><h3 data-i18n="c9.h">Talks &amp; Lectures</h3><p data-i18n="c9.p">Speaking on cybersecurity, risk and the reality of the CISO seat — for teams, leadership and professional audiences. Technical when it needs to be.</p><div class="tags"><i data-i18n="c9.t1">speaking</i><i data-i18n="c9.t2">training</i><i data-i18n="c9.t3">workshops</i></div></div>
       </div>
-    </section>
-  </div>
-
-  <!-- CREDENTIALS -->
-  <div class="wrap">
-    <section id="credentials" class="creds-sec">
-      <div class="sketch sk-right sk-sm sk-cred" aria-hidden="true"></div>
-      <div class="sec-head"><span class="idx" data-i18n="cred.idx">// CREDENTIALS</span><h2 data-decrypt data-i18n="cred.title">Certified, audited, accountable.</h2></div>
-      <p class="sec-intro" data-i18n="cred.intro">The letters behind the work — held, not borrowed. Tailored security still has to stand up to standards.</p>
-      <div class="creds">
-        <a class="cred verified" href="https://www.credly.com/badges/997e8e29-fea2-4a2b-abc1-b8697b5e2783" target="_blank" rel="noopener"><div class="cred-mark">CISSP</div><div class="cred-body"><span data-i18n="cred.cissp">Certified Information Systems Security Professional</span><i>(ISC)&sup2; &middot; <span data-i18n="cred.verify">verified</span></i></div></a>
-        <a class="cred verified" href="https://www.credly.com/badges/e3d5220b-04f4-4b10-b3de-7a09eb6f9cbb" target="_blank" rel="noopener"><div class="cred-mark">CISM</div><div class="cred-body"><span data-i18n="cred.cism">Certified Information Security Manager</span><i>ISACA &middot; <span data-i18n="cred.verify">verified</span></i></div></a>
-        <div class="cred"><div class="cred-mark">ISO 27001</div><div class="cred-body"><span data-i18n="cred.iso">Lead Auditor &middot; ISO/IEC 27001:2022</span><i>IQC &middot; 2024</i></div></div>
-        <div class="cred"><div class="cred-mark">DPO</div><div class="cred-body"><span data-i18n="cred.dpo">Data Protection Officer</span><i>Bar-Ilan Univ. &middot; 2025</i></div></div>
-        <div class="cred"><div class="cred-mark">CISO</div><div class="cred-body"><span data-i18n="cred.ciso">Chief Information Security Officer Program</span><i>Technion &middot; 2018</i></div></div>
-        <div class="cred"><div class="cred-mark">CLOUD</div><div class="cred-body"><span data-i18n="cred.cloud">Cloud Essentials</span><i>AWS &middot; Google Cloud</i></div></div>
-      </div>
-      <p class="creds-note" data-i18n="cred.foot">CISSP and CISM are independently verifiable on Credly.</p>
     </section>
   </div>
 
@@ -162,8 +147,6 @@
             <div class="ptag"><span>SUBJECT // Y.DADON</span><span>CEO</span></div>
           </div>
           <div class="trust">
-            <a href="https://www.credly.com/badges/997e8e29-fea2-4a2b-abc1-b8697b5e2783" target="_blank" rel="noopener" title="CISSP — verified on Credly"><img src="https://images.credly.com/images/6eeb0a98-33cb-4f72-bfc3-f89d65a3286c/linkedin_thumb_image.png" alt="CISSP certification badge, ISC2" loading="lazy" onerror="this.closest('a').style.display='none'" /></a>
-            <a href="https://www.credly.com/badges/e3d5220b-04f4-4b10-b3de-7a09eb6f9cbb" target="_blank" rel="noopener" title="CISM — verified on Credly"><img src="https://images.credly.com/images/d0891dee-6360-496c-9981-40652523b502/linkedin_thumb_dbdea6794f1a6bbcc18d90eea923421aac7df6b5.png" alt="CISM certification badge, ISACA" loading="lazy" onerror="this.closest('a').style.display='none'" /></a>
             <div class="trust-txt"><span data-i18n="trust.l1">CISSP &middot; CISM</span><span data-i18n="trust.l2">ISO 27001 LA &middot; DPO</span></div>
           </div>
         </div>
@@ -174,7 +157,7 @@
   <footer>
     <div class="wrap row">
       <span class="frow" data-i18n="foot.l">GRC&middot;LABS — Tailored Information Security</span>
-      <span class="frow"><a class="ver-tag" href="/changelog/" title="version history"><span class="ver-num">v1.60</span> &middot; <span class="ver-date">2026-07-19</span></a> &middot; <a href="/terms/" data-i18n="foot.terms">challenge terms</a></span>
+      <span class="frow"><a id="credentials" href="/credentials/" data-i18n="foot.creds">Credentials</a> &middot; <a href="/changelog/" data-i18n="foot.rel">Release notes</a> &middot; <a href="/terms/" data-i18n="foot.terms">challenge terms</a></span>
       <span class="frow"><a href="https://www.grc-labs.com/">grc-labs.com</a> &middot; JERUSALEM // IL</span>
       <span class="frow" data-i18n="foot.copy">&copy; 2026 GRC&middot;LABS &middot; all rights reserved</span>
     </div>

@@ -15,7 +15,6 @@
     "cred.dpo":{en:"Data Protection Officer",he:"ממונה הגנת פרטיות (DPO)"},
     "cred.ciso":{en:"Chief Information Security Officer Program",he:"תוכנית מנהלי אבטחת מידע (CISO)"},
     "cred.verify":{en:"verified",he:"מאומת"},
-    "cred.foot":{en:"CISSP and CISM are independently verifiable on Credly.",he:"אפשר לאמת את CISSP ו-CISM ישירות ב-Credly."},
     "cred.cloud":{en:"Cloud Essentials",he:"Cloud Essentials"},
     "nav.labs":{en:"The Labs",he:"המעבדות"},
     "nav.ch":{en:"Challenge",he:"אתגר"},

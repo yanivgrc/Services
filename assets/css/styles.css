@@ -179,6 +179,28 @@
   .cred-body i{font-family:var(--mono); font-style:normal; font-size:10.5px; color:var(--ink-faint); letter-spacing:.06em; direction:ltr; transition:color .25s}
   .creds-note{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:.04em; margin-top:14px}
   html[data-lang="he"] .creds-note{font-family:var(--he); font-size:12px; letter-spacing:0}
+  /* credentials page (/credentials/) — plain-text cards, no links, two verify QRs */
+  .creds-grouplabel{font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--green); margin:34px 0 10px}
+  html[data-lang="he"] .creds-grouplabel{font-family:var(--he); letter-spacing:.04em}
+  .cred.inprogress{opacity:.9}
+  .cred.inprogress .cred-mark{color:var(--amber-dim)}
+  /* the in-progress group has 2 items — 2-up so no empty third cell shows (still 1-up on phones) */
+  .creds.creds-inprog{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:460px){ .creds.creds-inprog{grid-template-columns:1fr} }
+  .cred .tag-inprog{font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); border:1px solid var(--amber-dim); padding:1px 6px; border-radius:2px; margin-inline-start:auto; flex:none; direction:ltr}
+  html[data-lang="he"] .cred .tag-inprog{font-family:var(--he); letter-spacing:.02em}
+  /* QR verification — dark-on-light cards so they scan in either theme */
+  .qr-verify{margin-top:44px}
+  .qr-verify .eyebrow{color:var(--green); display:block; margin-bottom:12px}
+  .qr-grid{display:flex; gap:20px; flex-wrap:wrap}
+  .qr-card{background:#ffffff; border:1px solid var(--line); padding:16px 16px 12px; display:flex; flex-direction:column; align-items:center; gap:10px; border-radius:3px}
+  .qr-card img{width:150px; height:150px; display:block; image-rendering:pixelated}
+  .qr-card figcaption{font-family:var(--mono); font-weight:600; font-size:12px; letter-spacing:.1em; color:#080B14; direction:ltr}
+  .qr-cap{font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:.06em; margin-top:14px}
+  html[data-lang="he"] .qr-cap{font-family:var(--he); font-size:12.5px; letter-spacing:0}
+  .creds-back{display:inline-block; margin-top:36px; font-family:var(--mono); font-size:12px; color:var(--ink-dim); letter-spacing:.06em}
+  html[data-lang="he"] .creds-back{font-family:var(--he); letter-spacing:0}
+  .creds-back:hover{color:var(--amber)}
 
   /* ── labs ── */
   .labs{border:1px solid var(--line); background:linear-gradient(color-mix(in srgb,var(--warn) 5%,transparent),color-mix(in srgb,var(--warn) 5%,transparent)),var(--bg-2); padding:42px 38px; position:relative; overflow:hidden}
@@ -334,6 +356,9 @@
   body.card-only .hero-cta .cta.primary:hover{background:transparent; color:var(--amber)}
   body.card-only .hero-cta .cta.secondary{background:transparent; color:var(--amber); border:1px solid var(--amber-dim)}
   body.card-only .hero-cta .cta.secondary:hover{background:var(--amber); color:var(--bg)}
+  /* hero trust line — plain text, no links; shown only in the card view */
+  .hero-trust{display:none}
+  body.card-only .hero-trust{display:block; margin-top:20px; font-family:var(--mono); font-size:clamp(10.5px,1.5vw,12.5px); letter-spacing:.16em; color:var(--ink-dim); direction:ltr; unicode-bidi:isolate; text-align:center}
 
   body.card-only footer .row{justify-content:center; text-align:center; gap:8px 18px}
   body.card-only footer .frow{flex:0 1 auto}

@@ -101,18 +101,14 @@ The current page has no proper icon. Design a small, sharp icon that reads at
 Ship a full set (favicon.ico, PNG sizes, apple-touch-icon, SVG if possible) and
 wire it into `<head>`.
 
-### Certification badges
-CISSP and CISM badges are hotlinked from Credly's CDN:
-- CISSP: `https://images.credly.com/images/6eeb0a98-33cb-4f72-bfc3-f89d65a3286c/linkedin_thumb_image.png`
-  → verify page `https://www.credly.com/badges/997e8e29-fea2-4a2b-abc1-b8697b5e2783`
-- CISM: `https://images.credly.com/images/d0891dee-6360-496c-9981-40652523b502/linkedin_thumb_dbdea6794f1a6bbcc18d90eea923421aac7df6b5.png`
-  → verify page `https://www.credly.com/badges/e3d5220b-04f4-4b10-b3de-7a09eb6f9cbb`
-
-These thumbs carry some background padding. **Preferred upgrade:** Yaniv
-downloads the official square transparent PNGs from Credly and drops them into
-`assets/img/`; then reference them locally so they're crisp and not dependent on
-Credly's CDN. The other four credentials (ISO 27001 LA, DPO, CISO, Cloud) stay
-text-only — they're institutional and have no shareable badge.
+### Certification verification
+Certifications are presented as plain-text cards on the `/credentials/` page — no
+external badge links or hotlinked images anywhere in the markup. Verification is
+offered by QR only: two static, locally-generated `assets/img/qr-*.svg` codes (one
+per verifiable badge) that resolve to the issuer's verification page when scanned.
+The verification URLs never appear in the HTML, JS, alt text, titles, data
+attributes or meta — they live solely inside the QR modules. The other credentials
+(ISO 27001 LA, DPO, CISO, Cloud) stay text-only — institutional, with no shareable badge.
 
 ---
 
