@@ -2,6 +2,11 @@
 
 All notable changes to grc-labs.com. Newest first.
 
+## v1.62 — 2026-10-05
+
+### Changed
+- On the Credentials page, each verification QR code is now clickable too — it opens the badge's verification page in a new tab (no third-party scripts or images). Scanning still works.
+
 ## v1.61 — 2026-10-05
 
 ### Added

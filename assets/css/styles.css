@@ -193,9 +193,13 @@
   .qr-verify{margin-top:44px}
   .qr-verify .eyebrow{color:var(--green); display:block; margin-bottom:12px}
   .qr-grid{display:flex; gap:20px; flex-wrap:wrap}
-  .qr-card{background:#ffffff; border:1px solid var(--line); padding:16px 16px 12px; display:flex; flex-direction:column; align-items:center; gap:10px; border-radius:3px}
+  .qr-card{background:#ffffff; border:1px solid var(--line); padding:16px 16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; border-radius:3px; transition:border-color .2s}
+  .qr-card:hover,.qr-card:focus-visible{border-color:#63B22E}
   .qr-card img{width:150px; height:150px; display:block; image-rendering:pixelated}
-  .qr-card figcaption{font-family:var(--mono); font-weight:600; font-size:12px; letter-spacing:.1em; color:#080B14; direction:ltr}
+  .qr-card .qr-name{font-family:var(--mono); font-weight:600; font-size:12px; letter-spacing:.1em; color:#080B14; direction:ltr}
+  .qr-card .qr-go{font-family:var(--mono); font-size:10px; letter-spacing:.12em; color:#4C8A1E; direction:ltr; opacity:0; transition:opacity .2s}
+  .qr-card:hover .qr-go,.qr-card:focus-visible .qr-go{opacity:1}
+  html[data-lang="he"] .qr-card .qr-go{font-family:var(--he); letter-spacing:.02em}
   .qr-cap{font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:.06em; margin-top:14px}
   html[data-lang="he"] .qr-cap{font-family:var(--he); font-size:12.5px; letter-spacing:0}
   .creds-back{display:inline-block; margin-top:36px; font-family:var(--mono); font-size:12px; color:var(--ink-dim); letter-spacing:.06em}
