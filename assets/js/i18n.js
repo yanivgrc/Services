@@ -171,6 +171,8 @@
     "cl.fixed":{en:"Fixed",he:"תוקן"},
     "cl.removed":{en:"Removed",he:"הוסר"},
     "cl.privacy":{en:"Privacy",he:"פרטיות"},
+        "cl.v169.f1":{en:"Smoothed the home-page mark's cavity rim: the circles where the hollow cuts each face looked jagged and lumpy, with a dark uneven ring. The rim is now beveled to match the edges and rendered with exact normals, a sub-pixel surface fit, and adaptive anti-aliasing on the internal edges (eased off automatically on low-end devices).",
+          he:"תוקנה שפת החלל בסימן שבעמוד הבית: המעגלים שבהם החלל החלול חותך כל פאה נראו משוננים וגושיים, עם טבעת כהה ולא אחידה. השפה עכשיו מעוגלת בהתאמה לקצוות ומרונדרת עם נורמלים מדויקים, התאמת משטח ברזולוציית תת-פיקסל, ואנטי-אליאסינג אדפטיבי על הקצוות הפנימיים (מושבת אוטומטית במכשירים חלשים)."},
         "cl.v168.c1":{en:"The home-page containment mark now floats in space — the same free tumble as the screensaver's mark, with a slow drift and bob. A cool-white light burns inside its hollow core; a distant green source rims only the edges and glints as it turns past.",
           he:"סימן ההכלה בעמוד הבית נע עכשיו בחופשיות בחלל — אותו גלגול איטי כמו של שומר המסך, עם ריחוף עדין. אור לבן-קריר דולק בחלל החלול שבתוכו, ומקור ירוק רחוק תופס רק את הקצוות ומנצנץ כשהסימן מסתובב."},
         "cl.v168.c2":{en:"Sharpened the mark's outlines and smoothed its rendering — anti-aliased and crisp at any screen size or pixel density — and locked the motion to real time so it runs at the same speed on any display.",

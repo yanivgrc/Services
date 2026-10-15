@@ -8,6 +8,11 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.69 — 2026-10-15
+
+### Fixed
+- Smoothed the home-page mark's cavity rim: the circles where the hollow cuts each face looked jagged and lumpy, with a dark uneven ring. The rim is now beveled to match the edges and rendered with exact normals, a sub-pixel surface fit, and adaptive anti-aliasing on the internal edges (eased off automatically on low-end devices).
+
 ## v1.68 — 2026-10-15
 
 ### Changed
