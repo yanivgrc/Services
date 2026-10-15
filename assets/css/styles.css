@@ -343,8 +343,10 @@
   body.card-only .hero .eyebrow{font-size:clamp(11px,1.7vw,14px); letter-spacing:.26em}
 
   body.card-only .hero h1{display:block; text-align:center; line-height:.95; font-size:clamp(42px,10vw,100px)}
-  body.card-only .hero h1 .logo-mark{display:block; width:clamp(150px,32vw,270px); height:clamp(150px,32vw,270px);
-    margin:clamp(14px,2.4vw,26px) auto 0}
+  body.card-only .hero h1 .logo-mark{display:block; width:clamp(225px,48vw,405px); height:clamp(225px,48vw,405px);
+    /* the mark floats inside the canvas with transparent air around it; negative margins crop that air so the larger mark
+       doesn't open up dead space above the wordmark / below the sub (still clears the bob) */
+    margin:clamp(-52px,-6vw,-26px) auto clamp(-64px,-7.4vw,-38px)}
   body.card-only .hero h1 .logo-fallback{display:none}
 
   body.card-only .hero .sub{margin:0 auto; text-align:center; max-width:560px}

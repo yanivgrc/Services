@@ -1,8 +1,10 @@
 /* GRC·LABS mark — the "containment breach": an epoxy tetrahedron with a hollow wax-sphere cavity,
    raymarched in a single fragment shader. Dependency-free WebGL; degrades to a static asset if WebGL is unavailable.
    Motion: the mark floats in space — the same free upward tumble as the screensaver's BREACH scene, with a slow
-   roll drift and a gentle bob. A single external key light models the dark matte body; a bright white light inside turns
-   the hollow core into a lit chamber seen through the openings. A distant green source rims the edges (v1.70).
+   roll drift and a gentle bob. Two bodies in space light it from outside: a cool-white key "sun" aimed from the GRC.LABS
+   wordmark's on-screen position, and a weak green "planet-shine" bounce from the opposite side that reveals the shadow
+   face. A bright white light inside turns the hollow core into a lit chamber seen through the openings. A distant green
+   source rims the edges (v1.71).
    Cavity rim is beveled (smax), analytic-normal shaded, sub-pixel refined, with adaptive supersampling on edge pixels.
    © 2026 GRC·LABS — all rights reserved. www.grc-labs.com */
 (function () {
@@ -13,9 +15,10 @@
 
   var FRAG =
     '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
-    'uniform vec2 u_res,u_bob; uniform float u_rin,u_rs,u_round,u_svis,u_scan,u_coreI,u_coreFall,u_rim,u_glint,u_edgePx,u_edgeW,u_shell,u_ssaa,u_amb,u_key,u_albedo; uniform vec3 u_tint,u_coreCol,u_greenCol; uniform mat3 u_rot;' +
+    'uniform vec2 u_res,u_bob; uniform float u_rin,u_rs,u_round,u_svis,u_scan,u_coreI,u_coreFall,u_rim,u_glint,u_edgePx,u_edgeW,u_shell,u_ssaa,u_amb,u_key,u_bounce,u_albedo; uniform vec3 u_tint,u_coreCol,u_greenCol,u_keyDir,u_bounceDir; uniform mat3 u_rot;' +
 
     'const vec3 BODY=vec3(0.847,0.871,0.902);' +   // #D8DEE6 — light neutral grey-white albedo; the external key light does all the face shading
+    'const vec3 KEYCOL=vec3(0.933,0.949,0.969);' +   // #EEF2F7 — cool white key ("the sun" = the GRC.LABS wordmark)
     'const vec3 SPECC=vec3(0.90,0.95,0.85);' +
     'const vec3 GREEN_SCAN=vec3(0.388,0.698,0.176);' +   // #63B22E phosphor — the periodic scan line (u_scan)
     'const vec3 N0=vec3( 0.57735, 0.57735, 0.57735);' +
@@ -60,8 +63,8 @@
     'float tetv=sdTet(ps,u_rin,u_round);float negS=u_rs-dl;float diff=tetv-negS;' +
     'vec3 n;if(!hit){n=calcN(ps,pxAng*tt*0.5);}else if(diff>u_round){n=fn;}else if(diff<-u_round){n=-ps/dl;}else{n=calcN(ps,pxAng*tt*0.5);}' +
     'vec3 vd=-rd;' +
-    'vec3 lk=normalize(vec3(-4.5,5.5,4.0));vec3 lf=normalize(R*vec3(2.0,-1.5,-3.0)-ps);' +   // page-anchored key light; fill follows the body
-    'float dk=max(dot(n,lk),0.0);float df=max(dot(n,lf),0.0);' +
+    'vec3 lk=u_keyDir;vec3 lb=u_bounceDir;' +   // two external bodies: key = the wordmark "sun" (page-anchored dir); bounce = planet-shine from the opposite side, slightly behind
+    'float dk=max(dot(n,lk),0.0);float dbn=max(dot(n,lb),0.0);' +
     'vec3 hh=normalize(lk+vd);float spec=pow(max(dot(n,hh),0.0),46.0);' +
     'float ndv=1.0-max(dot(n,vd),0.0);float fres5=ndv*ndv*ndv*ndv*ndv;' +   // fres5 = exp 5, for the green rim and a faint cavity-wall edge
     'float innerMix=1.0-smoothstep(0.0,w,abs(dl-u_rs));' +           // narrow cavity-rim blend; also masks the green rim off the circles
@@ -69,7 +72,8 @@
     'vec3 hg=normalize(Lg+vd);float glint=pow(max(dot(n,hg),0.0),60.0)*u_glint;' +
     'float rimPx=abs(dl-u_rs)/(pxAng*tt);' +                         // distance to the exact cavity circle, in pixels
     'float rimLine=1.0-smoothstep(0.0,u_edgePx,rimPx);' +            // analytic rim line — same width/weight as the triangle edges
-    'vec3 outerCol=BODY*u_albedo*(u_amb+dk*u_key+df*0.08+max(dot(n,-lk),0.0)*0.03)+SPECC*spec*0.20+GREEN*edgeGlow(ps,w)*u_edgeW+GRN*(grim+glint);' +   // one external key light drives the faces (white→very dark as they turn); weak fill + faint back-fill keep form; edges define the silhouette; NO core spill
+    'vec3 body=BODY*u_albedo;' +
+    'vec3 outerCol=body*(u_amb+KEYCOL*dk*u_key)+body*GRN*dbn*u_bounce+SPECC*spec*0.20+GREEN*edgeGlow(ps,w)*u_edgeW+GRN*(grim+glint);' +   // cool-white key drives the faces (white->very dark as they turn); weak green planet-shine reveals the shadow side without lighting it up; edges define the silhouette; NO core spill
     'if(hit){' +
     'float cDiff=max(dot(n,-ps/dl),0.0);' +
     'vec3 coreLit=CORE*u_coreI*cDiff/(dl*dl);' +   // cavity walls: bright white from the core point light — the brightest surface on screen
@@ -115,10 +119,46 @@
   var ploc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(ploc); gl.vertexAttribPointer(ploc, 2, gl.FLOAT, false, 0, 0);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  var U = {}; ['u_res', 'u_bob', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_scan', 'u_coreI', 'u_coreFall', 'u_rim', 'u_glint', 'u_edgePx', 'u_edgeW', 'u_shell', 'u_ssaa', 'u_amb', 'u_key', 'u_albedo', 'u_tint', 'u_coreCol', 'u_greenCol', 'u_rot'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  var U = {}; ['u_res', 'u_bob', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_scan', 'u_coreI', 'u_coreFall', 'u_rim', 'u_glint', 'u_edgePx', 'u_edgeW', 'u_shell', 'u_ssaa', 'u_amb', 'u_key', 'u_bounce', 'u_albedo', 'u_tint', 'u_coreCol', 'u_greenCol', 'u_keyDir', 'u_bounceDir', 'u_rot'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
   var PR = Math.min(window.devicePixelRatio || 1, 2);
-  function resize() { var r = cvs.getBoundingClientRect(); var w = Math.max(1, Math.round(r.width * PR)), h = Math.max(1, Math.round(r.height * PR)); if (w !== cvs.width || h !== cvs.height) { cvs.width = w; cvs.height = h; } gl.viewport(0, 0, cvs.width, cvs.height); }
-  window.addEventListener('resize', resize); resize();
+
+  // ── exterior lighting: temp tuning params + the wordmark-anchored key direction ──
+  var QS = (function () { try { return new URLSearchParams(location.search); } catch (e) { return null; } })();
+  function qNum(k) { if (!QS) return null; var v = parseFloat(QS.get(k)); return isFinite(v) ? v : null; }
+  var P_key = qNum('key'), P_bounce = qNum('bounce'), P_amb = qNum('amb');
+  var forceMobile = !!(QS && QS.get('mobile') === '1');                 // ?mobile=1 forces the mobile lighting on desktop for comparison
+
+  function norm3(x, y, z) { var l = Math.sqrt(x * x + y * y + z * z) || 1; return [x / l, y / l, z / l]; }
+  var FALLBACK_DIR = norm3(-4.5, 5.5, 4.0);                             // fallback: the current upper-left direction
+  var keyDir = new Float32Array(FALLBACK_DIR);
+  var bounceDir = new Float32Array(norm3(4.5, -5.5, -0.3));
+  var wordmark = (cvs.closest ? cvs.closest('h1') : cvs.parentNode);
+
+  // key "sun" aims from the wordmark's on-screen box toward the canvas centre; bounce mirrors it, slightly behind (z<0)
+  function computeKeyDir() {
+    var dir = FALLBACK_DIR;
+    var lat = (CFG && CFG.keyLateral) || 1.7;                           // read CFG hoisting-safe (first resize() runs before CFG is assigned)
+    var fwd = (CFG && CFG.keyForward) || 0.7;
+    try {
+      var marks = wordmark ? wordmark.querySelectorAll('[data-decrypt]') : null;
+      if (marks && marks.length) {
+        var l = Infinity, r = -Infinity, tp = Infinity, b = -Infinity;
+        for (var i = 0; i < marks.length; i++) { var q = marks[i].getBoundingClientRect(); l = Math.min(l, q.left); r = Math.max(r, q.right); tp = Math.min(tp, q.top); b = Math.max(b, q.bottom); }
+        var cr = cvs.getBoundingClientRect();
+        var unit = Math.max(1, cr.height);
+        var dx = ((l + r) / 2 - (cr.left + cr.width / 2)) / unit;
+        var dy = ((cr.top + cr.height / 2) - (tp + b) / 2) / unit;      // flip Y: screen-down → scene-up
+        if (isFinite(dx) && isFinite(dy) && (dx || dy)) dir = norm3(dx * lat, dy * lat, fwd);   // lat>1 biases the sun to one side; fwd lowers the frontal fill
+      }
+    } catch (e) { dir = FALLBACK_DIR; }
+    keyDir = new Float32Array(dir);
+    bounceDir = new Float32Array(norm3(-dir[0], -dir[1], -0.3));        // opposite side of the key, slightly from behind
+  }
+
+  function resize() { var r = cvs.getBoundingClientRect(); var w = Math.max(1, Math.round(r.width * PR)), h = Math.max(1, Math.round(r.height * PR)); if (w !== cvs.width || h !== cvs.height) { cvs.width = w; cvs.height = h; } gl.viewport(0, 0, cvs.width, cvs.height); computeKeyDir(); }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', resize);                // recompute the key direction on resize + orientation change only (not per frame)
+  resize();
   if (document.fonts && document.fonts.ready) { document.fonts.ready.then(resize); } // re-fit once the display font has loaded
 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -153,9 +193,12 @@
     coreFalloff: 6.0,           // k in exp(-k·dist²) — tight, so the volumetric core is a small soft cloud, not fog
     breathePeriod: 5.0,         // s — the core breathes 0.85…1.15 of coreIntensity (no flicker)
 
-    // outer faces — driven by the single external key light (upper-left); body stays light, the key does the shading
-    bodyAmbient: 0.04,          // flat ambient floor on the faces
+    // outer faces — two bodies in space light the mark (v1.71): key "sun" = the wordmark; bounce = green planet-shine
+    bodyAmbient: 0.04,          // flat ambient floor on the faces (×2 on mobile ≤768px)
     keyWeight: 1.0,             // strength of the external key light → lit face ≈ white, face turned away ≈ very dark
+    keyLateral: 1.7,            // side-bias gain on the wordmark offset — >1 pushes the sun further off to one side (stronger one-sided light, deeper far-side shadow)
+    keyForward: 0.7,            // forward (z) component of the key dir — lower = more raking side light, less frontal fill
+    bounceWeight: 0.18,         // green planet-shine from the opposite side — reveals the shadow side without lighting it up (×1.4 on mobile ≤768px)
     albedoMult: 0.8,            // scales the grey-white body albedo (#D8DEE6) — slightly darker body
 
     // distant green source in space — now a rare reflection only (−30% from v1.69)
@@ -257,8 +300,14 @@
     gl.uniform1f(U.u_scan, s.scan);
     gl.uniform1f(U.u_coreI, s.coreI);
     gl.uniform1f(U.u_coreFall, CFG.coreFalloff);
-    gl.uniform1f(U.u_amb, CFG.bodyAmbient);
-    gl.uniform1f(U.u_key, CFG.keyWeight);
+    var mob = forceMobile || window.innerWidth <= 768;                 // mobile ≤768px: lift the body on small, bright screens
+    var ambEff = (P_amb != null ? P_amb : CFG.bodyAmbient) * (mob ? 2.0 : 1.0);
+    var bounceEff = (P_bounce != null ? P_bounce : CFG.bounceWeight) * (mob ? 1.4 : 1.0);
+    gl.uniform1f(U.u_amb, ambEff);
+    gl.uniform1f(U.u_key, P_key != null ? P_key : CFG.keyWeight);
+    gl.uniform1f(U.u_bounce, bounceEff);
+    gl.uniform3fv(U.u_keyDir, keyDir);
+    gl.uniform3fv(U.u_bounceDir, bounceDir);
     gl.uniform1f(U.u_albedo, CFG.albedoMult);
     gl.uniform1f(U.u_rim, CFG.rimIntensity);
     gl.uniform1f(U.u_glint, CFG.glintIntensity);

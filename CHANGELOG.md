@@ -8,6 +8,12 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.71 — 2026-10-15
+
+### Changed
+- Relit the home-page containment mark from outside. Two sources in space now shape it: a cool-white key light anchored to the GRC·LABS wordmark — so the side nearest the name reads bright and the far side falls into shadow — and a faint green bounce from the opposite side that reveals the shadow face without flooding it. On phones the body is lifted a little so it still reads on small, bright screens.
+- Made the home-page mark larger — about half again its previous size.
+
 ## v1.70 — 2026-10-15
 
 ### Changed
