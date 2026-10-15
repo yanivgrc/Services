@@ -1,7 +1,8 @@
 /* GRC·LABS mark — the "containment breach": an epoxy tetrahedron with a hollow wax-sphere cavity,
    raymarched in a single fragment shader. Dependency-free WebGL; degrades to a static asset if WebGL is unavailable.
    Motion: the mark floats in space — the same free upward tumble as the screensaver's BREACH scene, with a slow
-   roll drift and a gentle bob. A cool-white light burns inside the cavity; a distant green source rims the edges (v1.68).
+   roll drift and a gentle bob. A single external key light models the dark matte body; a bright white light inside turns
+   the hollow core into a lit chamber seen through the openings. A distant green source rims the edges (v1.70).
    Cavity rim is beveled (smax), analytic-normal shaded, sub-pixel refined, with adaptive supersampling on edge pixels.
    © 2026 GRC·LABS — all rights reserved. www.grc-labs.com */
 (function () {
@@ -12,9 +13,9 @@
 
   var FRAG =
     '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n' +
-    'uniform vec2 u_res,u_bob; uniform float u_rin,u_rs,u_round,u_svis,u_scan,u_coreI,u_coreFall,u_rim,u_glint,u_edgePx,u_edgeW,u_shell,u_ssaa; uniform vec3 u_tint,u_coreCol,u_greenCol; uniform mat3 u_rot;' +
+    'uniform vec2 u_res,u_bob; uniform float u_rin,u_rs,u_round,u_svis,u_scan,u_coreI,u_coreFall,u_rim,u_glint,u_edgePx,u_edgeW,u_shell,u_ssaa,u_amb,u_key,u_albedo; uniform vec3 u_tint,u_coreCol,u_greenCol; uniform mat3 u_rot;' +
 
-    'const vec3 EPOXY=vec3(0.050,0.078,0.120);' +
+    'const vec3 BODY=vec3(0.847,0.871,0.902);' +   // #D8DEE6 — light neutral grey-white albedo; the external key light does all the face shading
     'const vec3 SPECC=vec3(0.90,0.95,0.85);' +
     'const vec3 GREEN_SCAN=vec3(0.388,0.698,0.176);' +   // #63B22E phosphor — the periodic scan line (u_scan)
     'const vec3 N0=vec3( 0.57735, 0.57735, 0.57735);' +
@@ -62,26 +63,22 @@
     'vec3 lk=normalize(vec3(-4.5,5.5,4.0));vec3 lf=normalize(R*vec3(2.0,-1.5,-3.0)-ps);' +   // page-anchored key light; fill follows the body
     'float dk=max(dot(n,lk),0.0);float df=max(dot(n,lf),0.0);' +
     'vec3 hh=normalize(lk+vd);float spec=pow(max(dot(n,hh),0.0),46.0);' +
-    'float ndv=1.0-max(dot(n,vd),0.0);float fres=ndv*ndv*ndv;float fres5=fres*ndv*ndv;' +   // fres = exp 3 (outer); fres5 = exp 5 (cavity + green rim)
+    'float ndv=1.0-max(dot(n,vd),0.0);float fres5=ndv*ndv*ndv*ndv*ndv;' +   // fres5 = exp 5, for the green rim and a faint cavity-wall edge
     'float innerMix=1.0-smoothstep(0.0,w,abs(dl-u_rs));' +           // narrow cavity-rim blend; also masks the green rim off the circles
     'float grim=fres5*max(dot(n,Lg),0.0)*u_rim*(1.0-innerMix);' +
     'vec3 hg=normalize(Lg+vd);float glint=pow(max(dot(n,hg),0.0),60.0)*u_glint;' +
     'float rimPx=abs(dl-u_rs)/(pxAng*tt);' +                         // distance to the exact cavity circle, in pixels
     'float rimLine=1.0-smoothstep(0.0,u_edgePx,rimPx);' +            // analytic rim line — same width/weight as the triangle edges
-    'vec3 outerCol=EPOXY*0.20+GREEN*(0.46+dk*0.94+df*0.30)+SPECC*spec*0.42+GREEN*fres*0.46+GREEN*edgeGlow(ps,w)*u_edgeW+GRN*(grim+glint);' +
+    'vec3 outerCol=BODY*u_albedo*(u_amb+dk*u_key+df*0.08+max(dot(n,-lk),0.0)*0.03)+SPECC*spec*0.20+GREEN*edgeGlow(ps,w)*u_edgeW+GRN*(grim+glint);' +   // one external key light drives the faces (white→very dark as they turn); weak fill + faint back-fill keep form; edges define the silhouette; NO core spill
     'if(hit){' +
     'float cDiff=max(dot(n,-ps/dl),0.0);' +
-    'vec3 coreLit=CORE*u_coreI*cDiff/(dl*dl);' +
-    'vec3 innerCol=CORE*0.05+GREEN*(dk*0.45+df*0.18)+GREEN*fres5*0.18+GREEN*0.05+coreLit;' +
+    'vec3 coreLit=CORE*u_coreI*cDiff/(dl*dl);' +   // cavity walls: bright white from the core point light — the brightest surface on screen
+    'vec3 innerCol=CORE*0.08+coreLit+GREEN*fres5*0.10;' +   // core-lit interior; the outer key/fill barely reach inside
     'col=mix(outerCol,innerCol,innerMix);' +
     'col+=GREEN*rimLine*u_edgeW;' +                                  // crisp analytic circle drawn on top of the blended body
     'if(u_scan>=0.0){float scanY=mix(2.4,-2.4,u_scan);float sb=smoothstep(0.18,0.0,abs(ps.y-scanY));col+=GREEN_SCAN*sb*0.85;}' +
     '}else{col=outerCol*cov;}' +
-    // volumetric core glow through the openings, occluded by the solid body
-    'if(u_coreI>0.0){float bb=dot(ro,rd);float cc=dot(ro,ro)-u_rs*u_rs;float disc2=bb*bb-cc;' +
-    'if(disc2>0.0){float sq=sqrt(disc2);float ta=-bb-sq;float tb=-bb+sq;float tc=-bb;float tenter=max(ta,0.0);' +
-    'if((!hit||tenter<tt)&&tc>0.0){float tcap=hit?min(tb,tt):tb;float tcl=clamp(tc,tenter,tcap);' +
-    'vec3 cp=ro+rd*tcl;float dist=length(cp);col+=CORE*u_coreI*exp(-u_coreFall*dist*dist);}}}' +
+    // (volumetric core cloud removed in v1.70 — cavity walls + rim lip carry the interior light; no fog in the middle)
     // faint ghost shell at the cavity radius
     'if(u_svis>0.001){float b=dot(ro,rd);float c2=dot(ro,ro)-u_rs*u_rs;float disc=b*b-c2;' +
     'if(disc>0.0){float tn=-b-sqrt(disc);if(tn>0.0&&(!hit||tn<tt)){vec3 sp=ro+rd*tn;vec3 sn=normalize(sp);' +
@@ -118,7 +115,7 @@
   var ploc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(ploc); gl.vertexAttribPointer(ploc, 2, gl.FLOAT, false, 0, 0);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  var U = {}; ['u_res', 'u_bob', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_scan', 'u_coreI', 'u_coreFall', 'u_rim', 'u_glint', 'u_edgePx', 'u_edgeW', 'u_shell', 'u_ssaa', 'u_tint', 'u_coreCol', 'u_greenCol', 'u_rot'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  var U = {}; ['u_res', 'u_bob', 'u_rin', 'u_rs', 'u_round', 'u_svis', 'u_scan', 'u_coreI', 'u_coreFall', 'u_rim', 'u_glint', 'u_edgePx', 'u_edgeW', 'u_shell', 'u_ssaa', 'u_amb', 'u_key', 'u_albedo', 'u_tint', 'u_coreCol', 'u_greenCol', 'u_rot'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
   var PR = Math.min(window.devicePixelRatio || 1, 2);
   function resize() { var r = cvs.getBoundingClientRect(); var w = Math.max(1, Math.round(r.width * PR)), h = Math.max(1, Math.round(r.height * PR)); if (w !== cvs.width || h !== cvs.height) { cvs.width = w; cvs.height = h; } gl.viewport(0, 0, cvs.width, cvs.height); }
   window.addEventListener('resize', resize); resize();
@@ -150,16 +147,21 @@
     scanPeriod: 12.0,           // s between scan passes
     scanDuration: 0.9,          // s a single scan takes to cross the mark
 
-    // the light inside the cavity — neutral cool white, no green
-    coreColor: [0.863, 0.902, 0.941],  // cool white #DCE6F0
-    coreIntensity: 0.45,        // base brightness of the core light + glow
-    coreFalloff: 3.0,           // k in exp(-k·dist²) for the volumetric glow
+    // the light source lives INSIDE the cavity — bright white walls (inverted lighting, v1.70) — APPROVED, keep as-is
+    coreColor: [0.949, 0.965, 0.980],  // bright white #F2F6FA
+    coreIntensity: 0.9,         // core point-light strength → cavity walls are the brightest surface on screen
+    coreFalloff: 6.0,           // k in exp(-k·dist²) — tight, so the volumetric core is a small soft cloud, not fog
     breathePeriod: 5.0,         // s — the core breathes 0.85…1.15 of coreIntensity (no flicker)
 
-    // distant green source in space — reflects off the mark as a rim + passing glints, never a fill
+    // outer faces — driven by the single external key light (upper-left); body stays light, the key does the shading
+    bodyAmbient: 0.04,          // flat ambient floor on the faces
+    keyWeight: 1.0,             // strength of the external key light → lit face ≈ white, face turned away ≈ very dark
+    albedoMult: 0.8,            // scales the grey-white body albedo (#D8DEE6) — slightly darker body
+
+    // distant green source in space — now a rare reflection only (−30% from v1.69)
     greenColor: [0.388, 0.698, 0.176], // phosphor green #63B22E
-    rimIntensity: 0.35,         // fresnel-weighted (exp 5) green rim on silhouette-facing surfaces
-    glintIntensity: 0.25,       // tight green specular (exp ~60) that flashes across flat faces as they turn past the light
+    rimIntensity: 0.245,        // fresnel-weighted (exp 5) green rim on silhouette-facing surfaces
+    glintIntensity: 0.175,      // tight green specular (exp ~60) that flashes across flat faces as they turn past the light
 
     // fine outlines — screen-space line widths so edges/rims stay ~1px at any canvas size and PR
     edgePx: 1.2,                // triangle-edge glow band width in pixels (also the cavity-rim blend + analytic-circle width)
@@ -255,6 +257,9 @@
     gl.uniform1f(U.u_scan, s.scan);
     gl.uniform1f(U.u_coreI, s.coreI);
     gl.uniform1f(U.u_coreFall, CFG.coreFalloff);
+    gl.uniform1f(U.u_amb, CFG.bodyAmbient);
+    gl.uniform1f(U.u_key, CFG.keyWeight);
+    gl.uniform1f(U.u_albedo, CFG.albedoMult);
     gl.uniform1f(U.u_rim, CFG.rimIntensity);
     gl.uniform1f(U.u_glint, CFG.glintIntensity);
     gl.uniform1f(U.u_edgePx, CFG.edgePx);

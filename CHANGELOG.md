@@ -8,6 +8,11 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.70 — 2026-10-15
+
+### Changed
+- Relit the home-page containment mark. The body is now a dark, matte solid modeled by a single external key light — each face sweeps from white to near-black as it turns — while the hollow core is lit from within, a bright chamber seen through the openings. Dropped the soft outer glow; the light now stops at the rim.
+
 ## v1.69 — 2026-10-15
 
 ### Fixed

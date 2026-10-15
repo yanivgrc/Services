@@ -171,6 +171,8 @@
     "cl.fixed":{en:"Fixed",he:"תוקן"},
     "cl.removed":{en:"Removed",he:"הוסר"},
     "cl.privacy":{en:"Privacy",he:"פרטיות"},
+        "cl.v170.c1":{en:"Relit the home-page containment mark. The body is now a dark, matte solid modeled by a single external key light — each face sweeps from white to near-black as it turns — while the hollow core is lit from within, a bright chamber seen through the openings. Dropped the soft outer glow; the light now stops at the rim.",
+          he:"שינינו את התאורה של סימן ההכלה בעמוד הבית. הגוף עכשיו מוצק כהה ומט שמעוצב על ידי מקור אור חיצוני יחיד — כל פאה עוברת מלבן לכמעט-שחור כשהיא מסתובבת — והחלל הפנימי החלול מואר מבפנים, תא מואר שנראה דרך הפתחים. הורדנו את ההילה הרכה שמסביב; האור נעצר עכשיו בשפה."},
         "cl.v169.f1":{en:"Smoothed the home-page mark's cavity rim: the circles where the hollow cuts each face looked jagged and lumpy, with a dark uneven ring. The rim is now beveled to match the edges and rendered with exact normals, a sub-pixel surface fit, and adaptive anti-aliasing on the internal edges (eased off automatically on low-end devices).",
           he:"תוקנה שפת החלל בסימן שבעמוד הבית: המעגלים שבהם החלל החלול חותך כל פאה נראו משוננים וגושיים, עם טבעת כהה ולא אחידה. השפה עכשיו מעוגלת בהתאמה לקצוות ומרונדרת עם נורמלים מדויקים, התאמת משטח ברזולוציית תת-פיקסל, ואנטי-אליאסינג אדפטיבי על הקצוות הפנימיים (מושבת אוטומטית במכשירים חלשים)."},
         "cl.v168.c1":{en:"The home-page containment mark now floats in space — the same free tumble as the screensaver's mark, with a slow drift and bob. A cool-white light burns inside its hollow core; a distant green source rims only the edges and glints as it turns past.",
