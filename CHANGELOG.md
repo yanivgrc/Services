@@ -8,6 +8,11 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.72 — 2026-11-03
+
+### Changed
+- On the Credentials page, the BA in Cyber Management from Bar-Ilan University moved from "In progress" to "Active & held" — the degree has been awarded.
+
 ## v1.71 — 2026-10-15
 
 ### Changed
