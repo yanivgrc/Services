@@ -8,6 +8,21 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.75 — 2026-11-17
+
+### Privacy
+- Reworked the digital business card for privacy: it now shows the portrait, a contact-form button, the full credentials list and the ARETZ portal link. The downloadable contact file, LinkedIn and website buttons were removed; personal contact details are shared only in person.
+
+## v1.74 — 2026-11-17
+
+### Privacy
+- On the digital business card, removed the phone number, email address and coupon. Contact now goes through the site's contact form; the saved contact holds only public details.
+
+## v1.73 — 2026-11-17
+
+### Added
+- Added a digital business card at grc-labs.com/yaniv — save the contact, open LinkedIn and credentials, scan or download a QR code, share to WhatsApp, and claim a personal coupon for the ARETZ lomda portal. It can be added to a phone's home screen and works offline.
+
 ## v1.72 — 2026-11-03
 
 ### Changed

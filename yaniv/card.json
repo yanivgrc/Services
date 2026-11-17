@@ -1,0 +1,95 @@
+{
+  "cardUrl": "https://grc-labs.com/yaniv",
+  "defaultLang": "auto",
+  "name": "Yaniv Dadon",
+  "title": "Founder & CEO",
+  "company": "GRC Labs",
+  "description": "Tailored information security — CISO-grade leadership, GRC, privacy and incident response.",
+  "contactUrl": "https://live.grc-labs.com/contact",
+  "profileImage": "assets/portrait.jpg",
+  "companyLogo": "assets/grc-mark.svg",
+  "linkedinUrl": "",
+  "certificationsUrl": "",
+  "websiteUrl": "",
+  "customLinkLabel": "ARETZ — lomda portal",
+  "customLinkUrl": "https://earth.grc-labs.com/",
+  "credentials": [
+    {
+      "mark": "CISSP",
+      "name": "Certified Information Systems Security Professional",
+      "meta": "(ISC)² · 2021 · Active",
+      "verifyUrl": "https://www.credly.com/badges/997e8e29-fea2-4a2b-abc1-b8697b5e2783",
+      "he": {
+        "name": "מומחה מוסמך לאבטחת מערכות מידע",
+        "meta": "(ISC)² · 2021 · בתוקף"
+      }
+    },
+    {
+      "mark": "CISM",
+      "name": "Certified Information Security Manager",
+      "meta": "ISACA · 2019 · Active",
+      "verifyUrl": "https://www.credly.com/badges/e3d5220b-04f4-4b10-b3de-7a09eb6f9cbb",
+      "he": {
+        "name": "מנהל אבטחת מידע מוסמך",
+        "meta": "ISACA · 2019 · בתוקף"
+      }
+    },
+    {
+      "mark": "ISO 27001",
+      "name": "Lead Auditor · ISO/IEC 27001:2022",
+      "meta": "IQC · 2024 · 40 hours",
+      "he": {
+        "name": "מבקר מוביל · ISO/IEC 27001:2022",
+        "meta": "IQC (המכון לאיכות ובקרה) · 2024 · 40 שעות"
+      }
+    },
+    {
+      "mark": "DPO",
+      "name": "Data Protection Officer",
+      "meta": "Bar-Ilan University, School of High-Tech & Cyber · 2025 · 60 hours",
+      "he": {
+        "name": "ממונה הגנת פרטיות (DPO)",
+        "meta": "אוניברסיטת בר-אילן, בית הספר להייטק וסייבר · 2025 · 60 שעות"
+      }
+    },
+    {
+      "mark": "B.A.",
+      "name": "BA, Cyber Management",
+      "meta": "Bar-Ilan University · 2026",
+      "he": {
+        "name": "תואר ראשון בניהול סייבר",
+        "meta": "אוניברסיטת בר-אילן · 2026"
+      }
+    },
+    {
+      "mark": "CISO",
+      "name": "Information Security Managers Program (CISO10)",
+      "meta": "Technion · 2018",
+      "he": {
+        "name": "תוכנית מנהלי אבטחת מידע (CISO10)",
+        "meta": "הטכניון · 2018"
+      }
+    },
+    {
+      "mark": "CLOUD",
+      "name": "Cloud Essentials",
+      "meta": "AWS · Google Cloud"
+    },
+    {
+      "mark": "TAISE",
+      "name": "Trusted AI Safety Expert (TAISE)",
+      "meta": "CSA",
+      "inProgress": true,
+      "he": {
+        "name": "מומחה מהימן לבטיחות AI (TAISE)"
+      }
+    }
+  ],
+  "he": {
+    "name": "יניב דדון",
+    "title": "מייסד ומנכ״ל",
+    "company": "GRC Labs",
+    "description": "אבטחת מידע בהתאמה אישית — הובלת אבטחה ברמת CISO, ‏GRC, פרטיות ותגובה לאירועים.",
+    "customLinkLabel": "ארצ — פורטל הלומדות"
+  }
+}
