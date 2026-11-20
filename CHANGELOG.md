@@ -8,6 +8,12 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.78 — 2026-11-20
+
+### Changed
+- On the home page, removed the certification line (CISSP · CISM · ISO 27001 LA · DPO); the credentials stay on their own page.
+- The screensaver on the digital business card (/yaniv) and on the Credentials page now starts after 18 seconds of idle (was 24).
+
 ## v1.77 — 2026-11-20
 
 ### Changed

@@ -23,7 +23,7 @@
 (function () {
   'use strict';
 
-  var CONFIG = { enabled: true, idleMs: 24000 };
+  var CONFIG = { enabled: true, idleMs: 18000 };   // site-v1.78: 18 s (was 24) — this file runs on /yaniv and /credentials
   var params = new URLSearchParams(location.search);
   if (params.get('saver') === 'off') CONFIG.enabled = false;
   if (params.get('saver') === 'fast') CONFIG.idleMs = 2500;
