@@ -127,3 +127,10 @@ html[lang="he"] .cr .vf{font-family:var(--he);font-size:12.5px;letter-spacing:0}
 .cr.inprog .mk{color:var(--amber)}
 .cr .tg{align-self:flex-start;margin-top:4px;font:500 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);padding:1px 6px}
 html[lang="he"] .cr .tg{font-family:var(--he);font-size:12px;letter-spacing:0}
+
+/* site-v1.76 — the main page's screensaver, moved here. Its own script would inject these rules, but this page's CSP
+   (style-src 'self') refuses an injected <style>, so they live in the stylesheet. Same values as in assets/js/screensaver.js. */
+#grc-saver{position:fixed;inset:0;z-index:9999;background:#080B14;opacity:0;transition:opacity .6s ease;pointer-events:none}
+#grc-saver.on{opacity:1;pointer-events:auto;cursor:none}
+#grc-saver canvas{display:block;width:100%;height:100%}
+#grc-saver .gs-hint{position:fixed;bottom:8px;right:20px;font:11px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.16em;color:rgba(99,178,46,0.55);z-index:2}

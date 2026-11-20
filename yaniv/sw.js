@@ -1,6 +1,6 @@
 // Offline cache for the card. Bump VERSION when files other than card.json change.
-const VERSION = 'card-v4';
-const CORE = ['./', 'index.html', 'card.css?v=3', 'card.js?v=4', 'matrix.js', 'card.json', 'manifest.webmanifest',
+const VERSION = 'card-v5';
+const CORE = ['./', 'index.html', 'card.css?v=4', 'card.js?v=4', 'matrix.js', 'card.json', 'manifest.webmanifest',
   'qr.svg', 'qr.png', 'assets/portrait.jpg', 'assets/grc-mark.svg',
   'assets/icons/icon-192.png', 'assets/icons/apple-touch-icon.png'];
 

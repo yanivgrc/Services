@@ -8,6 +8,11 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.76 — 2026-11-20
+
+### Changed
+- The home page now runs the screensaver of the ARETZ portal (earth.grc-labs.com): the matrix rain, the figures that grow from a rule, the engines, the menorah and the GRC slide, which shows this site's version. The tmux-style screensaver that ran here moved to the digital business card at /yaniv; the Credentials page keeps it.
+
 ## v1.75 — 2026-11-17
 
 ### Privacy

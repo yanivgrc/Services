@@ -35,11 +35,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Hebrew:wght@400;500;700&display=swap" />
-<link rel="stylesheet" href="card.css?v=3" />
+<link rel="stylesheet" href="card.css?v=4" />
 <link rel="preload" href="card.json" as="fetch" crossorigin />
 <script type="module" src="card.js?v=4"></script>
+<!-- site-v1.76 — the main page's screensaver lives here now; its styles are in card.css (this page's CSP allows no injected <style>) -->
+<script src="/assets/js/screensaver.js?v=1.76" defer></script>
 </head>
-<body>
+<body data-saver-css>
   <canvas id="rain" class="rain" aria-hidden="true"></canvas>
   <div class="shell" id="shell">
   <header class="bar">

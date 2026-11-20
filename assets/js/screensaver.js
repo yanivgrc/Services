@@ -147,7 +147,8 @@
     '#grc-saver.on{opacity:1;pointer-events:auto;cursor:none}' +
     '#grc-saver canvas{display:block;width:100%;height:100%}' +
     '#grc-saver .gs-hint{position:fixed;bottom:8px;right:20px;font:11px/1 ' + MONO + ';letter-spacing:.16em;color:' + DIM + ';z-index:2}';
-  document.head.appendChild(style);
+  // site-v1.76 — a page whose CSP refuses an injected <style> (/yaniv/) carries these rules in its own stylesheet and says so
+  if (!(document.body && document.body.hasAttribute('data-saver-css'))) document.head.appendChild(style);
   var root = document.createElement('div'); root.id = 'grc-saver'; root.setAttribute('aria-hidden', 'true');
   var canvas = document.createElement('canvas');
   var hint = document.createElement('div'); hint.className = 'gs-hint'; hint.textContent = '// move to dismiss';
