@@ -171,6 +171,7 @@
     "cl.fixed":{en:"Fixed",he:"תוקן"},
     "cl.removed":{en:"Removed",he:"הוסר"},
     "cl.privacy":{en:"Privacy",he:"פרטיות"},
+        "cl.v177.c1":{en:"On the home page's screensaver, the GRC\u00b7LABS slide no longer carries Hebrew text: no Hebrew lines, and the rights line reads in English.",he:"בשומר המסך של דף הבית, שקופית GRC·LABS כבר לא מציגה טקסט בעברית: אין שורות בעברית, ושורת הזכויות כתובה באנגלית."},
         "cl.v176.c1":{en:"The home page now runs the screensaver of the ARETZ portal (earth.grc-labs.com): the matrix rain, the figures that grow from a rule, the engines, the menorah and the GRC slide, which shows this site's version. The tmux-style screensaver that ran here moved to the digital business card at /yaniv; the Credentials page keeps it.",he:"בדף הבית רץ עכשיו שומר המסך של פורטל ארצ (earth.grc-labs.com): גשם המטריקס, הצורות שגדלות מכלל, המנועים, המנורה ושקופית GRC עם מספר הגרסה של האתר. שומר המסך בסגנון tmux שרץ כאן עבר לכרטיס הביקור הדיגיטלי ב-/yaniv, ונשאר גם בדף ההסמכות."},
         "cl.v175.c1":{en:"Reworked the digital business card for privacy: it now shows the portrait, a contact-form button, the full credentials list and the ARETZ portal link. The downloadable contact file, LinkedIn and website buttons were removed; personal contact details are shared only in person.",
           he:"כרטיס הביקור הדיגיטלי עוצב מחדש לטובת פרטיות: מוצגים בו הדיוקן, כפתור לטופס יצירת קשר, רשימת ההסמכות המלאה וקישור לפורטל ארצ. קובץ איש הקשר להורדה וכפתורי LinkedIn והאתר הוסרו. פרטי הקשר האישיים נמסרים רק פנים אל פנים."},

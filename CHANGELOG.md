@@ -8,6 +8,11 @@ All notable changes to grc-labs.com. Newest first.
 > HTML from loading against stale cached CSS/JS. See BRIEF.md and the
 > grc-changelog skill.
 
+## v1.77 — 2026-11-20
+
+### Changed
+- On the home page's screensaver, the GRC·LABS slide no longer carries Hebrew text: no Hebrew lines, and the rights line reads in English.
+
 ## v1.76 — 2026-11-20
 
 ### Changed

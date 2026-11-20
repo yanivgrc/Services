@@ -1,4 +1,4 @@
-/* GRC·LABS — the screensaver of earth.grc-labs.com, copied unchanged from yanivgrc/grc-live-v2 public/earth/saver.js at live-v1.42.6.
+/* GRC·LABS — the screensaver of earth.grc-labs.com, copied unchanged from yanivgrc/grc-live-v2 public/earth/saver.js at live-v1.42.7.
    Do not edit here: change it there, then copy it again (see SCREENSAVER-QA.md). */
 // live-v1.23.8 — Earth's screensaver (Yaniv, 20.10 12:33): «not the security topics, the shapes and ideas we have,
 // and add others». The shapes of live's idle screen (src/App.jsx, POINT_SHAPES + the torus), ported, in Earth's
@@ -33,6 +33,7 @@
   const IDLE_MS = 45000,   // live-v1.39.15 (Yaniv 12.11 12:18): 45 s, was 60 s (live's interval)
         HOLD_MS = 4500, IN_MAX = 20000, OUT_MAX = 20000, GROW_MS = 16000, DRAW_MS = 14000, RAIN_MS = 20000;
   const cv = document.getElementById("saver"); if (!cv) return;
+  const NO_WORDS = cv.dataset.words === "off";   // live-v1.42.7: a page that wants the GRC slide without its Hebrew words (grc-labs.com)
   const ctx = cv.getContext("2d");
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const COL = { bg: css("--space") || "#04060b", hi: css("--city") || "#ffcf7a", mid: css("--coast") || "#7fb4c9", lo: "#4f6c8a" };
@@ -1115,11 +1116,11 @@
   function rights(now) {
     if (ph === "in") return;
     const f = ph === "hold" ? (now - pt0) / 28 : 1e9, B = logoBox();
-    const yr = String(new Date().getFullYear()), heRun = "כל הזכויות שמורות", laRun = "© " + yr + " GRC Labs";
+    const yr = String(new Date().getFullYear()), heRun = NO_WORDS ? "" : "כל הזכויות שמורות", laRun = "© " + yr + " GRC Labs" + (NO_WORDS ? " · All rights reserved" : "");
     // visual order, left to right: the Latin run, the separator, then the Hebrew run reversed (it reads right to left).
     // live-v1.42.4 (Yaniv 20.11 12:59) — on the GRC slide the screensaver's version leads it, read from the page's own mark
-    const vr = SCENES[si] && SCENES[si].about ? VERSION : "";
-    const cells = [...(vr ? [...vr, " ", "·", " "] : []), ...laRun, " ", "·", " ", ...[...heRun].reverse()], nR = cells.length;
+    const vr = SCENES[si] && SCENES[si].ver ? VERSION : "";
+    const cells = [...(vr ? [...vr, " ", "·", " "] : []), ...laRun, ...(heRun ? [" ", "·", " ", ...[...heRun].reverse()] : [])], nR = cells.length;
     const kR = Math.min(nR, Math.max(0, Math.floor((f - 50) / 3)));
     if (f <= 50) return;
     const cs = B.tz, cw = cs * 0.62, x0 = Math.round(cv.width / 2 - nR * cw / 2), y = B.ry;   // under the line, as small as it
@@ -1185,7 +1186,8 @@
   function buildScenes(seed) {
     const r = xs(seed), figs = [...LOGIC.map((s) => ({ kind: "points", s, grow: true })), ...SHAPES.map((s) => ({ kind: "points", s })), ...SITE.map((f) => ({ kind: "site", f })), ...LITS, { kind: "demo", name: "דמו" }];
     for (let i = figs.length - 1; i > 0; i--) { const j = r() % (i + 1); [figs[i], figs[j]] = [figs[j], figs[i]]; }
-    const out = [{ kind: "rain", dur: 12000 }, { kind: "tetra", name: "הטטרהדר שלנו", about: true }];   // live-v1.39.6 — the words live in the GRC slide, once a cycle
+    // live-v1.42.7 — on grc-labs.com the GRC slide carries no Hebrew words (Yaniv 20.11 14:34): its canvas says data-words="off"
+    const out = [{ kind: "rain", dur: 12000 }, { kind: "tetra", name: "הטטרהדר שלנו", about: !NO_WORDS, ver: true }];   // live-v1.39.6 — the words live in the GRC slide, once a cycle
     figs.forEach((f, i) => { out.push(RAIN, f); if (i % 8 === 3) out.push(RAIN, { kind: "field", f: FIELDS[(i >> 3) % FIELDS.length] }); if (i % 10 === 9) out.push(RAIN, { kind: "tetra", name: "הטטרהדר שלנו" }); });
     out.push(RAIN, { kind: "torus", name: "טורוס" }, RAIN);
     return out;
